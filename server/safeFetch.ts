@@ -55,7 +55,7 @@ export function isLocalHostname(hostname: string): boolean {
   return LOCAL_SUFFIXES.some((s) => host.endsWith(s));
 }
 
-export const USER_AGENT = 'Mozilla/5.0 (compatible; TokenMaker/1.0; +https://token-maker.pages.dev/about)';
+export const USER_AGENT = 'Mozilla/5.0 (compatible; TokenMaker/1.0; +https://tokenmaker.uk/token-maker/about)';
 
 /** Checks one URL against the rules; returns it parsed or throws. */
 export function validateUrl(raw: string): URL {

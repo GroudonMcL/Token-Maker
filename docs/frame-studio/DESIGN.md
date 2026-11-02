@@ -1,6 +1,8 @@
 # Frame Studio — Design Document
 
-> **Purpose of this file:** the single source of truth for Frame Studio. Anyone (person or AI) building it reads this whole file first, follows it, and updates it when a decision changes. Read `docs/TOKEN-MAKER-CONTEXT.md` for how the existing Token Maker frames work, and `docs/PROJECT-STARTER.md` for the owner's original brief.
+> **Purpose of this file:** the single source of truth for Frame Studio. Anyone (person or AI) building it reads this whole file first, follows it, and updates it when a decision changes. 
+>
+> **Note on paths:** this document was written while Frame Studio was its own repository. In Token Studio its code is in `src/frame-studio/`, so `src/project/` here means `src/frame-studio/project/`, `docs/screenshots/` means `docs/frame-studio/screenshots/`, and so on. Its scripts are run with an `fs:` prefix (`npm run fs:showcase`, `npm run fs:screenshots`…; see `package.json`). The `engine:sync`, `engine:check`, `share:export` and `share:check` scripts belonged to the separate repositories and are not included; Token Studio uses `npm run fs:share-copy` instead (README, "The shared code copies"). `ROADMAP.md`, `TOKEN-MAKER-CONTEXT.md` and `PROJECT-STARTER.md` were working documents and are not included.
 
 ---
 
@@ -192,7 +194,7 @@ These are the conventions of token-maker's `frameKit.ts` (`alongBand(g, count, a
 - **Version 2 → 3** (`MIGRATIONS[2]`): only adds things (texture layers, the ring paint), so nothing changes. Version-2 files saved by Phase 2 are in `src/project/fixtures/v2/`.
 - **Version 3 → 4** (`MIGRATIONS[3]`): lit paints get `highlight: null`, linear paints `followLight: false`, gradient stops `opacity: 1` and repeats `shaded: true, show: []`, in groups too, so nothing changes. Version-3 files saved by Phase 3 (a lit/pressed/across/linear paint mix on a rounded token lit from 135°, and both texture templates) are in `src/project/fixtures/v3/`.
 - **Version 4 → 5** (`MIGRATIONS[4]`): every layer of a kind this version knows gets `effects: []`, shapes and paths `faceted: false, facetTable: 0.5, facetDepth: 1`, in groups too, so nothing changes; a layer of a kind it doesn't know is left exactly as it was. An effect of a kind this version doesn't know is left out with a warning (a layer that can't be read keeps its effects in its kept data). Version-4 files saved by Phase 5 (Jewelled on a hexagon lit from 300°, and Paladin converted to layers on a thick square) are in `src/project/fixtures/v4/`.
-- **Version 5 → 6** (`MIGRATIONS[5]`): repeats get `follow: null`, no variation, the brilliant cut at Phase 6's numbers and no setting; shapes and paths `radialCount: 1`; in groups too, so nothing changes. Version-5 files saved by Phase 6 (Dwarven bronze on a hexagon lit from 300°, Eldritch crystal on a square with the sample picture, Radiant gold) are in `src/project/fixtures/v5/`. From Phase 7 on, `npm run make-fixtures -- file:template:shape:light:showArt …` writes a version's fixtures before the next phase changes the format.
+- **Version 5 → 6** (`MIGRATIONS[5]`): repeats get `follow: null`, no variation, the brilliant cut at Phase 6's numbers and no setting; shapes and paths `radialCount: 1`; in groups too, so nothing changes. Version-5 files saved by Phase 6 (Dwarven bronze on a hexagon lit from 300°, Eldritch crystal on a square with the sample picture, Radiant gold) are in `src/project/fixtures/v5/`. From Phase 7 on, `npm run fs:make-fixtures -- file:template:shape:light:showArt …` writes a version's fixtures before the next phase changes the format.
 - **Version 6 → 7** (`MIGRATIONS[6]`): lines get `waveFit: 0` and wear effects (on layers and on settings) `scratches: 0`, so nothing changes. Version-6 files saved by Phase 7 (the Royal inscription on a square lit from 135° and on a flat hexagon with the sample picture; they have text, so the test loads Frame Studio's fonts) are in `src/project/fixtures/v6/`.
 - **Version 7 → 8** (`MIGRATIONS[7]`): only a version number. Masks, shared height, combining, strokes and separate handles are all off when a file leaves them out (`mask: null`, `heightMode: 'none'`, `combine: 'normal'`, `stroke: 0`, no `handleIn`), which is how earlier files have them. Version-7 files saved by Phase 8 (the Overgrown ruin on a hexagon lit from 300° and on a circle with the sample picture) are in `src/project/fixtures/v7/`. An unsupported layer keeps its own mask and height settings in its kept data.
 - **Version 8 → 9** (`MIGRATIONS[8]`): only a version number; the lighting rig is off when a file leaves it out (no extra lights, no ambient colour, no bloom or bleed). Version-8 files saved by Phase 9 (the Rune-carved plates on a square lit from 140° and on a circle with the sample picture) are in `src/project/fixtures/v8/`. Library files can carry your own styles since version 9 (`styles: [{ name, effects }]`, §6.8); older readers ignore them.
@@ -255,7 +257,7 @@ Token Maker's see-through colours (`rgba(…, 0.55)`) become a solid colour and 
 
 - **In the editor:** New offers "Token Maker frames, as editable layers" (marked *Editable*) above the 27 originals; in "Add a Token Maker frame" the editable ones are added as a group. A Token Maker frame layer whose style has a converter shows **Turn into editable layers** in Properties: a group with the layer's name, visibility, opacity, blend and clip takes its place, as one undo step.
 - **Converted frames follow the light** (§5.1), which the originals can't. At the top-left light they are drawn to match the originals.
-- **How close each is** (`src/project/convert.test.ts`): the original (a legacy layer, itself pixel for pixel `drawFrame`) and the conversion are drawn on every shape and compared, premultiplied: the mean difference per channel (0–255) and the share of pixels that differ visibly (by more than 24/255). Polished and Paladin are checked at 96, 200 and 320 px and thicknesses 0.14 and 0.25; the others at 200 px on every shape and thick on a circle. Each has a limit a little above what it measures; `npm run compare-conversions` draws them side by side with the difference.
+- **How close each is** (`src/project/convert.test.ts`): the original (a legacy layer, itself pixel for pixel `drawFrame`) and the conversion are drawn on every shape and compared, premultiplied: the mean difference per channel (0–255) and the share of pixels that differ visibly (by more than 24/255). Polished and Paladin are checked at 96, 200 and 320 px and thicknesses 0.14 and 0.25; the others at 200 px on every shape and thick on a circle. Each has a limit a little above what it measures; `npm run fs:compare-conversions` draws them side by side with the difference.
 
 | Frame | Worst mean | Worst visibly different | Limit (mean / %) | What differs |
 |---|---|---|---|---|
@@ -327,7 +329,7 @@ Built on a separate branch alongside Phases 6–7 and brought onto the Phase 10 
 - **Fills with a paint** (`fillPaint`, `paintEach` on repeats, shapes and paths): metal lighting, gradients, colours round the ring or photos instead of the fill colour. The paint is drawn once over the whole picture (`paintCanvas`) and used as a pattern set at the moment of filling (`paintPattern`): across the token each ornament shows its own part; with `paintEach` the whole paint is shrunk into each one. Shading is laid over it as light and shade. A faceted shape keeps its fill colour.
 - **Reset buttons:** the ↺ beside a slider or colour puts it back as a new layer, effect or stage has it, as one undo step; it stays in place, disabled, when there is nothing to reset.
 - **Templates:** Moon & stars, Frostbound, Celtic knots, Royal (a crown ornament over fleurs-de-lis and jewels) and Grim iron.
-- `npm run showcase -- ornaments|textures|photos|fills|templates|shapes|crafted|converted out.png` draws them on one sheet (docs/screenshots/27–30, 33–35; version 11: 38–40).
+- `npm run fs:showcase -- ornaments|textures|photos|fills|templates|shapes|crafted|converted out.png` draws them on one sheet (docs/frame-studio/screenshots/27–30, 33–35; version 11: 38–40).
 
 ### 4.12 Blending, blur, natural and strange textures, more shapes (version 11)
 
@@ -490,7 +492,7 @@ A **setting** follows the gem's outline (or an oval round any other element): a 
 - **Styles…** opens the style library: 26 styles in six groups (Metal: polished gold, silver, hammered bronze, blackened iron, brushed steel, verdigris copper; Stone and bone: carved stone, cracked flagstone, obsidian, ancient bone, dragon scales; Crystal: glossy gem, amethyst, ice; Carving: engraved, embossed, stepped rim, coin rim; Magic: arcane, hellfire, holy radiance, necrotic, frost; Finish: soft shadow, raised, aged and worn). Each tile is **your design with the selected layer in that style**, drawn by the renderer on a thicker band, so you choose by seeing it. Picking one gives every picked layer the style's effects (each its own copy), replacing theirs or, with "Add to its effects instead of replacing them", after them; one undo step. A style is only effects, so after picking one each effect is ordinary and can be changed, switched off or removed.
 - **Copy effects / Paste effects:** copies the selected layer's effects and gives them to every picked layer (Ctrl+click to pick several), in place of their own, one undo step.
 - Metal and stone styles are a bevel followed by a material colour, so they work on any colour; crystal, magic and carving styles keep the layer's colour.
-- `npm run effects-sheet -- out.png [size] [shape]` draws every style and every effects template on one picture.
+- `npm run fs:effects-sheet -- out.png [size] [shape]` draws every style and every effects template on one picture.
 
 ### 6.1 The layer library (Phase 5)
 
@@ -560,7 +562,7 @@ Autosave: the project's JSON is written to IndexedDB (`frame-studio:project`) 0.
 - Every new schema version: a migration, and version-1 (and later) fixture files that must still open and draw the same.
 - Don't claim tests passed without running them. Run `npm test`, `npm run e2e`, `npm run typecheck`, `npm run lint`, `npm run build` before a PR.
 - Plain-English summaries and Windows PowerShell commands for the owner.
-- Progress screenshots: `npm run screenshots` (with `npm run dev` running) writes `docs/screenshots/`.
+- Progress screenshots: `npm run fs:screenshots` (with `npm run dev` running) writes `docs/frame-studio/screenshots/`.
 
 ## 8. Roadmap
 

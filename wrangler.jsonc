@@ -1,5 +1,5 @@
-// Only used when the site is deployed as a Cloudflare Worker (README §4,
-// "Deployed as a Worker"). Cloudflare Pages skips this file, because it has no
+// Only used when the site is deployed as a Cloudflare Worker (README,
+// "Deploying"). Cloudflare Pages skips this file, because it has no
 // pages_build_output_dir, and uses functions/ instead.
 {
   "$schema": "node_modules/wrangler/config-schema.json",

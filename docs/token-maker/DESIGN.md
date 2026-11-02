@@ -1,7 +1,9 @@
 # Token Maker — Design Document
 
-> **Working title:** Token Maker (final name and logo to be decided).
-> **Purpose of this file:** the single source of truth for the project. Any AI or person building the site should read this whole file before writing code, follow it, and update it when a decision changes. Put it in the repository at `docs/DESIGN.md`.
+> **Name:** Token Maker, part of Token Studio, live at [tokenmaker.uk](https://tokenmaker.uk).
+> **Purpose of this file:** the single source of truth for the project. Any AI or person building the site should read this whole file before writing code, follow it, and update it when a decision changes.
+>
+> **Note on paths:** this document was written while Token Maker was its own repository. In Token Studio its code is in `src/token-maker/`, so `src/render/` here means `src/token-maker/render/`, and so on. Its scripts are run with a `tm:` prefix (`npm run tm:help-images`…; see `package.json`). Frame Studio's `share:export` and `share:check` scripts are replaced by `npm run fs:share-copy` (README, "The shared code copies").
 
 ---
 
@@ -274,7 +276,7 @@ All version-1 effects are static images (animation is a future feature, but desi
 - *Outer glow behind or over the art follows the art's own outline (a halo round a cut-out creature); on the border it glows round the token. Inner glow shines in from the frame's edge (or lights the band on the border).*
 - *Condition looks change what is under them with blend modes: petrified uses the "colour" blend with a stone colour plus a stone texture and cracks; ethereal erases part of what is under it (more at the bottom), so the exported token is really see-through; frightened and poisoned tint with the "colour" blend; unconscious desaturates and dims, with a "Zzz". Bloodied is splatters with drips.*
 - *Each effect is a function of (settings, size, seed, time) — `src/render/effectPainters.ts` — returning one or more passes, each with a blend mode. A pass is drawn once into its own canvas and cached (about 100 MB at most; very large exports are drawn fresh), then composited at the Intensity, so dragging Intensity redraws nothing. Time is in seconds and always 0 for now; fire flickers, embers and bubbles rise, sparkles twinkle and lightning re-strikes as it changes, ready for animation (§15).*
-- *The picker shows a live thumbnail of every effect, drawn by the renderer on the token's own shape and frame with a stand-in cut-out figure, and each name has a help card with a before/after picture made by `npm run help-images`.)*
+- *The picker shows a live thumbnail of every effect, drawn by the renderer on the token's own shape and frame with a stand-in cut-out figure, and each name has a help card with a before/after picture made by `npm run tm:help-images`.)*
 
 ### 6.9 Borders, decorations, presets and size
 
@@ -346,7 +348,7 @@ Tiny, Small, Medium, Large, Huge, Gargantuan, Custom (any number of squares). Ch
 - **Photo textures** (Frame Studio format 10): a design can use Frame Studio's photo textures, which its renderer draws as their average colour until loaded. `ensurePictures` (`src/state/pictureLibrary.ts`) loads a design's photos with the token's other pictures (`loadFrameDesignPictures`), when the frame changes and before every export; when one arrives the asset map is renewed so the stage and thumbnails draw again, and the frame layer's cache key includes Frame Studio's `pictureEpoch()`.
 - **Kept in this browser:** the `token-maker-designs` IndexedDB database (`src/state/designLibrary.ts`) holds each opened file's text, read again (and so migrated) by Frame Studio's reader. "New token" never deletes it. A token keeps working without it, since the design is in the document.
 - **Presets:** a look with a design carries it (it is part of `frame`). Installing a shared preset also adds its design to that browser's designs, as uploaded frame pictures are.
-- **Tests:** `src/render/designFrames.test.ts` draws designs saved by Frame Studio (versions 2 and 3, Paladin as editable layers lit from the bottom right, every themed border, and a design with photo textures, game-icons ornaments and paint fills once its photos have loaded) through `renderToken` and through Frame Studio's own `renderProject` on a band of the same shape, thickness and spacing, and checks they are the **same picture, pixel for pixel**, on every shape and at other thicknesses, spacings and token sizes. Also the migration and checks, the panel, presets and the library, and end-to-end on desktop, tablet and phone (open two designs, pick one, thicken the band, reload, export).
+- **Tests:** `src/render/designFrames.test.ts` draws designs saved by Frame Studio (versions 2 and 3, Paladin as editable layers lit from the bottom right, every themed border, and a design with photo textures, ornaments (game-icons.net ones at the time; now drawn) and paint fills once its photos have loaded) through `renderToken` and through Frame Studio's own `renderProject` on a band of the same shape, thickness and spacing, and checks they are the **same picture, pixel for pixel**, on every shape and at other thicknesses, spacings and token sizes. Also the migration and checks, the panel, presets and the library, and end-to-end on desktop, tablet and phone (open two designs, pick one, thicken the band, reload, export).
 
 ---
 
@@ -466,7 +468,7 @@ Type scale: 12 / 13 / 15 (body) / 18 (section titles) / 22 / 28 px.
 - A `?` icon next to every **section heading** (and the top-bar items). *(Changed after Phase 1: controls inside a section — Brightness, Contrast, Thickness, the toolbar's zoom slider, Advanced… — no longer get their own `?`; it was too cluttered. Their help shows as a card when the control's name is hovered, or long-pressed on a touch screen, including any before/after picture the entry has (`src/components/LabelTip.tsx`), and every control still needs a help entry.)*
 - Hover (desktop) or tap (touch) opens a small card: one or two plain sentences + a before/after picture or short looping clip (WebP/MP4, small file size).
 - *(Phase 10: every help entry has a before/after picture, named after its id (`frame.thickness` → `public/help/frame-thickness.webp`), with alt text; the ones outside the Image and Effects sections are drawn by `scripts/help-token-pictures.ts` with the real renderer, and the help test fails if any is missing.)*
-- *(Phase 3: the Image section's before/after pictures are drawn by `npm run help-images` with the real image code, into `public/help/`. A test checks every help picture exists, and that every Image control has one. Phase 6: the same script draws a before/after for every effect and Effects control with the real renderer; the picker's effect names open those cards.)*
+- *(Phase 3: the Image section's before/after pictures are drawn by `npm run tm:help-images` with the real image code, into `public/help/`. A test checks every help picture exists, and that every Image control has one. Phase 6: the same script draws a before/after for every effect and Effects control with the real renderer; the picker's effect names open those cards.)*
 - All help content lives in one file (e.g. `src/help/helpContent.ts`) keyed by control id, so it's easy to edit and spot missing entries. A test fails if a control has no help entry.
 
 ---
