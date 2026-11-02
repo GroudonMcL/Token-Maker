@@ -17,8 +17,27 @@ function tokenMakerPages(): Plugin {
   };
 }
 
+/**
+ * Leaves ONNX Runtime's .wasm files out of the build. Bundling onnxruntime-web
+ * makes Vite copy them into dist/assets, but transformers.js never loads them
+ * from there: it points ONNX Runtime at the jsDelivr copy of the same version
+ * (env.backends.onnx.wasm.wasmPaths). The biggest one is over 25 MiB, which is
+ * more than Cloudflare Workers allows for a single asset, so deploys fail.
+ */
+function dropOnnxWasm(): Plugin {
+  return {
+    name: 'drop-onnx-wasm',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      for (const name of Object.keys(bundle)) {
+        if (/(^|\/)ort-wasm[^/]*\.wasm$/.test(name)) delete bundle[name];
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), devApi(), tokenMakerPages()],
+  plugins: [react(), devApi(), tokenMakerPages(), dropOnnxWasm()],
   build: {
     rollupOptions: {
       // Token Studio's page, and the two apps it shows.
