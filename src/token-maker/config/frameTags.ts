@@ -1,5 +1,5 @@
 // The tags the owner can give each frame while ranking them (FrameRanker.tsx):
-// what it is made of, its effects, its decorations and its overall style.
+// what it is made of, its effects, its details and its overall style.
 // The frame picker can filter by them, and its search finds them too.
 // Add a tag by adding it to a group; ids are what is saved, so keep them.
 
@@ -22,21 +22,12 @@ export const FRAME_TAG_GROUPS: readonly FrameTagGroup[] = [
     label: 'Material',
     tags: [
       t('metal', 'Metal'),
-      t('gold', 'Gold'),
-      t('silver', 'Silver'),
-      t('bronze', 'Bronze / copper'),
-      t('iron', 'Iron / steel'),
       t('stone', 'Stone'),
-      t('marble', 'Marble'),
       t('crystal', 'Crystal / ice'),
       t('wood', 'Wood'),
       t('plants', 'Plants / leaves'),
       t('bone', 'Bone'),
-      t('leather', 'Leather / hide'),
-      t('cloth', 'Cloth'),
-      t('rope', 'Rope'),
-      t('enamel', 'Enamel'),
-      t('energy', 'Energy / magic'),
+      t('energy', 'Magic / energy'),
     ],
   },
   {
@@ -45,51 +36,22 @@ export const FRAME_TAG_GROUPS: readonly FrameTagGroup[] = [
     tags: [
       t('glow', 'Glow'),
       t('transparent', 'Transparent'),
-      t('shiny', 'Shiny'),
       t('fire', 'Fire / lava'),
-      t('frost', 'Frost'),
-      t('lightning', 'Lightning'),
       t('water', 'Water'),
-      t('smoke', 'Smoke / shadow'),
-      t('sparkle', 'Sparkle'),
-      t('gradient', 'Gradient / rainbow'),
-      t('cracked', 'Cracked / worn'),
+      t('smoke', 'Cloud / smoke'),
+      t('gradient', 'Gradient'),
     ],
   },
   {
-    id: 'decoration',
-    label: 'Decorations',
-    tags: [
-      t('gems', 'Gems'),
-      t('runes', 'Runes'),
-      t('text', 'Text / inscription'),
-      t('rivets', 'Rivets / studs'),
-      t('beads', 'Beads'),
-      t('filigree', 'Filigree'),
-      t('knotwork', 'Knotwork'),
-      t('vines', 'Vines / leaves'),
-      t('thorns', 'Thorns'),
-      t('flowers', 'Flowers'),
-      t('stars', 'Stars / moons'),
-      t('skulls', 'Skulls'),
-      t('spikes', 'Spikes'),
-      t('scales', 'Scales'),
-      t('feathers', 'Feathers'),
-      t('chains', 'Chains'),
-      t('plates', 'Plates / panels'),
-      t('gears', 'Gears'),
-      t('notes', 'Music notes'),
-      t('crowns', 'Crowns / fleurs'),
-      t('symbols', 'Holy symbols'),
-      t('eyes', 'Eyes'),
-    ],
+    id: 'detail',
+    label: 'Details',
+    tags: [t('gems', 'Gems'), t('runes', 'Runes / text')],
   },
   {
     id: 'style',
     label: 'Style',
     tags: [
       t('simple', 'Simple'),
-      t('ornate', 'Ornate'),
       t('rustic', 'Rustic'),
       t('elegant', 'Elegant'),
       t('grim', 'Grim'),
@@ -100,6 +62,32 @@ export const FRAME_TAG_GROUPS: readonly FrameTagGroup[] = [
 ];
 
 const BY_ID = new Map(FRAME_TAG_GROUPS.flatMap((g) => g.tags.map((tag) => [tag.id, tag] as const)));
+
+/**
+ * Tags from the longer first list and the tag they became (null: dropped),
+ * so rankings saved before the list was slimmed down still read.
+ */
+const RETIRED: Record<string, string | null> = {
+  gold: 'metal',
+  silver: 'metal',
+  bronze: 'metal',
+  iron: 'metal',
+  enamel: 'metal',
+  marble: 'stone',
+  frost: 'crystal',
+  vines: 'plants',
+  thorns: 'plants',
+  flowers: 'plants',
+  skulls: 'bone',
+  lightning: 'energy',
+  text: 'runes',
+};
+
+/** A tag id as the current list has it: itself, the tag it became, or null if it is gone. */
+export function currentTag(id: string): string | null {
+  if (BY_ID.has(id)) return id;
+  return RETIRED[id] ?? null;
+}
 
 /** A tag's label (or its id, for a tag no longer listed). */
 export const tagLabel = (id: string): string => BY_ID.get(id)?.label ?? id;
