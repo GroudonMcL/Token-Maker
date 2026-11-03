@@ -146,10 +146,10 @@ describe('Frame section: built-in Frame Studio designs (v11)', () => {
     expect(getDoc().frame.design).toBeNull();
   });
 
-  it("lists every frame on its own, with no versions stacked behind another, opens on the chosen frame's group, and closes with Escape", () => {
+  it('lists every frame on its own, with no versions stacked behind another, opens on All frames, and closes with Escape', () => {
     render(<FrameSection />);
     fireEvent.click(screen.getByRole('button', { name: 'Change frame' }));
-    expect(screen.getByRole('tab', { name: /Essentials/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /All frames/ })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('radio', { name: /^Simple$/ })).toBeChecked();
     expect(screen.queryByRole('button', { name: /versions of/ })).toBeNull();
     fireEvent.click(screen.getByRole('tab', { name: /Metal & Gems/ }));

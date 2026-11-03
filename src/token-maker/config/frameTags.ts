@@ -1,7 +1,6 @@
-// The tags the owner can give each frame while ranking them (FrameRanker.tsx):
-// what it is made of, its effects, its details and its overall style.
-// The frame picker can filter by them, and its search finds them too.
-// Add a tag by adding it to a group; ids are what is saved, so keep them.
+// The tags the owner gave each frame (config/frameOrder.json): what it is
+// made of, its effects, its details and its overall style. The frame picker
+// filters by them, in this order, and its search finds them too.
 
 export interface FrameTag {
   id: string;
@@ -62,32 +61,6 @@ export const FRAME_TAG_GROUPS: readonly FrameTagGroup[] = [
 ];
 
 const BY_ID = new Map(FRAME_TAG_GROUPS.flatMap((g) => g.tags.map((tag) => [tag.id, tag] as const)));
-
-/**
- * Tags from the longer first list and the tag they became (null: dropped),
- * so rankings saved before the list was slimmed down still read.
- */
-const RETIRED: Record<string, string | null> = {
-  gold: 'metal',
-  silver: 'metal',
-  bronze: 'metal',
-  iron: 'metal',
-  enamel: 'metal',
-  marble: 'stone',
-  frost: 'crystal',
-  vines: 'plants',
-  thorns: 'plants',
-  flowers: 'plants',
-  skulls: 'bone',
-  lightning: 'energy',
-  text: 'runes',
-};
-
-/** A tag id as the current list has it: itself, the tag it became, or null if it is gone. */
-export function currentTag(id: string): string | null {
-  if (BY_ID.has(id)) return id;
-  return RETIRED[id] ?? null;
-}
 
 /** A tag's label (or its id, for a tag no longer listed). */
 export const tagLabel = (id: string): string => BY_ID.get(id)?.label ?? id;
