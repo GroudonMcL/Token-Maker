@@ -1,3 +1,4 @@
+import shippedFile from '../config/frameRanking.json';
 import { isKnownTag } from '../config/frameTags';
 import { TILES } from '../sections/frameTiles';
 import {
@@ -179,6 +180,21 @@ describe('the ranking store', () => {
     reloadRanking();
     expect(frameRanking.getState().tags[first!]).toEqual([]);
     expect(frameRanking.getState().tags[second!]).toEqual(shipped[second!]);
+    // Only the frame changed here is saved, so a newer shipped file still reaches the rest.
+    expect(Object.keys(JSON.parse(localStorage.getItem('tm.frameRanking')!).tags)).toEqual([first]);
+  });
+
+  it('reads files with tags from the first, longer list', () => {
+    importRanking(JSON.stringify({ tags: { 'test-frame': ['gold', 'iron', 'text', 'rivets', 'glow'] } }));
+    expect(frameRanking.getState().tags['test-frame']).toEqual(['metal', 'runes', 'glow']);
+  });
+
+  it('lets the shipped tags replace frames this browser saved with the first, longer list', () => {
+    const [first] = TILES.map((t) => t.id);
+    localStorage.setItem('tm.frameRanking', JSON.stringify({ order: [], tags: { [first!]: ['gold', 'shiny'], 'test-frame': ['glow'] } }));
+    reloadRanking();
+    expect(frameRanking.getState().tags[first!]).toEqual(readRanking(shippedFile).tags[first!]);
+    expect(frameRanking.getState().tags['test-frame']).toEqual(['glow']);
   });
 });
 

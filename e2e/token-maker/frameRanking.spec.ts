@@ -15,11 +15,11 @@ test('sort frames into tiers with tags, compare them, and the picker shows that 
   await gallery.getByRole('button', { name: 'Rank & tag' }).click();
   const ranker = page.getByRole('dialog', { name: 'Rank & tag frames' });
 
-  // Tiers: the first two frames in S (the first tagged Gold), the third in A.
+  // Tiers: the first two frames in S (the first tagged Gems), the third in A.
   await ranker.getByRole('button', { name: 'Sort into tiers' }).click();
   const current = ranker.locator('.ranker__tier-frame strong').first();
   await expect(current).toHaveText('Simple');
-  await ranker.getByRole('group', { name: 'Tags for Simple' }).getByRole('button', { name: 'Gold', exact: true }).click();
+  await ranker.getByRole('group', { name: 'Tags for Simple' }).getByRole('button', { name: 'Gems', exact: true }).click();
   await page.keyboard.press('1');
   await expect(current).not.toHaveText('Simple');
   const second = (await current.textContent())!;
@@ -53,12 +53,12 @@ test('sort frames into tiers with tags, compare them, and the picker shows that 
 
   // Filter by tag, and search finds tags.
   const all = await tiles.count();
-  await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gold' }).click();
-  // Simple (tagged Gold here) is one of the two S frames, ahead of every other gold frame.
+  await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gems' }).click();
+  // Simple (tagged Gems here) is one of the two S frames, ahead of every other frame with gems.
   await expect(tiles.first()).toContainText('Simple');
   expect(await tiles.count()).toBeLessThan(all);
-  await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gold' }).click();
-  await gallery.getByRole('searchbox', { name: 'Search frames' }).fill('gold');
+  await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gems' }).click();
+  await gallery.getByRole('searchbox', { name: 'Search frames' }).fill('gems');
   await expect(gallery.getByRole('radio', { name: 'Simple', exact: true })).toBeVisible();
 
   // It's kept after a reload.

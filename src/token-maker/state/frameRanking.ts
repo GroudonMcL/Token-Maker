@@ -20,6 +20,7 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import shipped from '../config/frameRanking.json';
+import { currentTag, isKnownTag } from '../config/frameTags';
 
 export const TIERS = [
   { tier: 1, label: 'S', hint: 'The best' },
@@ -137,7 +138,8 @@ function cleanTags(v: unknown): Record<string, string[]> {
   if (v && typeof v === 'object') {
     for (const [id, list] of Object.entries(v)) {
       // An empty list is kept: it means "no tags", not "the shipped ones".
-      if (Array.isArray(list)) out[id] = [...new Set(strings(list))];
+      // Tags from the first, longer list become the tag that replaced them.
+      if (Array.isArray(list)) out[id] = [...new Set(strings(list).map(currentTag).filter((x): x is string => !!x))];
     }
   }
   return out;
@@ -167,6 +169,9 @@ export function readRanking(v: unknown): RankingData {
   return { order: [...new Set(strings(o.order))], tiers, tags: cleanTags(o.tags), sort: cleanSession(o.sort, tiers) };
 }
 
+/** The ranking and tags shipped with the app. */
+const SHIPPED = readRanking(shipped);
+
 /**
  * This browser's ranking over the shipped one: the shipped tags and tiers
  * fill in any frame this browser hasn't given its own (so tags added to the
@@ -174,11 +179,16 @@ export function readRanking(v: unknown): RankingData {
  * order is used until this browser has one.
  */
 function load(): RankingData {
-  const base = readRanking(shipped);
+  const base = { ...SHIPPED, tags: { ...SHIPPED.tags }, tiers: { ...SHIPPED.tiers } };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const local = readRanking(JSON.parse(raw));
+      const saved = JSON.parse(raw) as { tags?: Record<string, unknown> };
+      // A frame saved with tags from the first, longer list was saved before the
+      // frames were tagged again with the short one: the shipped tags replace it.
+      if (saved?.tags && typeof saved.tags === 'object')
+        saved.tags = Object.fromEntries(Object.entries(saved.tags).filter(([, list]) => !Array.isArray(list) || list.every((x) => typeof x === 'string' && isKnownTag(x))));
+      const local = readRanking(saved);
       return {
         order: local.order.length || local.sort ? local.order : base.order,
         tiers: { ...base.tiers, ...local.tiers },
@@ -192,9 +202,15 @@ function load(): RankingData {
   return base;
 }
 
+const sameTags = (a: readonly string[] | undefined, b: readonly string[] | undefined) =>
+  !!a && !!b && a.length === b.length && a.every((x) => b.includes(x));
+
+/** Saves this browser's ranking. Tags the same as the shipped ones aren't saved, so a newer shipped file still reaches them. */
 function save({ order, tiers, tags, sort }: RankingData) {
+  const base = SHIPPED.tags;
+  const own = Object.fromEntries(Object.entries(tags).filter(([id, list]) => !sameTags(list, base[id])));
   try {
-    localStorage.setItem(KEY, JSON.stringify({ order, tiers, tags, sort }));
+    localStorage.setItem(KEY, JSON.stringify({ order, tiers, tags: own, sort }));
   } catch {
     // Private browsing with storage blocked: the ranking lasts until the page closes.
   }
