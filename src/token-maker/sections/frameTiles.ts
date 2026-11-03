@@ -1,7 +1,7 @@
-// Every frame the frame picker lists (drawn frames and built-in designs), and
-// their thumbnails. Shared by the picker (FrameSection.tsx) and the ranker
-// (FrameRanker.tsx).
+// Every frame the frame picker lists (drawn frames and built-in designs), in
+// the owner's order (config/frameOrder.json), with their tags and thumbnails.
 
+import frameOrder from '../config/frameOrder.json';
 import { categoryOf, categoryRank } from '../frameStudio/project/frameCategories';
 import { loadFrameDesignPictures } from '../frameStudio/share/frameDesign';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
@@ -9,11 +9,19 @@ import { FRAME_PRESETS, type ShapeId } from '../render/catalog';
 import type { FrameTile } from './FramePicker';
 import { clearDesignThumbnails, designThumbnail, frameThumbnail } from './frameThumbs';
 
+/** Each frame's place in the owner's ranking (0 = best). */
+const RANK = new Map(frameOrder.order.map((id, i) => [id, i]));
+export const rankOf = (id: string) => RANK.get(id) ?? Infinity;
+
+/** Each frame's tags (config/frameTags.ts), as the owner gave them. */
+export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrder.tags;
+
 /**
  * Every frame in the picker, by category (frameCategories.ts): the drawn
  * frames and built-in designs, each a frame of its own in its own category
- * (no versions stacked behind another frame). Within a category, frames made
- * from the same one stay next to each other.
+ * (no versions stacked behind another frame). Within a category, frames are
+ * in the owner's ranking, best first; any frame not ranked yet goes after
+ * them, next to frames made from the same one.
  */
 function frameTiles(): FrameTile[] {
   const tiles: (FrameTile & { from: string })[] = [
@@ -25,14 +33,13 @@ function frameTiles(): FrameTile[] {
   tiles.forEach((t, i) => first.has(t.from) || first.set(t.from, i));
   return tiles
     .map((t, i) => ({ t, i }))
-    .sort((a, b) => categoryRank(a.t.group) - categoryRank(b.t.group) || essentials(a.t) - essentials(b.t) || first.get(a.t.from)! - first.get(b.t.from)! || a.i - b.i)
+    .sort((a, b) => categoryRank(a.t.group) - categoryRank(b.t.group) || rankOf(a.t.id) - rankOf(b.t.id) || essentials(a.t) - essentials(b.t) || first.get(a.t.from)! - first.get(b.t.from)! || a.i - b.i)
     .map(({ t }) => ({ id: t.id, label: t.label, group: t.group }));
 }
 
 /** The built-in designs, made once each (their thumbnails and photo textures are cached by id). */
 export const builtInFrames = new Map(BUILT_IN_DESIGNS.map((b) => [b.id, builtInDesignFrame(b.id)!]));
 export const TILES = frameTiles();
-export const tileById = new Map(TILES.map((t) => [t.id, t]));
 
 /** One frame's thumbnail (a drawn frame or a built-in design), `px` across. */
 export const thumbOf = (id: string, shape: ShapeId, px = 96) => {

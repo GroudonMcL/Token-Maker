@@ -2,18 +2,17 @@
 // shows only the chosen frame and a Change button; Change pops out a gallery
 // with a tab per group, search and large thumbnails. Every frame is a tile of
 // its own (owner's request: no versions stacked behind another frame).
-// Once the frames are ranked (FrameRanker.tsx), the gallery opens on "My
-// ranking", every frame best first, and each group lists its frames in that
-// order too; the tags given while ranking filter the frames and are found by
-// the search.
+// The gallery opens on "All frames", every frame in the owner's ranking
+// (config/frameOrder.json), and each group lists its frames in that order
+// too. The owner's tags (config/frameTags.ts) filter the frames, and the
+// search finds them.
 
-import { ListOrdered, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ControlLabel } from '../components';
 import { FRAME_TAG_GROUPS, tagLabel } from '../config/frameTags';
-import { byRank, rankIndex, tierLabel, useFrameRanking } from '../state/frameRanking';
-import { FrameRanker } from './FrameRanker';
+import { FRAME_TAGS, rankOf } from './frameTiles';
 
 export interface FrameTile {
   id: string;
@@ -80,35 +79,25 @@ function Thumb({ src, size }: { src: string | undefined; size: number }) {
   return src ? <img src={src} alt="" width={size} height={size} /> : <span className="tile__blank" style={{ width: size, height: size }} />;
 }
 
-/** The gallery tab listing every frame in the owner's ranking. */
-const RANKED = 'My ranking';
+/** The gallery tab listing every frame, in the owner's ranking. */
+const ALL = 'All frames';
 
 function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: readonly FrameTile[]; thumbs: Map<string, string> | null; value: string; onPick: (id: string) => void; onClose: () => void }) {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
-  const order = useFrameRanking((s) => s.order);
-  const sort = useFrameRanking((s) => s.sort);
-  const tiers = useFrameRanking((s) => s.tiers);
-  const tagsOf = useFrameRanking((s) => s.tags);
-  const [ranking, setRanking] = useState(false);
-  const rankButton = useRef<HTMLButtonElement>(null);
-  const rank = useMemo(() => rankIndex({ order, sort, tiers }), [order, sort, tiers]);
-  const hasRanking = allTiles.some((t) => rank.has(t.id));
-  const ranked = useMemo(() => byRank(allTiles, (t) => t.id, rank), [allTiles, rank]);
-  const groups = useMemo(() => [...(hasRanking ? [RANKED] : []), ...new Set(allTiles.map((t) => t.group))], [allTiles, hasRanking]);
-  const chosen = allTiles.find((t) => t.id === value);
-  const [picked, setTab] = useState(hasRanking ? RANKED : (chosen?.group ?? groups[0]));
-  // (The ranking tab goes if the ranking is cleared while the gallery is open.)
-  const tab = groups.includes(picked!) ? picked : groups[0];
+  // Every frame best first; the groups keep their own order, with their frames in the same ranking.
+  const ranked = useMemo(() => allTiles.map((t, i) => ({ t, i })).sort((a, b) => rankOf(a.t.id) - rankOf(b.t.id) || a.i - b.i).map(({ t }) => t), [allTiles]);
+  const groups = useMemo(() => [ALL, ...new Set(allTiles.map((t) => t.group))], [allTiles]);
+  const [tab, setTab] = useState(ALL);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<string[]>([]);
   // The tags in use, in the order they are listed in.
   const usedTags = useMemo(() => {
-    const used = new Set(allTiles.flatMap((t) => tagsOf[t.id] ?? []));
+    const used = new Set(allTiles.flatMap((t) => FRAME_TAGS[t.id] ?? []));
     return FRAME_TAG_GROUPS.flatMap((g) => g.tags.filter((t) => used.has(t.id)));
-  }, [allTiles, tagsOf]);
-  const tiles = filter.length ? ranked.filter((t) => filter.every((f) => tagsOf[t.id]?.includes(f))) : ranked;
-  const inTab = (g: string) => (g === RANKED ? tiles : tiles.filter((t) => t.group === g));
+  }, [allTiles]);
+  const tiles = filter.length ? ranked.filter((t) => filter.every((f) => FRAME_TAGS[t.id]?.includes(f))) : ranked;
+  const inTab = (g: string) => (g === ALL ? tiles : tiles.filter((t) => t.group === g));
 
   useEffect(() => {
     const start = box.current?.querySelector<HTMLElement>('[aria-checked="true"]') ?? box.current?.querySelector<HTMLElement>('input');
@@ -125,17 +114,11 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
       className="frame-pick__tile"
       onClick={() => onPick(t.id)}
     >
-      {tab === RANKED && !q && rank.has(t.id) && (
-        <span className="frame-pick__rank" title={tiers[t.id] ? `Tier ${tierLabel(tiers[t.id])}` : undefined}>
-          {tiers[t.id] ? `${tierLabel(tiers[t.id])} · ` : ''}
-          {rank.get(t.id)! + 1}
-        </span>
-      )}
       <Thumb src={thumbs?.get(t.id)} size={72} />
       <span>{t.label}</span>
     </button>
   );
-  const words = (t: FrameTile) => `${t.label} ${t.group} ${(tagsOf[t.id] ?? []).map(tagLabel).join(' ')}`.toLowerCase();
+  const words = (t: FrameTile) => `${t.label} ${t.group} ${(FRAME_TAGS[t.id] ?? []).map(tagLabel).join(' ')}`.toLowerCase();
   const shown = (q ? tiles.filter((t) => words(t).includes(q)) : inTab(tab)).map(tileButton);
 
   return (
@@ -159,10 +142,6 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
             <Search size={16} aria-hidden="true" />
             <input type="search" placeholder="Search frames" aria-label="Search frames" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
-          <button ref={rankButton} type="button" className="btn btn--small" onClick={() => setRanking(true)}>
-            <ListOrdered size={14} aria-hidden="true" />
-            Rank & tag
-          </button>
           <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
             <X size={18} />
           </button>
@@ -173,7 +152,7 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
               <button
                 key={t.id}
                 type="button"
-                className="ranker__chip"
+                className="frame-pick__chip"
                 aria-pressed={filter.includes(t.id)}
                 onClick={() => setFilter((f) => (f.includes(t.id) ? f.filter((x) => x !== t.id) : [...f, t.id]))}
               >
@@ -181,7 +160,7 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
               </button>
             ))}
             {filter.length > 0 && (
-              <button type="button" className="btn btn--ghost btn--small" onClick={() => setFilter([])}>
+              <button type="button" className="btn btn--ghost btn--small frame-pick__clear" onClick={() => setFilter([])}>
                 Clear
               </button>
             )}
@@ -201,14 +180,6 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
           </div>
         </div>
       </div>
-      {ranking && (
-        <FrameRanker
-          onClose={() => {
-            setRanking(false);
-            rankButton.current?.focus();
-          }}
-        />
-      )}
     </div>
   );
 }
