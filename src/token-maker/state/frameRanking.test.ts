@@ -1,3 +1,5 @@
+import { isKnownTag } from '../config/frameTags';
+import { TILES } from '../sections/frameTiles';
 import {
   answer,
   byRank,
@@ -10,6 +12,7 @@ import {
   newSession,
   opponentOf,
   rankIndex,
+  reloadRanking,
   readRanking,
   rerankFrame,
   shuffled,
@@ -152,17 +155,30 @@ describe('the ranking store', () => {
   });
 
   it('toggles tags, and saves and opens them with the ranking', () => {
-    toggleTag('oak', 'wood');
-    toggleTag('oak', 'glow');
-    toggleTag('oak', 'glow');
-    expect(frameRanking.getState().tags).toEqual({ oak: ['wood'] });
-    setTier('oak', 2);
+    toggleTag('test-frame', 'wood');
+    toggleTag('test-frame', 'glow');
+    toggleTag('test-frame', 'glow');
+    expect(frameRanking.getState().tags['test-frame']).toEqual(['wood']);
+    setTier('test-frame', 2);
     const text = exportRanking();
     resetRanking();
-    expect(frameRanking.getState().tags).toEqual({});
+    expect(frameRanking.getState().tags['test-frame']).toBeUndefined();
     expect(importRanking(text)).toBe(true);
-    expect(frameRanking.getState().tags).toEqual({ oak: ['wood'] });
-    expect(frameRanking.getState().tiers).toEqual({ oak: 2 });
+    expect(frameRanking.getState().tags['test-frame']).toEqual(['wood']);
+    expect(frameRanking.getState().tiers).toMatchObject({ 'test-frame': 2 });
     expect(importRanking('not json')).toBe(false);
   });
+
+  it('ships tags for every frame, which fill in frames this browser has not tagged', () => {
+    const shipped = frameRanking.getState().tags;
+    for (const id of TILES.map((t) => t.id)) expect(shipped[id]?.length, id).toBeGreaterThan(0);
+    for (const list of Object.values(shipped)) for (const tag of list) expect(isKnownTag(tag), tag).toBe(true);
+    // A frame cleared in this browser stays cleared; the rest keep the shipped tags.
+    const [first, second] = TILES.map((t) => t.id);
+    for (const tag of shipped[first!]!) toggleTag(first!, tag);
+    reloadRanking();
+    expect(frameRanking.getState().tags[first!]).toEqual([]);
+    expect(frameRanking.getState().tags[second!]).toEqual(shipped[second!]);
+  });
 });
+

@@ -52,9 +52,11 @@ test('sort frames into tiers with tags, compare them, and the picker shows that 
   await expect(tiles.nth(2)).toContainText(third);
 
   // Filter by tag, and search finds tags.
+  const all = await tiles.count();
   await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gold' }).click();
-  await expect(tiles).toHaveCount(1);
+  // Simple (tagged Gold here) is one of the two S frames, ahead of every other gold frame.
   await expect(tiles.first()).toContainText('Simple');
+  expect(await tiles.count()).toBeLessThan(all);
   await gallery.getByRole('group', { name: 'Show only frames tagged' }).getByRole('button', { name: 'Gold' }).click();
   await gallery.getByRole('searchbox', { name: 'Search frames' }).fill('gold');
   await expect(gallery.getByRole('radio', { name: 'Simple', exact: true })).toBeVisible();

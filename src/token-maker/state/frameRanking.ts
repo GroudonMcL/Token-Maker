@@ -136,8 +136,8 @@ function cleanTags(v: unknown): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   if (v && typeof v === 'object') {
     for (const [id, list] of Object.entries(v)) {
-      const tags = [...new Set(strings(list))];
-      if (tags.length) out[id] = tags;
+      // An empty list is kept: it means "no tags", not "the shipped ones".
+      if (Array.isArray(list)) out[id] = [...new Set(strings(list))];
     }
   }
   return out;
@@ -167,14 +167,29 @@ export function readRanking(v: unknown): RankingData {
   return { order: [...new Set(strings(o.order))], tiers, tags: cleanTags(o.tags), sort: cleanSession(o.sort, tiers) };
 }
 
+/**
+ * This browser's ranking over the shipped one: the shipped tags and tiers
+ * fill in any frame this browser hasn't given its own (so tags added to the
+ * shipped file reach a browser that has already ranked), and the shipped
+ * order is used until this browser has one.
+ */
 function load(): RankingData {
+  const base = readRanking(shipped);
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return readRanking(JSON.parse(raw));
+    if (raw) {
+      const local = readRanking(JSON.parse(raw));
+      return {
+        order: local.order.length || local.sort ? local.order : base.order,
+        tiers: { ...base.tiers, ...local.tiers },
+        tags: { ...base.tags, ...local.tags },
+        sort: local.sort,
+      };
+    }
   } catch {
     // No localStorage, or something unreadable in it: use the shipped ranking.
   }
-  return readRanking(shipped);
+  return base;
 }
 
 function save({ order, tiers, tags, sort }: RankingData) {
@@ -270,10 +285,7 @@ export function toggleTag(frameId: string, tagId: string) {
   const { tags } = frameRanking.getState();
   const now = tags[frameId] ?? [];
   const next = now.includes(tagId) ? now.filter((x) => x !== tagId) : [...now, tagId];
-  const all = { ...tags };
-  if (next.length) all[frameId] = next;
-  else delete all[frameId];
-  set({ tags: all });
+  set({ tags: { ...tags, [frameId]: next } });
 }
 
 /** The ranking, tiers and tags as a file's text (to keep, move to another browser, or ship with the app as config/frameRanking.json). */
@@ -293,6 +305,11 @@ export function importRanking(text: string): boolean {
   }
 }
 
+/** Reads the ranking again from localStorage and the shipped file, as a page load does. */
+export function reloadRanking() {
+  frameRanking.setState({ ...load(), undo: [] });
+}
+
 /** Forgets this browser's ranking, tiers and tags (back to the ones shipped with the app). */
 export function resetRanking() {
   try {
@@ -300,7 +317,7 @@ export function resetRanking() {
   } catch {
     // Nothing saved anyway.
   }
-  frameRanking.setState({ ...readRanking(shipped), undo: [] });
+  frameRanking.setState({ ...load(), undo: [] });
 }
 
 /** The ranking being made while a sort is in progress (it carries on where it was left), else the finished one. */
