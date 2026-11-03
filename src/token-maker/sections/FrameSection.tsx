@@ -5,16 +5,15 @@ import { updateFrameAndArt } from '../editor/artActions';
 import { nudgeHole, pickImageFrame, uploadFrame } from '../editor/frameActions';
 import { applyBuiltInDesign, applyDesignFrame, openDesignFile } from '../editor/designActions';
 import type { DesignFrame, FrameSettings, ImageFrame } from '../document/types';
-import { loadFrameDesignPictures } from '../frameStudio/share/frameDesign';
-import { categoryOf, categoryRank } from '../frameStudio/project/frameCategories';
 import { refreshDesigns, removeDesign, useDesignLibrary } from '../state/designLibrary';
-import { BUILT_IN_DESIGNS, builtInDesignById, builtInDesignFrame, isBuiltInDesign } from '../render/builtInDesigns';
+import { builtInDesignById, builtInDesignFrame, isBuiltInDesign } from '../render/builtInDesigns';
 import { refreshUploadedFrames, removeUploadedFrame, useUploadedFrames } from '../state/frameLibrary';
-import { FRAME_PRESETS, framePresetById, SHAPES, type ShapeId } from '../render/catalog';
+import { framePresetById, SHAPES, type ShapeId } from '../render/catalog';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
-import { clearDesignThumbnails, designThumbnail, frameThumbnail } from './frameThumbs';
+import { designThumbnail } from './frameThumbs';
+import { loadFramePictures, thumbOf, TILES } from './frameTiles';
 import { createDocument } from '../document/defaults';
-import { FramePicker, type FrameTile } from './FramePicker';
+import { FramePicker } from './FramePicker';
 import { frameAccent } from '../render/frames';
 
 const DEFAULTS = createDocument().frame;
@@ -345,26 +344,6 @@ function BandSliders() {
   );
 }
 
-/**
- * Every frame in the picker, by category (frameCategories.ts): the drawn
- * frames and built-in designs, each a frame of its own in its own category
- * (no versions stacked behind another frame). Within a category, frames made
- * from the same one stay next to each other.
- */
-function frameTiles(): FrameTile[] {
-  const tiles: (FrameTile & { from: string })[] = [
-    ...FRAME_PRESETS.map((p) => ({ id: p.id, label: p.name, group: categoryOf(p.id), from: p.id })),
-    ...BUILT_IN_DESIGNS.map((b) => ({ id: b.id, label: b.name, group: b.group, from: b.after ?? b.id.replace(/^builtin:/, '') })),
-  ];
-  const essentials = (t: FrameTile) => Number(t.group !== 'Essentials' || !t.id.startsWith('builtin:'));
-  const first = new Map<string, number>();
-  tiles.forEach((t, i) => first.has(t.from) || first.set(t.from, i));
-  return tiles
-    .map((t, i) => ({ t, i }))
-    .sort((a, b) => categoryRank(a.t.group) - categoryRank(b.t.group) || essentials(a.t) - essentials(b.t) || first.get(a.t.from)! - first.get(b.t.from)! || a.i - b.i)
-    .map(({ t }) => ({ id: t.id, label: t.label, group: t.group }));
-}
-
 /** A colour picker for each of a built-in design's colour slots (its band, its highlights…). */
 function BuiltInColours({ id }: { id: string }) {
   const chosen = useDoc((d) => d.frame.design?.colours);
@@ -391,16 +370,6 @@ function BuiltInColours({ id }: { id: string }) {
     </>
   );
 }
-
-/** The built-in designs, made once each (their thumbnails and photo textures are cached by id). */
-const builtInFrames = new Map(BUILT_IN_DESIGNS.map((b) => [b.id, builtInDesignFrame(b.id)!]));
-const TILES = frameTiles();
-
-/** One frame's thumbnail (a drawn frame or a built-in design). */
-const thumbOf = (id: string, shape: ShapeId) => {
-  const design = builtInFrames.get(id);
-  return design ? designThumbnail(id, design.project, shape) : frameThumbnail(id, shape);
-};
 
 /** Each thumbnail takes a few ms; the gallery draws them in slices this long, so the page never freezes. */
 const SLICE_MS = 12;
@@ -429,12 +398,8 @@ function useFrameThumbs(shape: ShapeId, value: string) {
   // Photo textures for the designs that are about to be drawn.
   useEffect(() => {
     let live = true;
-    const designs = gallery ? [...builtInFrames.entries()] : builtInFrames.has(value) ? [[value, builtInFrames.get(value)!] as const] : [];
-    if (!designs.length) return;
-    void Promise.all(designs.map(([, d]) => loadFrameDesignPictures(d.project).then((loaded) => loaded, () => false))).then((loaded) => {
-      if (!live || !loaded.some(Boolean)) return;
-      clearDesignThumbnails(designs.map(([id]) => id));
-      setEpoch((e) => e + 1);
+    void loadFramePictures(gallery ? TILES.map((t) => t.id) : [value]).then((redraw) => {
+      if (live && redraw) setEpoch((e) => e + 1);
     });
     return () => {
       live = false;
