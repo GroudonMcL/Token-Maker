@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useBatch } from '../batch/batch';
-import { listenForStudioFrames } from '../editor/studioBridge';
+import { listenForSentFrames } from '../editor/shellBridge';
 import { useGlobalImport } from '../editor/useGlobalImport';
 import { useShortcuts } from '../editor/useShortcuts';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -38,7 +38,7 @@ function boot() {
     watchAiRemoval();
     watchLabelFonts();
     preloadSections();
-    listenForStudioFrames();
+    listenForSentFrames();
   });
 }
 

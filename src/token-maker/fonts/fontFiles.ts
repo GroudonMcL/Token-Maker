@@ -31,7 +31,7 @@ import spectral700I from '@fontsource/spectral/files/spectral-latin-700-italic.w
 import germaniaOne400 from '@fontsource/germania-one/files/germania-one-latin-400-normal.woff2?url';
 import eagleLake400 from '@fontsource/eagle-lake/files/eagle-lake-latin-400-normal.woff2?url';
 
-/** A font file in public/fonts/ (the fictional alphabets, shared with Frame Studio's text layers). */
+/** A font file in public/fonts/ (the fictional alphabets, shared with Frame Maker's text layers). */
 const publicFont = (file: string) => `${import.meta.env.BASE_URL}fonts/${file}`;
 
 export interface FontFile {

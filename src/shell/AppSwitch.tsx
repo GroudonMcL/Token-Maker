@@ -1,13 +1,13 @@
 // The app titles in each app's top bar, in place of its own title. Inside
-// Token Studio they switch between Token Maker and Frame Studio; on an app's
+// Token Maker they switch between Token Maker and Frame Maker; on an app's
 // own page there is nothing to switch to, so only its title shows.
 
 import type { ReactNode } from 'react';
-import { APPS, inTokenStudio, showApp, type AppId } from './studioApps';
-import './studio-ui.css';
+import { APPS, inSite, showApp, type AppId } from './apps';
+import './shell-ui.css';
 
 export function AppSwitch({ current, compact = false, logo, standalone }: { current: AppId; compact?: boolean; logo?: ReactNode; standalone: ReactNode }) {
-  if (!inTokenStudio()) return <>{standalone}</>;
+  if (!inSite()) return <>{standalone}</>;
   return (
     <>
       {logo}

@@ -17,8 +17,8 @@ export default tseslint.config(
     },
   },
   {
-    // Frame Studio's code (and Token Maker's copy of it) follows Frame Studio's own lint rules.
-    files: ['src/frame-studio/**/*.{ts,tsx}', 'src/token-maker/frameStudio/**/*.ts', 'scripts/frame-studio/**/*.ts', 'e2e/frame-studio/**/*.ts'],
+    // Frame Maker's code (and Token Maker's copy of it) follows Frame Maker's own lint rules.
+    files: ['src/frame-maker/**/*.{ts,tsx}', 'src/token-maker/frameMaker/**/*.ts', 'scripts/frame-maker/**/*.ts', 'e2e/frame-maker/**/*.ts'],
     rules: { '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true, argsIgnorePattern: '^_' }] },
   },
 );

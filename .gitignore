@@ -7,7 +7,7 @@ test-results
 *.local
 *.tsbuildinfo
 .DS_Store
-docs/frame-studio/screenshots/conversions/*
-!docs/frame-studio/screenshots/conversions/minimal.png
-!docs/frame-studio/screenshots/conversions/paladin.png
-scripts/frame-studio/scratch/
+docs/frame-maker/screenshots/conversions/*
+!docs/frame-maker/screenshots/conversions/minimal.png
+!docs/frame-maker/screenshots/conversions/paladin.png
+scripts/frame-maker/scratch/

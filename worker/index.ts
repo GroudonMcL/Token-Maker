@@ -20,7 +20,7 @@ export default {
       if (pathname === '/api/health') return Response.json({ ok: true });
       return Response.json({ error: { code: 'not_found', message: 'There is nothing at that address.' } }, { status: 404 });
     }
-    // Token Maker's own pages (/token-maker/about…) get Token Maker's page.
+    // Token Maker's own pages (/token-maker/about…) get Token Maker's own page.
     if (pathname.startsWith('/token-maker/') && !pathname.includes('.')) return env.ASSETS.fetch(new Request(new URL('/token-maker/', request.url), request));
     return env.ASSETS.fetch(request);
   },

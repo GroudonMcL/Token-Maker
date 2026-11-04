@@ -1,5 +1,5 @@
 /*
- * Token Studio's themes, shared by the page and both apps (palettes.ts lists
+ * Token Maker's themes, shared by the page and both apps (palettes.ts lists
  * them; palettes.test.ts checks contrast). Each replaces the colours from the
  * apps' tokens.css. Light and Day are light themes: they also set
  * <html data-theme="light">, so the light shadows, danger and overlay colours

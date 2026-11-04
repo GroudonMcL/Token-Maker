@@ -68,8 +68,8 @@ export function PrivacyPage() {
 
       <h2>Terms of use</h2>
       <p>
-        Token Studio is free, open-source software, offered under the{' '}
-        <a href="https://github.com/GroudonMcL/Token-Studio/blob/main/LICENSE" target="_blank" rel="noreferrer">
+        Token Maker is free, open-source software, offered under the{' '}
+        <a href="https://github.com/GroudonMcL/Token-Maker/blob/main/LICENSE" target="_blank" rel="noreferrer">
           MIT licence
         </a>
         . By using it you agree that:

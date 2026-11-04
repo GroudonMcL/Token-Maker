@@ -1,6 +1,6 @@
 # Asset credits
 
-Every font, icon, image and other asset bundled with Token Studio (Token Maker and Frame Studio), with its source and licence (DESIGN.md §12). The code itself is under the MIT licence (`LICENSE`); the assets below keep their own licences. Token Maker's About page shows this table as it is, so keep it a plain table: one row per asset, links written as `[text](https://…)`.
+Every font, icon, image and other asset bundled with Token Maker (Token Maker and Frame Maker), with its source and licence (DESIGN.md §12). The code itself is under the MIT licence (`LICENSE`); the assets below keep their own licences. Token Maker's About page shows this table as it is, so keep it a plain table: one row per asset, links written as `[text](https://…)`.
 
 | Asset | Source | Licence |
 |---|---|---|
@@ -29,38 +29,38 @@ Every font, icon, image and other asset bundled with Token Studio (Token Maker a
 | 14 picture-decoration icons (`public/pictures/deco-*.webp`, other than the `deco-orn-*` and `deco-art-*` ones below) | Kenney, [Board Game Icons](https://kenney.nl/assets/board-game-icons) (drawn from the SVGs with a dark outline added) | CC0 1.0 |
 | AI background-removal model (downloaded by the browser when used, not bundled) | [BiRefNet-lite](https://github.com/ZhengPeng7/BiRefNet) by Zheng Peng et al., 512 × 512 ONNX export [studioludens/birefnet-lite-512](https://huggingface.co/studioludens/birefnet-lite-512), run with [Transformers.js](https://github.com/huggingface/transformers.js) | MIT (model); Apache 2.0 (Transformers.js) |
 | AI cut-out test picture (`e2e/token-maker/fixtures/goblin-boss-ai-mask.png`) | Made once from the goblin fixture with the model above | — |
-| Photo texture “Tree bark” (Frame Studio, `bark` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/bark_brown_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Brown leather” (Frame Studio, `leather` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/brown_leather)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Castle brick” (Frame Studio, `castle-brick` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/castle_brick_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Coarse rust” (Frame Studio, `rust` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/rust_coarse_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Cobblestones” (Frame Studio, `cobblestone` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/cobblestone_floor_08)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Granite tiles” (Frame Studio, `granite` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/granite_tile)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Green painted metal” (Frame Studio, `green-rust` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/green_metal_rust)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Bumpy bronze” (Frame Studio, `hammered-metal` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Metal007)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Hessian” (Frame Studio, `hessian` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/hessian_230)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Ice” (Frame Studio, `ice` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Ice002)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Lava” (Frame Studio, `lava` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava004)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Marble blocks” (Frame Studio, `marble` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/marble_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Medieval wood” (Frame Studio, `medieval-wood` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/medieval_wood)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Mossy rock” (Frame Studio, `mossy-rock` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/mossy_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Red jacquard” (Frame Studio, `jacquard` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/quatrefoil_jacquard_fabric)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Twisted rope” (Frame Studio, `rope` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Rope001)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Rough gold” (Frame Studio, `gold` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Metal048C)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Snow” (Frame Studio, `snow` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/snow_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Tread plate” (Frame Studio, `metal-plate` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/metal_plate)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Wood planks” (Frame Studio, `wood-planks` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/wood_planks)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Ember streaks” (Frame Studio, `lava-flow` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava001)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Molten rock” (Frame Studio, `molten-rock` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava005)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Moss” (Frame Studio, `moss` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Moss002)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Blue onyx” (Frame Studio, `blue-onyx` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Onyx006)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Black onyx” (Frame Studio, `black-onyx` in `src/frame-studio/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Onyx013)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Plane tree bark” (Frame Studio, `plane-bark` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/bark_platanus)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Coral stone” (Frame Studio, `coral-stone` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/coral_stone_wall)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Dark rock” (Frame Studio, `dark-rock` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/dark_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Forest floor” (Frame Studio, `forest-floor` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/forest_leaves_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Lichen rock” (Frame Studio, `lichen-rock` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/lichen_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Cracked mud” (Frame Studio, `cracked-mud` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/mud_cracked_dry_03)): its 1K colour map, resized to 512 px | CC0 1.0 |
-| Photo texture “Tiger rock” (Frame Studio, `tiger-rock` in `src/frame-studio/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/tiger_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Tree bark” (Frame Maker, `bark` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/bark_brown_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Brown leather” (Frame Maker, `leather` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/brown_leather)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Castle brick” (Frame Maker, `castle-brick` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/castle_brick_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Coarse rust” (Frame Maker, `rust` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/rust_coarse_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Cobblestones” (Frame Maker, `cobblestone` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/cobblestone_floor_08)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Granite tiles” (Frame Maker, `granite` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/granite_tile)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Green painted metal” (Frame Maker, `green-rust` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/green_metal_rust)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Bumpy bronze” (Frame Maker, `hammered-metal` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Metal007)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Hessian” (Frame Maker, `hessian` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/hessian_230)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Ice” (Frame Maker, `ice` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Ice002)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Lava” (Frame Maker, `lava` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava004)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Marble blocks” (Frame Maker, `marble` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/marble_01)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Medieval wood” (Frame Maker, `medieval-wood` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/medieval_wood)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Mossy rock” (Frame Maker, `mossy-rock` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/mossy_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Red jacquard” (Frame Maker, `jacquard` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/quatrefoil_jacquard_fabric)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Twisted rope” (Frame Maker, `rope` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Rope001)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Rough gold” (Frame Maker, `gold` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Metal048C)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Snow” (Frame Maker, `snow` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/snow_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Tread plate” (Frame Maker, `metal-plate` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/metal_plate)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Wood planks” (Frame Maker, `wood-planks` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/wood_planks)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Ember streaks” (Frame Maker, `lava-flow` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava001)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Molten rock” (Frame Maker, `molten-rock` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Lava005)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Moss” (Frame Maker, `moss` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Moss002)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Blue onyx” (Frame Maker, `blue-onyx` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Onyx006)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Black onyx” (Frame Maker, `black-onyx` in `src/frame-maker/project/pictures.ts`) | ambientCG ([source](https://ambientcg.com/view?id=Onyx013)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Plane tree bark” (Frame Maker, `plane-bark` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/bark_platanus)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Coral stone” (Frame Maker, `coral-stone` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/coral_stone_wall)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Dark rock” (Frame Maker, `dark-rock` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/dark_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Forest floor” (Frame Maker, `forest-floor` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/forest_leaves_02)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Lichen rock” (Frame Maker, `lichen-rock` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/lichen_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Cracked mud” (Frame Maker, `cracked-mud` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/mud_cracked_dry_03)): its 1K colour map, resized to 512 px | CC0 1.0 |
+| Photo texture “Tiger rock” (Frame Maker, `tiger-rock` in `src/frame-maker/project/pictures.ts`) | Poly Haven ([source](https://polyhaven.com/a/tiger_rock)): its 1K colour map, resized to 512 px | CC0 1.0 |
 | Lucide icons | [lucide.dev](https://lucide.dev) (`lucide-react`) | ISC |
 | Logo, favicon and home-screen icon (`public/favicon.svg`, `public/apple-touch-icon.png`, `src/token-maker/layout/BrandMark.tsx`) | Designed by the owner, GroudonMcL (letters as outlines) | Owner's own |
 | 25 code-drawn frames and 5 shapes (`src/token-maker/render/catalog.ts`) | Ported from the owner's own [LK-to-Owlbear-Combined](https://github.com/GroudonMcL/LK-to-Owlbear-Combined) extension | Owner's own code |
@@ -139,8 +139,8 @@ Every font, icon, image and other asset bundled with Token Studio (Token Maker a
 | Decoration “Laurel” (`public/pictures/deco-art-laurel.webp`) | Firkin, [Openclipart 303221](https://openclipart.org/detail/303221) (uploaded 2018-06-14; the left half of the wreath; drawn from the SVG at 256 px, trimmed) | CC0 1.0 |
 | Decoration “Chain” (`public/pictures/deco-art-chain.webp`) | tallmike, [Openclipart 288591](https://openclipart.org/detail/288591) (uploaded 2017-10-11; drawn from the SVG at 256 px, trimmed) | CC0 1.0 |
 | Decoration “Leaf” (`public/pictures/deco-art-leaf.webp`) | davidblyons, [Openclipart 280731](https://openclipart.org/detail/280731) (uploaded 2017-06-01; drawn from the SVG at 256 px, trimmed) | CC0 1.0 |
-| Essentials frames (Simple, Dual-tone gradient, Small gradient, Clean gradient, Rainbow, Marble, Gold and red marble, Glowing ice, Glowing lava) | Designed in Frame Studio by the owner, GroudonMcL (`src/frame-studio/project/essentialsData.ts`) | Owner's own |
-| 8 built-in Frame Studio frames (Gilded laurel, Iron rivets, Runestone, Thorns, Dragon scales, Celestial star, Rope, Shield rim; once picture frames) | Built from Frame Studio layers for the project (`src/frame-studio/project/pictureFrameTemplates.ts`), using the photo textures above | — (made for the project) |
+| Essentials frames (Simple, Dual-tone gradient, Small gradient, Clean gradient, Rainbow, Marble, Gold and red marble, Glowing ice, Glowing lava) | Designed in Frame Maker by the owner, GroudonMcL (`src/frame-maker/project/essentialsData.ts`) | Owner's own |
+| 8 built-in Frame Maker frames (Gilded laurel, Iron rivets, Runestone, Thorns, Dragon scales, Celestial star, Rope, Shield rim; once picture frames) | Built from Frame Maker layers for the project (`src/frame-maker/project/pictureFrameTemplates.ts`), using the photo textures above | — (made for the project) |
 | 18 decorations (gems, crown, star, skull, horn, wing, ribbon, laurel, chain, leaf, class icons) | Drawn by code at render time (`src/token-maker/render/decorationPainters.ts`) | — |
 | Effects (fire, frost, poison, lightning, conditions, embers, sparkles, glows…) | Drawn by code at render time (`src/token-maker/render/effectPainters.ts`) | — |
 | Label shapes (banner, plaque, pill, box) | Drawn by code at render time (`src/token-maker/render/label.ts`) | — |
@@ -148,5 +148,5 @@ Every font, icon, image and other asset bundled with Token Studio (Token Maker a
 | Sample art in frame tiles, frame sheet and tests | Drawn by code for the project (`src/token-maker/render/sampleArt.ts`, `scripts/token-maker/make-fixture.ts`) | — |
 | "Try a sample" picture, True Goblin (`public/sample/true-goblin.png`) | Drawn by the owner, GroudonMcL | Owner's own |
 | Help-tip before/after pictures (`public/help/`) | Drawn by the site's own renderer (`scripts/token-maker/help-images.ts`, `scripts/token-maker/help-token-pictures.ts`) | — |
-| Frame Studio's ornaments, templates, themed and crafted borders, procedural textures, generators, shapes and styles | Drawn by code for the project (`src/frame-studio/render/`, `src/frame-studio/project/`) | — |
+| Frame Maker's ornaments, templates, themed and crafted borders, procedural textures, generators, shapes and styles | Drawn by code for the project (`src/frame-maker/render/`, `src/frame-maker/project/`) | — |
 | Test pictures (`e2e/token-maker/fixtures/`, `scripts/token-maker/fixtures/`) | Drawn by code for the project (`scripts/token-maker/make-fixture.ts`), or made from the owner's True Goblin | — (tests only, not shown on the site) |

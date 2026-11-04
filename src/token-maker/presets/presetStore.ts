@@ -118,7 +118,7 @@ export async function installSharedImages(p: TokenPreset): Promise<void> {
     const blob = await (await fetch(font.data)).blob();
     await saveUploadedFont(blob, font.name, fontId).catch((e) => console.warn(e));
   }
-  // A Frame Studio design travels inside the look; keep it in this browser's design library too, to pick again
+  // A Frame Maker design travels inside the look; keep it in this browser's design library too, to pick again
   // (not a built-in one: it is already listed with the drawn frames).
   const design = p.look.frame.design;
   if (design && !isBuiltInDesign(design.id) && !(await hasDesign(design.id))) await saveDesign(JSON.stringify(design.project), design.name, design.id).catch((e) => console.warn(e));

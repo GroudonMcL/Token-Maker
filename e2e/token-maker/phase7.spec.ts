@@ -184,7 +184,7 @@ test('built-in picture frame and preset; drag a decoration on the canvas to anot
   // The tapped decoration is selected: its card is open and it has handles.
   await expect(page.getByTestId('decor-rotate-handle')).toBeVisible();
 
-  // A built-in Frame Studio design, listed with the drawn frames (v11).
+  // A built-in Frame Maker design, listed with the drawn frames (v11).
   panel = await openSection(page, 'Frame & shape');
   await panel.getByRole('radio', { name: 'Drawn' }).click();
   await panel.getByRole('button', { name: 'Change frame' }).click();

@@ -37,9 +37,9 @@ const fromPct = (p: number) => p / 50;
 
 /**
  * Frame & shape section (DESIGN.md §6.9, §6.12): shape, the frames drawn by
- * code (colour, thickness, spacing) and the built-in Frame Studio designs
+ * code (colour, thickness, spacing) and the built-in Frame Maker designs
  * listed with them, a picture frame of your own (with its hole) or a Frame
- * Studio design you opened (on the same band as a drawn frame), and the
+ * Maker design you opened (on the same band as a drawn frame), and the
  * backing.
  */
 export function FrameSection() {
@@ -58,7 +58,7 @@ export function FrameSection() {
         onChange={(k) => {
           setPictureChosen(k === 'image');
           if (k === 'code') updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'code' } }));
-          // A built-in design belongs with the drawn frames: Frame Studio starts with no design picked.
+          // A built-in design belongs with the drawn frames: Frame Maker starts with no design picked.
           else if (k === 'design') updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'design', design: isBuiltInDesign(d.frame.design?.id) ? null : d.frame.design } }));
           else if (frame.image) updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'image' } }));
           else {
@@ -69,7 +69,7 @@ export function FrameSection() {
         options={[
           { value: 'code', label: 'Drawn' },
           { value: 'image', label: 'Picture' },
-          { value: 'design', label: 'Frame Studio' },
+          { value: 'design', label: 'Frame Maker' },
         ]}
       />
       {kind === 'image' ? <PictureFrame image={frame.kind === 'image' ? frame.image : null} /> : kind === 'design' ? <DesignFramePanel design={frame.design} /> : <DrawnFrame />}
@@ -203,8 +203,8 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
 }
 
 /**
- * A Frame Studio design: the designs opened in this browser, opening another
- * .framestudio.json file, and the band it sits on (shape, thickness and
+ * A Frame Maker design: the designs opened in this browser, opening another
+ * .framemaker.json file, and the band it sits on (shape, thickness and
  * spacing, as for a drawn frame).
  */
 function DesignFramePanel({ design }: { design: DesignFrame | null }) {
@@ -234,7 +234,7 @@ function DesignFramePanel({ design }: { design: DesignFrame | null }) {
       <ShapeControl />
       {tiles.length > 0 ? (
         <TileGrid
-          label="Frame Studio design"
+          label="Frame Maker design"
           helpId="frame.design"
           value={design?.id ?? ''}
           onChange={(id) => {
@@ -248,12 +248,12 @@ function DesignFramePanel({ design }: { design: DesignFrame | null }) {
           }))}
         />
       ) : (
-        <p className="control__hint">No designs yet. Make one in Frame Studio, save it, and open the .framestudio.json file here.</p>
+        <p className="control__hint">No designs yet. Make one in Frame Maker, save it, and open the .framemaker.json file here.</p>
       )}
       <div className="control control--row" data-control="frame-design-open" data-help-id="frame.designOpen">
         <button type="button" className="btn btn--small" onClick={() => input.current?.click()}>
           <FolderOpen size={14} aria-hidden="true" />
-          Open a Frame Studio design
+          Open a Frame Maker design
         </button>
         {design && designs.some((d) => d.id === design.id) && (
           <button type="button" className="btn btn--ghost btn--small" onClick={() => void removeDesign(design.id)}>
@@ -264,7 +264,7 @@ function DesignFramePanel({ design }: { design: DesignFrame | null }) {
         <input
           ref={input}
           type="file"
-          accept=".framestudio.json,.json,application/json"
+          accept=".framemaker.json,.json,application/json"
           className="visually-hidden"
           tabIndex={-1}
           aria-hidden="true"
@@ -296,7 +296,7 @@ function ShapeControl() {
   );
 }
 
-/** Thickness and spacing of the frame band (drawn frames and Frame Studio designs). */
+/** Thickness and spacing of the frame band (drawn frames and Frame Maker designs). */
 function BandSliders() {
   const frame = useDoc((d) => d.frame);
   const setFrame = (patch: Partial<FrameSettings>, transient = false) =>
@@ -348,7 +348,7 @@ function BandSliders() {
 function BuiltInColours({ id }: { id: string }) {
   const chosen = useDoc((d) => d.frame.design?.colours);
   const slots = builtInDesignById(id)?.colours ?? [];
-  if (!slots.length) return <p className="control__hint">A Frame Studio design with its own colours. Open it in Frame Studio (New → Token Studio's frames) to change them.</p>;
+  if (!slots.length) return <p className="control__hint">A Frame Maker design with its own colours. Open it in Frame Maker (New → Token Maker's frames) to change them.</p>;
   const setColour = (slotId: string, colour: string) =>
     updateDoc((d) => {
       const design = builtInDesignFrame(id, { ...d.frame.design?.colours, [slotId]: colour });
@@ -444,7 +444,7 @@ function useFrameThumbs(shape: ShapeId, value: string) {
 
 /**
  * The drawn frames: shape, the frames drawn by code (colour, thickness and
- * spacing) and, in their Crafted group, the built-in Frame Studio designs.
+ * spacing) and, in their Crafted group, the built-in Frame Maker designs.
  */
 function DrawnFrame() {
   const shape = useDoc((d) => d.shape);

@@ -1,7 +1,7 @@
 // @vitest-environment node
-// Frame Studio designs as frames (DESIGN.md §6.12). A design is drawn by
-// Frame Studio's own renderer (src/frameStudio/) on Token Maker's band, so it
-// must look exactly as it does in Frame Studio on a band of the same shape,
+// Frame Maker designs as frames (DESIGN.md §6.12). A design is drawn by
+// Frame Maker's own renderer (src/frameMaker/) on Token Maker's band, so it
+// must look exactly as it does in Frame Maker on a band of the same shape,
 // thickness and spacing, at every token size.
 import { createCanvas, loadImage, Path2D } from '@napi-rs/canvas';
 import { readFileSync } from 'node:fs';
@@ -9,13 +9,13 @@ import { createDocument } from '../document/defaults';
 import { migrateDocument } from '../document/migrate';
 import { computeInsets, outputSize } from '../document/sizing';
 import type { TokenDocument } from '../document/types';
-import { editableProject } from '../frameStudio/project/convert';
-import { bandFillLayer, createProject, photoBand, repeatLayer, shapeLayer, textureLayer } from '../frameStudio/project/defaults';
-import { pictureImage, setPictureDecoder } from '../frameStudio/render/pictures';
-import { THEMED_TEMPLATES, themedProject } from '../frameStudio/project/themedTemplates';
-import { setCanvasFactory as setFrameStudioCanvas } from '../frameStudio/render/canvas';
-import { renderProject } from '../frameStudio/render/renderProject';
-import { loadFrameDesignPictures, readFrameDesign, type FrameProject } from '../frameStudio/share/frameDesign';
+import { editableProject } from '../frameMaker/project/convert';
+import { bandFillLayer, createProject, photoBand, repeatLayer, shapeLayer, textureLayer } from '../frameMaker/project/defaults';
+import { pictureImage, setPictureDecoder } from '../frameMaker/render/pictures';
+import { THEMED_TEMPLATES, themedProject } from '../frameMaker/project/themedTemplates';
+import { setCanvasFactory as setFrameMakerCanvas } from '../frameMaker/render/canvas';
+import { renderProject } from '../frameMaker/render/renderProject';
+import { loadFrameDesignPictures, readFrameDesign, type FrameProject } from '../frameMaker/share/frameDesign';
 import { setCanvasFactory } from '../image/processedArt';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from './builtInDesigns';
 import { SHAPES } from './catalog';
@@ -24,18 +24,18 @@ import { renderToken } from './render';
 
 const make = (w: number, h: number) => createCanvas(w, h) as unknown as HTMLCanvasElement;
 setCanvasFactory(make);
-setFrameStudioCanvas(make);
-// Frame Studio's icon ornaments are SVG paths and its photo textures JPEGs: node has neither Path2D nor a decoder.
+setFrameMakerCanvas(make);
+// Frame Maker's icon ornaments are SVG paths and its photo textures JPEGs: node has neither Path2D nor a decoder.
 (globalThis as { Path2D?: unknown }).Path2D ??= Path2D;
 setPictureDecoder(async (url) => loadImage(Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')));
 
 const fixture = (name: string): FrameProject => {
-  const r = readFrameDesign(readFileSync(`e2e/token-maker/fixtures/designs/${name}.framestudio.json`, 'utf8'));
+  const r = readFrameDesign(readFileSync(`e2e/token-maker/fixtures/designs/${name}.framemaker.json`, 'utf8'));
   if (!r.ok) throw new Error(r.error);
   return r.project;
 };
 
-/** A themed border from Frame Studio's template picker, as its saved file reads back. */
+/** A themed border from Frame Maker's template picker, as its saved file reads back. */
 function themed(id: string): FrameProject {
   const r = readFrameDesign(JSON.parse(JSON.stringify(themedProject(THEMED_TEMPLATES.find((t) => t.id === id)!))));
   if (!r.ok) throw new Error(r.error);
@@ -60,8 +60,8 @@ const pixels = (draw: (ctx: Ctx) => void, size: number) => {
 
 const inTokenMaker = (doc: TokenDocument, size = outputSize(doc.size.squares)) => pixels((ctx) => renderToken(ctx, doc, new Map(), size), size);
 
-/** Frame Studio's own picture of the design, with its stage set to the token's band. */
-function inFrameStudio(doc: TokenDocument, size = outputSize(doc.size.squares)) {
+/** Frame Maker's own picture of the design, with its stage set to the token's band. */
+function inFrameMaker(doc: TokenDocument, size = outputSize(doc.size.squares)) {
   const insets = computeInsets(doc);
   const p = doc.frame.design!.project;
   const stage = { ...p.stage, shape: doc.shape, showArt: false, outerSpacing: insets.frameOuter, thickness: insets.frameInner - insets.frameOuter };
@@ -76,21 +76,21 @@ const designs: [string, FrameProject][] = [
   ['Clockwork (a themed border with generators)', themed('clockwork')],
 ];
 
-describe('Frame Studio designs as frames', () => {
-  it.each(designs)('%s looks the same as in Frame Studio, on every shape', (_name, project) => {
+describe('Frame Maker designs as frames', () => {
+  it.each(designs)('%s looks the same as in Frame Maker, on every shape', (_name, project) => {
     for (const s of SHAPES) {
       const doc = frameOnly(project, (d) => (d.shape = s.id));
       const a = inTokenMaker(doc);
-      const b = inFrameStudio(doc);
+      const b = inFrameMaker(doc);
       expect(a.every((v, i) => v === b[i]), s.id).toBe(true);
     }
   });
 
-  it('every themed border opens and draws as in Frame Studio', () => {
+  it('every themed border opens and draws as in Frame Maker', () => {
     for (const t of THEMED_TEMPLATES) {
       const doc = frameOnly(themed(t.id));
       const a = inTokenMaker(doc, 128);
-      const b = inFrameStudio(doc, 128);
+      const b = inFrameMaker(doc, 128);
       expect(a.some((v) => v !== 0), t.id).toBe(true);
       expect(a.every((v, i) => v === b[i]), t.id).toBe(true);
     }
@@ -114,18 +114,18 @@ describe('Frame Studio designs as frames', () => {
     for (const s of SHAPES) {
       const doc = frameOnly(r.project, (d) => (d.shape = s.id));
       const a = inTokenMaker(doc, 160);
-      const b = inFrameStudio(doc, 160);
+      const b = inFrameMaker(doc, 160);
       expect(a.some((v) => v !== 0), s.id).toBe(true);
       expect(a.every((v, i) => v === b[i]), s.id).toBe(true);
     }
   });
 
-  it.each(BUILT_IN_DESIGNS.map((b) => [b.name, b] as const))('the built-in %s design looks the same as in Frame Studio once its photos have loaded', async (_name, b) => {
+  it.each(BUILT_IN_DESIGNS.map((b) => [b.name, b] as const))('the built-in %s design looks the same as in Frame Maker once its photos have loaded', async (_name, b) => {
     const design = builtInDesignFrame(b.id)!;
     await loadFrameDesignPictures(design.project);
     const doc = frameOnly(design.project, (d) => (d.frame = { ...d.frame, thickness: b.band.thickness, outerSpacing: Math.max(d.frame.outerSpacing, b.band.outerSpacing) }));
     const a = inTokenMaker(doc, 128);
-    const c = inFrameStudio(doc, 128);
+    const c = inFrameMaker(doc, 128);
     expect(a.some((v) => v !== 0)).toBe(true);
     expect(a.every((v, i) => v === c[i])).toBe(true);
   });
@@ -140,7 +140,7 @@ describe('Frame Studio designs as frames', () => {
       const doc = frameOnly(project, patch);
       const size = 256;
       const a = inTokenMaker(doc, size);
-      const b = inFrameStudio(doc, size);
+      const b = inFrameMaker(doc, size);
       expect(a.every((v, i) => v === b[i])).toBe(true);
     }
     // A thicker band draws a different picture.
@@ -149,7 +149,7 @@ describe('Frame Studio designs as frames', () => {
     expect(thick.some((v, i) => v !== usual[i])).toBe(true);
   });
 
-  it('draws no frame when Frame Studio is picked but no design is opened yet', () => {
+  it('draws no frame when Frame Maker is picked but no design is opened yet', () => {
     const doc = frameOnly(fixture('jewelled'), (d) => (d.frame.design = null));
     expect(inTokenMaker(doc, 128).every((v) => v === 0)).toBe(true);
   });

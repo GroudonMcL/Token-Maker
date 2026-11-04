@@ -1,4 +1,4 @@
-/* Token Studio's shell: the two apps, one shown at a time. Each app's own top bar has the titles that switch between them. */
+/* The main page's shell: the two apps, one shown at a time. Each app's own top bar has the titles that switch between them. */
 *,
 *::before,
 *::after {
@@ -24,13 +24,13 @@ body {
   color-scheme: light;
 }
 
-.studio {
+.site {
   display: flex;
   flex-direction: column;
   height: 100dvh;
 }
 
-.studio__frames {
+.site__frames {
   position: relative;
   flex: 1;
   min-height: 0;
@@ -38,7 +38,7 @@ body {
 
 /* Both apps stay loaded, stacked; only the chosen one shows. Hidden with
    visibility, not display, so the other keeps its size and its canvas. */
-.studio__frame {
+.site__frame {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -47,6 +47,6 @@ body {
   visibility: hidden;
 }
 
-.studio__frame[data-active='true'] {
+.site__frame[data-active='true'] {
   visibility: visible;
 }

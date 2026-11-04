@@ -1,10 +1,10 @@
-// Opening Frame Studio designs and using them as the token's frame
-// (DESIGN.md §6.12). A design is read by Frame Studio's own reader, kept in
+// Opening Frame Maker designs and using them as the token's frame
+// (DESIGN.md §6.12). A design is read by Frame Maker's own reader, kept in
 // this browser's design library, and copied into the document.
 
 import type { DesignFrame } from '../document/types';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
-import { readFrameDesign, type FrameProject } from '../frameStudio/share/frameDesign';
+import { readFrameDesign, type FrameProject } from '../frameMaker/share/frameDesign';
 import { saveDesign } from '../state/designLibrary';
 import { toast } from '../ui/toast';
 import { updateFrameAndArt } from './artActions';
@@ -33,16 +33,16 @@ export function applyBuiltInDesign(id: string): void {
   }));
 }
 
-/** Reads a .framestudio.json file, keeps it in the design library and uses it as the frame. */
+/** Reads a .framemaker.json file, keeps it in the design library and uses it as the frame. */
 export async function openDesignFile(file: File): Promise<boolean> {
   if (file.size > MAX_DESIGN_BYTES) {
-    toast("That file is too big to be a Frame Studio design.", 'error');
+    toast("That file is too big to be a Frame Maker design.", 'error');
     return false;
   }
   return openDesignText(await file.text());
 }
 
-/** Reads a design's text (a file, or one sent from Frame Studio), keeps it in the design library and uses it as the frame. */
+/** Reads a design's text (a file, or one sent from Frame Maker), keeps it in the design library and uses it as the frame. */
 export async function openDesignText(text: string): Promise<boolean> {
   if (text.length > MAX_DESIGN_BYTES) {
     toast("That design is too big to use.", 'error');

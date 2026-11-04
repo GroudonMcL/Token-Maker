@@ -1,14 +1,14 @@
-// The built-in Frame Studio designs (src/frame-studio/project/builtInFrames.ts,
-// copied into frameStudio/): the owner's Essentials, the new versions of the
+// The built-in Frame Maker designs (src/frame-maker/project/builtInFrames.ts,
+// copied into frameMaker/): the owner's Essentials, the new versions of the
 // drawn frames, and the old picture frames (gilded laurel, iron rivets…).
-// They are listed with the drawn frames and used like any Frame Studio
+// They are listed with the drawn frames and used like any Frame Maker
 // design, so they follow the token's shape and thickness; their colour
 // slots each get a colour picker.
 
 import type { DesignFrame, FrameSettings, TokenDocument } from '../document/types';
 import { createDocument } from '../document/defaults';
-import { BUILT_IN_FRAMES, type BuiltInGroup } from '../frameStudio/project/builtInFrames';
-import { cleanChoices, recolourProject, type ColourChoices, type ColourSlot } from '../frameStudio/project/colourSlots';
+import { BUILT_IN_FRAMES, type BuiltInGroup } from '../frameMaker/project/builtInFrames';
+import { cleanChoices, recolourProject, type ColourChoices, type ColourSlot } from '../frameMaker/project/colourSlots';
 
 /** The id a built-in design has in a document (`builtin:gilded-laurel`). */
 const PREFIX = 'builtin:';

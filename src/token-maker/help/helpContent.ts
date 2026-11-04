@@ -582,7 +582,7 @@ export const helpContent = {
   'frame.shape': { title: 'Shape', text: 'The outline of the token. Hexagons suit hex-grid maps.', media: beforeAfter('frame-shape', 'a round token becomes a hexagon') },
   'frame.kind': {
     title: 'Frame type',
-    text: 'Drawn frames are made by the site and follow the token’s shape and thickness, and Frame Studio frames are designs you made in Frame Studio. Picture frames use a PNG of your own with a see-through middle.',
+    text: 'Drawn frames are made by the site and follow the token’s shape and thickness, and Frame Maker frames are designs you made in Frame Maker. Picture frames use a PNG of your own with a see-through middle.',
     media: beforeAfter('frame-kind', 'a plain frame becomes the gilded laurel frame'),
   },
   'frame.picture': {
@@ -596,13 +596,13 @@ export const helpContent = {
     media: beforeAfter('frame-upload', 'a purple ring picture becomes the frame'),
   },
   'frame.design': {
-    title: 'Frame Studio design',
-    text: 'Pick a design you opened from Frame Studio. It follows the token shape, thickness and spacing, like a drawn frame.',
-    media: beforeAfter('frame-design', 'a drawn frame becomes a Frame Studio design'),
+    title: 'Frame Maker design',
+    text: 'Pick a design you opened from Frame Maker. It follows the token shape, thickness and spacing, like a drawn frame.',
+    media: beforeAfter('frame-design', 'a drawn frame becomes a Frame Maker design'),
   },
   'frame.designOpen': {
-    title: 'Open a Frame Studio design',
-    text: 'Open a .framestudio.json file saved in Frame Studio to use it as the frame. Your designs are kept in this browser.',
+    title: 'Open a Frame Maker design',
+    text: 'Open a .framemaker.json file saved in Frame Maker to use it as the frame. Your designs are kept in this browser.',
     media: beforeAfter('frame-designOpen', 'a design file is opened and becomes the frame'),
   },
   'frame.holeSize': { title: 'Hole size', text: "Make the art's opening bigger or smaller if the hole found in the picture doesn't quite fit.", media: beforeAfter('frame-holeSize', 'a too-small hole is made to fit the frame') },
@@ -611,7 +611,7 @@ export const helpContent = {
   'frame.holeReset': { title: 'Reset the hole', text: 'Go back to the hole the site found in the picture.', media: beforeAfter('frame-holeReset', 'a nudged hole goes back to the one that was found') },
   'frame.style': {
     title: 'Frame',
-    text: 'The border drawn around the art. Most frames take any colour; the Crafted ones are Frame Studio designs with their own colours, and every frame takes any thickness and spacing.',
+    text: 'The border drawn around the art. Most frames take any colour; the Crafted ones are Frame Maker designs with their own colours, and every frame takes any thickness and spacing.',
     media: beforeAfter('frame-style', 'the frame changes to the Druid vines'),
   },
   'frame.color': {

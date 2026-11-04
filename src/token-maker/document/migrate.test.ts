@@ -1,6 +1,6 @@
 import { createDocument, MAX_DECORATIONS, MAX_EFFECTS, newDecoration, newEffect, newLabel } from './defaults';
 import { DocumentVersionError, migrateDocument } from './migrate';
-import { PICTURE_FRAME_TEMPLATES } from '../frameStudio/project/pictureFrameTemplates';
+import { PICTURE_FRAME_TEMPLATES } from '../frameMaker/project/pictureFrameTemplates';
 import { SCHEMA_VERSION } from './types';
 
 describe('migrateDocument', () => {
@@ -313,7 +313,7 @@ describe('migrateDocument', () => {
   });
 });
 
-describe('v9: Frame Studio designs', () => {
+describe('v9: Frame Maker designs', () => {
   const design = { format: 'frame-studio-project', schemaVersion: 4, name: 'Ring', stage: {}, layers: [{ type: 'line', id: 'l1', name: 'Rim', at: 0.5, width: 0.2, paint: { kind: 'solid', color: '#ffffff' } }] };
 
   it('a version-8 token gets no design and keeps its frame', () => {
@@ -324,7 +324,7 @@ describe('v9: Frame Studio designs', () => {
     expect(doc.frame).toMatchObject({ kind: 'code', design: null, style: 'stamped' });
   });
 
-  it('keeps a design, read and checked by Frame Studio’s own reader', () => {
+  it('keeps a design, read and checked by Frame Maker’s own reader', () => {
     const doc = migrateDocument({ ...createDocument(), frame: { ...createDocument().frame, kind: 'design', design: { id: 'd1', name: 'Ring', project: design } } });
     expect(doc.frame.kind).toBe('design');
     expect(doc.frame.design?.project.layers[0]).toMatchObject({ type: 'line', clip: 'none', waveAmplitude: 0 });
@@ -356,7 +356,7 @@ describe('v10: drop shadow size', () => {
   });
 });
 
-describe('v11: background colours, and the built-in picture frames as Frame Studio designs', () => {
+describe('v11: background colours, and the built-in picture frames as Frame Maker designs', () => {
   const v10 = () => ({ ...JSON.parse(JSON.stringify(createDocument('Old'))), schemaVersion: 10 });
 
   it('a version-10 background picture keeps its colours', () => {
@@ -373,7 +373,7 @@ describe('v11: background colours, and the built-in picture frames as Frame Stud
     expect(doc.background.adjust).toEqual({ brightness: 100, contrast: -100, saturation: 0, hue: 180, temperature: 20 });
   });
 
-  it.each(PICTURE_FRAME_TEMPLATES.map((t) => t.id))('a token with the old %s picture frame gets its Frame Studio design', (id) => {
+  it.each(PICTURE_FRAME_TEMPLATES.map((t) => t.id))('a token with the old %s picture frame gets its Frame Maker design', (id) => {
     const old = v10();
     old.frame = { ...old.frame, kind: 'image', image: { source: { type: 'library', id }, name: id, hole: [0.7, 0, 0, 0.7, -0.7, 0, 0, -0.7], outer: 0.96, nudge: { x: 0, y: 0, scale: 1 } } };
     const doc = migrateDocument(old);

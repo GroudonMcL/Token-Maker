@@ -3,7 +3,7 @@
 // pages_build_output_dir, and uses functions/ instead.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "token-studio",
+  "name": "token-maker",
   "main": "worker/index.ts",
   "compatibility_date": "2026-09-01",
   "assets": {
@@ -11,7 +11,7 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     // The image proxy runs before the static files, so /api/* never gets the editor's page,
-    // and /token-maker/* is sent to Token Maker's page rather than Token Studio's.
+    // and /token-maker/* is sent to Token Maker's own page rather than the main page.
     "run_worker_first": ["/api/*", "/token-maker/*"]
   },
   "observability": { "enabled": true },
