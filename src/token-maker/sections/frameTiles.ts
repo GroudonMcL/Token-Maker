@@ -2,8 +2,8 @@
 // the owner's order (config/frameOrder.json), with their tags and thumbnails.
 
 import frameOrder from '../config/frameOrder.json';
-import { categoryOf, categoryRank } from '../frameStudio/project/frameCategories';
-import { loadFrameDesignPictures } from '../frameStudio/share/frameDesign';
+import { categoryOf, categoryRank } from '../frameMaker/project/frameCategories';
+import { loadFrameDesignPictures } from '../frameMaker/share/frameDesign';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
 import { FRAME_PRESETS, type ShapeId } from '../render/catalog';
 import type { FrameTile } from './FramePicker';

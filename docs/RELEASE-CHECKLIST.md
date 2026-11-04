@@ -1,16 +1,16 @@
 # Before going public
 
-What to do before Token Studio goes public, from a review on 27 October 2026. When this review ran, `npm run typecheck`, `npm run lint`, `npm test` (1,920 tests) and `npm run build` all passed. The end-to-end tests (`npm run e2e`) were not run.
+What to do before Token Maker goes public, from a review on 27 October 2026. When this review ran, `npm run typecheck`, `npm run lint`, `npm test` (1,920 tests) and `npm run build` all passed. The end-to-end tests (`npm run e2e`) were not run.
 
 ## 1. Art, credits and licences
 
 - [ ] Replace the AI-made art: see [`AI-ART-REPLACEMENT.md`](AI-ART-REPLACEMENT.md) and the replacement pack.
 - [ ] Afterwards, run `npm run tm:help-images` to redraw the help pictures. Also update the tests that compare pictures pixel for pixel (`libraryFiles.test.ts`, the frame and preset tests…).
-- [x] Bring `ASSETS-CREDITS.md` up to date (done 1 November 2026: paths fixed, 32 photo textures listed one per row, Frame Studio's credits merged in). Still to do when art is replaced:
+- [x] Bring `ASSETS-CREDITS.md` up to date (done 1 November 2026: paths fixed, 32 photo textures listed one per row, Frame Maker's credits merged in). Still to do when art is replaced:
   - Remove the rows for art you replaced and add your own ("by GroudonMcL").
   - The "25 code-drawn frames" row says "Owner's own code". If the AI wrote that code, say so, or drop the row once the frames are replaced.
 - [x] The **game-icons.net** ornaments were removed (1 November 2026); saved designs that used one get a drawn ornament instead.
-- [x] The link to the old Frame-Studio repository's credits went with the game-icons.net row.
+- [x] The link to the old Frame-Maker repository's credits went with the game-icons.net row.
 - [x] Choose a licence for the code: MIT (`LICENSE`). There is no `LICENSE` file, so the code is "all rights reserved" by default. That is fine if you mean it. If the repository is public and you want others to reuse the code, add an open licence (MIT, for example).
 - [ ] Trademarks: "D&D" appears in the page descriptions. Mentioning it as a description ("for D&D and other tabletop RPGs") is normally fine. Don't use Wizards of the Coast's logos, and don't name the product after D&D.
 
@@ -41,7 +41,7 @@ What to do before Token Studio goes public, from a review on 27 October 2026. Wh
 
 ## 4. Performance
 
-- [ ] `pictureData` (Frame Studio's 32 photo textures, embedded as text) builds as a **2.2 MB chunk (1.66 MB gzipped), twice**: once per app. It only loads when a design uses a photo texture, so it doesn't slow the first load. But someone using both apps downloads it twice. Moving the photos into `public/` as separate files would fix that, and each design would then fetch only the photos it uses.
+- [ ] `pictureData` (Frame Maker's 32 photo textures, embedded as text) builds as a **2.2 MB chunk (1.66 MB gzipped), twice**: once per app. It only loads when a design uses a photo texture, so it doesn't slow the first load. But someone using both apps downloads it twice. Moving the photos into `public/` as separate files would fix that, and each design would then fetch only the photos it uses.
 - [ ] Check the first load on a real phone over mobile data (Lighthouse or WebPageTest).
 - [ ] The AI model (about 100 MB) downloads only when someone uses AI cut-out, and the page warns about it. Leave it as it is.
 
@@ -50,7 +50,7 @@ What to do before Token Studio goes public, from a review on 27 October 2026. Wh
 - [ ] Choose a **name and a domain**, then add the domain in Cloudflare (Workers → Settings → Domains & Routes).
 - [ ] Merge to `main` and check:
   - `https://<domain>/api/health` shows `{"ok":true}`
-  - `/`, `/token-maker/`, `/token-maker/about`, `/token-maker/privacy` and `/frame-studio/` all open
+  - `/`, `/token-maker/`, `/token-maker/about`, `/token-maker/privacy` and `/frame-maker/` all open
   - a web import works on the live site
 - [x] The PROGRESS.md files and other build-time documents were removed.
 - [x] `apple-touch-icon` PNG added (`public/apple-touch-icon.png`, 180 × 180, linked from all three pages).
@@ -65,7 +65,7 @@ What to do before Token Studio goes public, from a review on 27 October 2026. Wh
   - copying to the clipboard
   - downloading ZIPs
   - IndexedDB storage in private windows
-- [ ] Do a full pass as a new visitor: open the site, try a sample, upload a picture, style it, export it, reload (autosave), then send a frame from Frame Studio to Token Maker.
+- [ ] Do a full pass as a new visitor: open the site, try a sample, upload a picture, style it, export it, reload (autosave), then send a frame from Frame Maker to Token Maker.
 - [ ] Ask a few people from your group or community to try it before announcing it.
 
 ## 7. Launch and after

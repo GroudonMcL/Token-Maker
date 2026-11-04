@@ -1,5 +1,5 @@
-// Frame Studio designs in the Frame section (DESIGN.md §6.12): opening a
-// .framestudio.json file, picking a design again from the ones kept in this
+// Frame Maker designs in the Frame section (DESIGN.md §6.12): opening a
+// .framemaker.json file, picking a design again from the ones kept in this
 // browser, and sharing one in a preset.
 import 'fake-indexeddb/auto';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -11,8 +11,8 @@ import { designLibrary, hasDesign, refreshDesigns, removeDesign, saveDesign } fr
 import { getDoc, resetDoc, undo } from '../state/tokenStore';
 import { FrameSection } from './FrameSection';
 
-const jewelled = readFileSync('e2e/token-maker/fixtures/designs/jewelled.framestudio.json', 'utf8');
-const nightSky = readFileSync('e2e/token-maker/fixtures/designs/night-sky.framestudio.json', 'utf8');
+const jewelled = readFileSync('e2e/token-maker/fixtures/designs/jewelled.framemaker.json', 'utf8');
+const nightSky = readFileSync('e2e/token-maker/fixtures/designs/night-sky.framemaker.json', 'utf8');
 // jsdom's File has no text(); browsers' do.
 const file = (text: string, name: string) => Object.assign(new File([text], name, { type: 'application/json' }), { text: async () => text });
 
@@ -22,13 +22,13 @@ beforeEach(async () => {
   for (const d of designLibrary.getState().designs) await removeDesign(d.id);
 });
 
-describe('Frame Studio designs', () => {
+describe('Frame Maker designs', () => {
   it('opens a design file as the frame, keeps it in this browser, and undo brings the drawn frame back', async () => {
     const { container } = render(<FrameSection />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Frame Studio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Frame Maker' }));
     expect(getDoc().frame.kind).toBe('design');
     expect(await screen.findByText(/No designs yet/)).toBeInTheDocument();
-    fireEvent.change(screen.getByTestId('design-file-input'), { target: { files: [file(jewelled, 'jewelled.framestudio.json')] } });
+    fireEvent.change(screen.getByTestId('design-file-input'), { target: { files: [file(jewelled, 'jewelled.framemaker.json')] } });
     await waitFor(() => expect(getDoc().frame.design?.name).toBe('Jewelled'));
     expect(getDoc().frame.design?.project.layers.length).toBeGreaterThan(3);
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Jewelled' })).toBeChecked());
@@ -44,7 +44,7 @@ describe('Frame Studio designs', () => {
     await saveDesign(jewelled, 'Jewelled');
     await saveDesign(nightSky, 'Night sky');
     render(<FrameSection />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Frame Studio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Frame Maker' }));
     fireEvent.click(await screen.findByRole('radio', { name: 'Night sky' }));
     expect(getDoc().frame.design?.name).toBe('Night sky');
     fireEvent.change(screen.getByTestId('design-file-input'), { target: { files: [file('{"hello": 1}', 'oops.json')] } });
@@ -55,8 +55,8 @@ describe('Frame Studio designs', () => {
 
   it('a shared preset carries its design, which is kept in the other browser’s library', async () => {
     render(<FrameSection />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Frame Studio' }));
-    fireEvent.change(screen.getByTestId('design-file-input'), { target: { files: [file(nightSky, 'night-sky.framestudio.json')] } });
+    fireEvent.click(screen.getByRole('radio', { name: 'Frame Maker' }));
+    fireEvent.change(screen.getByTestId('design-file-input'), { target: { files: [file(nightSky, 'night-sky.framemaker.json')] } });
     await waitFor(() => expect(getDoc().frame.design).not.toBeNull());
     const shared = migratePreset(JSON.parse(JSON.stringify(createPreset(getDoc(), 'Starry'))));
     expect(shared.look.frame).toMatchObject({ kind: 'design', design: { name: 'Night sky' } });

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * A tiny router: the current path, and `navigate()` to change it without a
- * page reload. Token Maker lives under /token-maker/ in Token Studio; paths
+ * page reload. Token Maker lives under /token-maker/ in Token Maker; paths
  * here are written without it ('/about') and BASE is added to the address.
  */
 export const BASE = '/token-maker';

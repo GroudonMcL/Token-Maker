@@ -1,4 +1,4 @@
-// Token Studio's themes (palettes.css). The choice is kept in this browser as
+// Token Maker's themes (palettes.css). The choice is kept in this browser as
 // 'ts.palette' and set as <html data-palette> (and data-theme, light or dark)
 // on the page and in both apps; each page's index.html applies it before
 // painting (keep THEME_SCRIPT's list in step), and a change in one app reaches

@@ -1,7 +1,7 @@
 // Picture (PNG) frames (DESIGN.md §6.9): the user's own, kept in IndexedDB
 // (src/state/frameLibrary.ts). The picture is held in the asset store under
 // frameAssetId(), and it fills the token's square, so it scales with the
-// token. The built-in picture frames became Frame Studio designs in v11
+// token. The built-in picture frames became Frame Maker designs in v11
 // (render/builtInDesigns.ts).
 
 import type { ImageFrame, ImageFrameSource } from '../document/types';

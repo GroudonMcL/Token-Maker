@@ -1,7 +1,7 @@
 // The TokenDocument (DESIGN.md §4.1): everything about a token in one plain
 // JSON object. Images are not stored here, only asset ids.
 
-import type { FrameProject } from '../frameStudio/share/frameDesign';
+import type { FrameProject } from '../frameMaker/share/frameDesign';
 import type { FrameStyle, ShapeId } from '../render/catalog';
 
 export const SCHEMA_VERSION = 11;
@@ -136,7 +136,7 @@ export interface PopOutSettings {
 export interface FrameSettings {
   /**
    * A frame drawn by code, a picture (PNG) frame (Phase 7), or a design made
-   * in Frame Studio (v9). Switching keeps every kind's settings.
+   * in Frame Maker (v9). Switching keeps every kind's settings.
    */
   kind: 'code' | 'image' | 'design';
   /** Which preset tile is selected (two presets can share a style, e.g. Arcane/Infernal). */
@@ -155,12 +155,12 @@ export interface FrameSettings {
   backingOpacity: number;
   /** The picture frame, used when `kind` is 'image' (Phase 7). */
   image: ImageFrame | null;
-  /** The Frame Studio design, used when `kind` is 'design' (v9). */
+  /** The Frame Maker design, used when `kind` is 'design' (v9). */
   design: DesignFrame | null;
 }
 
 /**
- * A frame designed in Frame Studio and opened from its .framestudio.json
+ * A frame designed in Frame Maker and opened from its .framemaker.json
  * file (DESIGN.md §6.12). The whole design is kept in the document, so the
  * renderer, undo, autosave and presets need nothing else; it is drawn on the
  * same band as a drawn frame (thickness and spacing), on the token's shape.
@@ -170,13 +170,13 @@ export interface DesignFrame {
   id: string;
   /** Shown in the panel. */
   name: string;
-  /** The design, as Frame Studio's reader checked it. */
+  /** The design, as Frame Maker's reader checked it. */
   project: FrameProject;
   /** A built-in design's chosen colours, by colour slot (the project is already in them). */
   colours?: Record<string, string>;
 }
 
-/** Where a picture frame comes from: one the user uploaded (kept in IndexedDB). The built-in ones became Frame Studio designs in v11. */
+/** Where a picture frame comes from: one the user uploaded (kept in IndexedDB). The built-in ones became Frame Maker designs in v11. */
 export type ImageFrameSource = { type: 'upload'; id: string };
 
 /**

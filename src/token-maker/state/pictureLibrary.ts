@@ -8,8 +8,8 @@ import { createStore as createIdbStore, del, entries, get, set, type UseStore } 
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { PictureSource, TokenDocument } from '../document/types';
-import { onPictureLoaded } from '../frameStudio/render/pictures';
-import { loadFrameDesignPictures } from '../frameStudio/share/frameDesign';
+import { onPictureLoaded } from '../frameMaker/render/pictures';
+import { loadFrameDesignPictures } from '../frameMaker/share/frameDesign';
 import { decodeImage } from '../import/decode';
 import { pictureAssetId, pictureUrl } from '../render/pictureLibrary';
 import type { RenderSource } from '../render/render';
@@ -118,7 +118,7 @@ export function documentPictures(doc: Pick<TokenDocument, 'effects' | 'decoratio
   return out;
 }
 
-/** Makes sure every picture the document uses is loaded, a Frame Studio design's photo textures too. */
+/** Makes sure every picture the document uses is loaded, a Frame Maker design's photo textures too. */
 export async function ensurePictures(doc: Pick<TokenDocument, 'effects' | 'decorations' | 'frame'>): Promise<void> {
   const design = doc.frame.kind === 'design' ? doc.frame.design : null;
   await Promise.all([
@@ -133,7 +133,7 @@ export function watchPictures(): () => void {
   const stopDoc = docHistory.subscribe((s, prev) => {
     if (s.present.effects !== prev.present.effects || s.present.decorations !== prev.present.decorations || s.present.frame !== prev.present.frame) void ensurePictures(s.present);
   });
-  // A Frame Studio design's photo is drawn as its average colour until it arrives; then
+  // A Frame Maker design's photo is drawn as its average colour until it arrives; then
   // everything that draws tokens draws again (they redraw when the asset map changes).
   const stopDesigns = onPictureLoaded(() => assetStore.setState((st) => ({ assets: new Map(st.assets) })));
   return () => {

@@ -1,0 +1,3 @@
+# Old addresses from before the rename to Frame Maker (Cloudflare reads this file on Pages and Workers).
+/frame-studio /frame-maker/ 301
+/frame-studio/* /frame-maker/:splat 301

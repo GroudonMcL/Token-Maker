@@ -204,7 +204,7 @@ button:disabled {
 }
 
 /* On a phone the top bar can have more controls than fit in a row: they wrap
-   rather than push the whole editor wider than the screen. Inside Token Studio
+   rather than push the whole editor wider than the screen. Inside Token Maker
    the app switch and the colour/theme buttons take the first row, the rest the second. */
 .editor--phone .topbar {
   flex-wrap: wrap;
@@ -214,21 +214,21 @@ button:disabled {
   row-gap: var(--space-1);
 }
 
-.editor--phone .topbar--studio > * {
+.editor--phone .topbar--site > * {
   order: 3;
 }
 
-.editor--phone .topbar--studio > .app-switch,
-.editor--phone .topbar--studio > .topbar__brand {
+.editor--phone .topbar--site > .app-switch,
+.editor--phone .topbar--site > .topbar__brand {
   order: 0;
 }
 
-.editor--phone .topbar--studio > [data-control='theme'] {
+.editor--phone .topbar--site > [data-control='theme'] {
   order: 1;
   margin-left: auto;
 }
 
-.editor--phone .topbar--studio > .topbar__spacer {
+.editor--phone .topbar--site > .topbar__spacer {
   order: 2;
   flex: 0 0 100%;
   height: 0;

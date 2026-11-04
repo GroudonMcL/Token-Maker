@@ -50,7 +50,7 @@ describe.each(PALETTES.map((p) => [p.id]))('the %s theme', (id) => {
 });
 
 describe('applying the theme', () => {
-  it.each(['index.html', 'token-maker/index.html', 'frame-studio/index.html'])('%s applies it before painting, with the current list', (page) => {
+  it.each(['index.html', 'token-maker/index.html', 'frame-maker/index.html'])('%s applies it before painting, with the current list', (page) => {
     expect(readFileSync(new URL(`../../${page}`, import.meta.url), 'utf8')).toContain(THEME_SCRIPT);
   });
 });

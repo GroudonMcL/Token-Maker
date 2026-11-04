@@ -3,7 +3,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { devApi } from './server/devApi.ts';
 
-/** In `npm run dev` and `npm run preview`, Token Maker's own pages (/token-maker/about…) get Token Maker's page. */
+/** In `npm run dev` and `npm run preview`, Token Maker's own pages (/token-maker/about…) get Token Maker's own page. */
 function tokenMakerPages(): Plugin {
   const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {
     const path = req.url?.split('?')[0] ?? '';
@@ -40,8 +40,8 @@ export default defineConfig({
   plugins: [react(), devApi(), tokenMakerPages(), dropOnnxWasm()],
   build: {
     rollupOptions: {
-      // Token Studio's page, and the two apps it shows.
-      input: { main: 'index.html', tokenMaker: 'token-maker/index.html', frameStudio: 'frame-studio/index.html' },
+      // The main page, and the two apps it shows.
+      input: { main: 'index.html', tokenMaker: 'token-maker/index.html', frameMaker: 'frame-maker/index.html' },
     },
   },
   test: {
@@ -56,7 +56,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: 'frame-studio', include: ['src/frame-studio/**/*.test.{ts,tsx}'], setupFiles: ['./src/frame-studio/test/setup.ts'] },
+        test: { name: 'frame-maker', include: ['src/frame-maker/**/*.test.{ts,tsx}'], setupFiles: ['./src/frame-maker/test/setup.ts'] },
       },
       {
         extends: true,

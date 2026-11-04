@@ -1,9 +1,9 @@
 {
-  "name": "token-studio",
+  "name": "token-maker",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Token Maker and Frame Studio in one web app: make tokens for tabletop RPGs and design their frames.",
+  "description": "Token Maker and Frame Maker in one web app: make tokens for tabletop RPGs and design their frames.",
   "author": "GroudonMcL",
   "license": "MIT",
   "scripts": {
@@ -22,15 +22,15 @@
     "tm:make-fixture": "tsx scripts/token-maker/make-fixture.ts",
     "tm:decoration-sheet": "tsx scripts/token-maker/decoration-sheet.ts",
     "tm:label-sheet": "tsx scripts/token-maker/label-sheet.ts",
-    "fs:frame-sheet": "tsx scripts/frame-studio/frame-sheet.ts",
-    "fs:effects-sheet": "tsx scripts/frame-studio/effects-sheet.ts",
-    "fs:screenshots": "tsx scripts/frame-studio/screenshots.ts",
-    "fs:compare-conversions": "tsx scripts/frame-studio/compare-conversions.ts",
-    "fs:showcase": "tsx scripts/frame-studio/showcase.ts",
-    "fs:make-fixtures": "tsx scripts/frame-studio/make-fixtures.ts",
-    "fs:look": "tsx scripts/frame-studio/look.ts",
-    "fs:compare-pictures": "tsx scripts/frame-studio/compare-pictures.ts",
-    "fs:share-copy": "tsx scripts/frame-studio/share-copy.ts"
+    "fm:frame-sheet": "tsx scripts/frame-maker/frame-sheet.ts",
+    "fm:effects-sheet": "tsx scripts/frame-maker/effects-sheet.ts",
+    "fm:screenshots": "tsx scripts/frame-maker/screenshots.ts",
+    "fm:compare-conversions": "tsx scripts/frame-maker/compare-conversions.ts",
+    "fm:showcase": "tsx scripts/frame-maker/showcase.ts",
+    "fm:make-fixtures": "tsx scripts/frame-maker/make-fixtures.ts",
+    "fm:look": "tsx scripts/frame-maker/look.ts",
+    "fm:compare-pictures": "tsx scripts/frame-maker/compare-pictures.ts",
+    "fm:share-copy": "tsx scripts/frame-maker/share-copy.ts"
   },
   "dependencies": {
     "@fontsource/alegreya-sc": "^5.3.0",

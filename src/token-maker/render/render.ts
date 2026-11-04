@@ -18,8 +18,8 @@ import { drawDecorations } from './decorations';
 import { drawLabel } from './label';
 import { activeImageFrame, drawImageFrame, frameAssetId } from './imageFrames';
 import { shapePolygon } from './shapes';
-import { pictureEpoch } from '../frameStudio/render/pictures';
-import { drawFrameDesign } from '../frameStudio/share/frameDesign';
+import { pictureEpoch } from '../frameMaker/render/pictures';
+import { drawFrameDesign } from '../frameMaker/share/frameDesign';
 import type { DesignFrame } from '../document/types';
 
 /** A decoded image the renderer can draw. */
@@ -60,7 +60,7 @@ const MAX_CACHED_SIDE = 2048;
 
 /**
  * The frame drawn on a transparent square layer of `size`, centred: a drawn
- * frame of `style`, or a Frame Studio design (keyed by the design object
+ * frame of `style`, or a Frame Maker design (keyed by the design object
  * itself, which only changes when the design does).
  */
 function frameLayer(style: FrameStyle | DesignFrame, g: FrameGeometry, size: number): CanvasImageSource {
@@ -89,7 +89,7 @@ function frameLayer(style: FrameStyle | DesignFrame, g: FrameGeometry, size: num
   lctx.clearRect(0, 0, size, size);
   lctx.translate(size / 2, size / 2);
   if (typeof style === 'string') drawFrame(lctx, style, g);
-  // Frame Studio keeps its own per-layer cache (up to 2048 px, like this one).
+  // Frame Maker keeps its own per-layer cache (up to 2048 px, like this one).
   else drawFrameDesign(lctx, style.project, g);
   if (cache) frameLayers.set(key, layer as CanvasImageSource);
   return layer as CanvasImageSource;
@@ -104,9 +104,9 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   // A picture frame (Phase 7) fills the square; its hole is the art's clipping shape.
   const imageFrame = activeImageFrame(doc.frame);
   const frameImage = imageFrame ? assets.get(frameAssetId(imageFrame.source)) : undefined;
-  // A Frame Studio design (v9) sits on the same band as a drawn frame.
+  // A Frame Maker design (v9) sits on the same band as a drawn frame.
   const design = doc.frame.kind === 'design' ? doc.frame.design : null;
-  // Frame Studio chosen but no design opened yet: no frame.
+  // Frame Maker chosen but no design opened yet: no frame.
   const hasFrame = imageFrame ? true : (doc.frame.kind === 'design' ? !!design : doc.frame.style !== 'none') && insets.frameInner > insets.frameOuter;
   const art = doc.art.assetId ? assets.get(doc.art.assetId) : undefined;
   const clip = imageFrame ? imageClipPolygon(doc).map((p) => ({ x: p.x * R, y: p.y * R })) : shapePolygon(doc.shape, R, insets.image * R);
@@ -296,7 +296,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     fctx.restore();
   }
 
-  // 9. Frame: a picture frame, one drawn by code, or a Frame Studio design,
+  // 9. Frame: a picture frame, one drawn by code, or a Frame Maker design,
   // lit like the art when "Light the frame" is on.
   const drawFrameLayer = (paint: (c: Ctx) => void) => {
     if (!doc.lighting.frame) return paint(fctx);

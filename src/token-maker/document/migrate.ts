@@ -2,9 +2,9 @@
 // upgraded step by step, then everything is checked and filled in from the
 // defaults, so a damaged or partial file can never crash the editor.
 
-import { readFrameDesign } from '../frameStudio/share/frameDesign';
+import { readFrameDesign } from '../frameMaker/share/frameDesign';
 import { builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
-import { cleanChoices } from '../frameStudio/project/colourSlots';
+import { cleanChoices } from '../frameMaker/project/colourSlots';
 import { FRAME_STYLES, SHAPES } from '../render/catalog';
 import {
   copyGradient,
@@ -90,12 +90,12 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
       effects: [...arr(foreground).map(overlayToEffect), ...arr(doc.effects)],
     };
   },
-  // v8 → v9 (Frame Studio designs as frames): nothing could use one before; `design` starts empty (filled in by sanitize).
+  // v8 → v9 (Frame Maker designs as frames): nothing could use one before; `design` starts empty (filled in by sanitize).
   8: (doc) => doc,
   // v9 → v10 (drop shadow controls): shadows were always the size of what cast them, so `spread` starts at 0 (filled in by sanitize).
   9: (doc) => doc,
   // v10 → v11 (owner feedback): background pictures get colour changes (`background.adjust`, filled in
-  // by sanitize), and the built-in picture frames became Frame Studio designs (see builtInFrameFor).
+  // by sanitize), and the built-in picture frames became Frame Maker designs (see builtInFrameFor).
   10: (doc) => {
     const frame = obj(doc.frame);
     const image = obj(frame.image);
@@ -369,10 +369,10 @@ export function imageFrame(raw: unknown): ImageFrame | null {
   };
 }
 
-/** Most characters a kept Frame Studio design may have (its JSON). */
+/** Most characters a kept Frame Maker design may have (its JSON). */
 const MAX_DESIGN_CHARS = 2_000_000;
 
-/** A Frame Studio design frame, checked by Frame Studio's own reader (nothing in it is ever run). */
+/** A Frame Maker design frame, checked by Frame Maker's own reader (nothing in it is ever run). */
 export function designFrame(raw: unknown): DesignFrame | null {
   if (!isObject(raw)) return null;
   const id = typeof raw.id === 'string' ? raw.id.slice(0, 80) : '';

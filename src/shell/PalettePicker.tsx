@@ -1,11 +1,11 @@
 // The Themes button: a sun (light theme) or moon (dark theme) that opens a
-// small menu of Token Studio's themes, each shown by its own colours. The
+// small menu of Token Maker's themes, each shown by its own colours. The
 // choice applies to both apps at once. It replaced the separate light/dark switch.
 
 import { useEffect, useRef, useState } from 'react';
 import { Check, Moon, Sun } from 'lucide-react';
 import { PALETTES, paletteMode, usePalette } from './palettes';
-import './studio-ui.css';
+import './shell-ui.css';
 
 export function PalettePicker({ className = 'icon-btn' }: { className?: string }) {
   const [palette, setPalette] = usePalette();

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Design code-drawn token frames visually, layer by layer." />
+    <meta name="theme-color" content="#0f1a2e" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Frame Maker</title>
+    <script>
+      // The theme (src/shell/palettes.ts, THEME_SCRIPT), applied before the page paints, so there is no flash.
+      try{var p=localStorage.getItem('ts.palette'),l=['midnight','light','lamplit','obsidian','day','sunset','ocean'],m=['light','day'];if(l.indexOf(p)<0)p=localStorage.getItem('tm.theme')==='light'?'light':'midnight';document.documentElement.setAttribute('data-palette',p);document.documentElement.setAttribute('data-theme',m.indexOf(p)<0?'dark':'light')}catch(e){}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/frame-maker/main.tsx"></script>
+  </body>
+</html>

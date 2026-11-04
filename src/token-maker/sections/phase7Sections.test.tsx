@@ -111,7 +111,7 @@ function pickFrame(name: string) {
   fireEvent.click(screen.getByRole('radio', { name: new RegExp(`^${name}$`) }));
 }
 
-describe('Frame section: built-in Frame Studio designs (v11)', () => {
+describe('Frame section: built-in Frame Maker designs (v11)', () => {
   it('lists them with the drawn frames, uses one with its band, and goes back to a drawn frame', () => {
     const { container } = render(<FrameSection />);
     const before = getDoc().frame.style;
@@ -138,10 +138,10 @@ describe('Frame section: built-in Frame Studio designs (v11)', () => {
     expect(getDoc().frame.style).toBe(before);
   });
 
-  it('Frame Studio starts with no design rather than the built-in one', () => {
+  it('Frame Maker starts with no design rather than the built-in one', () => {
     render(<FrameSection />);
     pickFrame('Thorns');
-    fireEvent.click(screen.getByRole('radio', { name: 'Frame Studio' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Frame Maker' }));
     expect(getDoc().frame.kind).toBe('design');
     expect(getDoc().frame.design).toBeNull();
   });

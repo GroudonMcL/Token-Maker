@@ -5,12 +5,12 @@ import { redo, undo, useCanRedo, useCanUndo } from '../state/tokenStore';
 import { Toggle } from '../components';
 import { Link } from '../components/Link';
 import { AppSwitch } from '../../shell/AppSwitch';
-import { inTokenStudio } from '../../shell/studioApps';
+import { inSite } from '../../shell/apps';
 import { PalettePicker } from '../../shell/PalettePicker';
 import { BrandMark } from './BrandMark';
 import { PanelSettings } from './PanelSettings';
 
-/** Logo, Batch toggle, Undo/Redo, New (DESIGN.md §8). Inside Token Studio the title is the switch between the apps. */
+/** Logo, Batch toggle, Undo/Redo, New (DESIGN.md §8). Inside Token Maker the title is the switch between the apps. */
 export function TopBar({ compact }: { compact: boolean }) {
   const batch = useBatch((b) => b.on);
   const setBatch = (on: boolean) => {
@@ -21,7 +21,7 @@ export function TopBar({ compact }: { compact: boolean }) {
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
   return (
-    <header className={`topbar${inTokenStudio() ? ' topbar--studio' : ''}`}>
+    <header className={`topbar${inSite() ? ' topbar--site' : ''}`}>
       <AppSwitch
         current="token-maker"
         compact={compact}

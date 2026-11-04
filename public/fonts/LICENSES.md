@@ -1,6 +1,6 @@
 # Fonts for text layers
 
-These fonts are bundled for Frame Studio's text layers and Token Maker's labels.
+These fonts are bundled for Frame Maker's text layers and Token Maker's labels.
 
 | File | Font | By | Licence | Source |
 |---|---|---|---|---|
