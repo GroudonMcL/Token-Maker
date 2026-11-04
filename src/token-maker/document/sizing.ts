@@ -3,7 +3,7 @@
 import type { TokenDocument } from './types';
 
 /** Default and allowed output resolution, pixels per grid square (DESIGN.md §6.11). */
-export const DEFAULT_PX_PER_SQUARE = 256;
+export const DEFAULT_PX_PER_SQUARE = 512;
 export const MAX_OUTPUT_SIDE = 4096;
 
 /** Final image side in pixels: squares × pixels per square, capped. */

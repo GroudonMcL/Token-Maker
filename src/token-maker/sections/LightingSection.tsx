@@ -1,5 +1,5 @@
 import { Flame, FlameKindling, Moon, Sparkles, Sun, Zap } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { ColorSwatches, ControlLabel, DirectionDial, Slider, Toggle } from '../components';
 import { DEFAULT_LIGHTING, LIGHT_PRESETS } from '../document/defaults';
 import type { LightingSettings, LightPresetId } from '../document/types';
@@ -25,10 +25,17 @@ const setLight = (patch: Partial<LightingSettings>, transient = false) =>
  */
 export function LightingSection() {
   const l = useDoc((d) => d.lighting);
+  const whatId = useId();
   const applyPreset = (id: LightPresetId) => {
+    // Clicking the preset in use turns it off again: back to a new token's light (none).
+    if (l.enabled && l.preset === id) {
+      updateDoc((d) => ({ ...d, lighting: { ...DEFAULT_LIGHTING, rim: { ...DEFAULT_LIGHTING.rim } } }));
+      return;
+    }
     const p = LIGHT_PRESETS.find((x) => x.id === id)!;
-    updateDoc((d) => ({ ...d, lighting: { ...d.lighting, ...p.settings, rim: { ...p.settings.rim }, enabled: true, preset: id } }));
+    updateDoc((d) => ({ ...d, lighting: { ...d.lighting, ...p.settings, rim: { ...p.settings.rim }, enabled: true, background: true, preset: id } }));
   };
+  const lit = l.enabled || l.frame || l.background;
   return (
     <>
       <div className="control" data-control="light-presets">
@@ -43,9 +50,13 @@ export function LightingSection() {
           ))}
         </div>
       </div>
-      <div className="toggle-pair">
-        <Toggle label="Light the art" checked={l.enabled} onChange={(enabled) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, enabled } }))} />
-        <Toggle label="Light the frame" checked={l.frame} onChange={(frame) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, frame } }))} />
+      <div className="control" data-control="light-what" role="group" aria-labelledby={whatId}>
+        <ControlLabel id={whatId} label="Light the…" />
+        <div className="toggle-row">
+          <Toggle label="Art" checked={l.enabled} onChange={(enabled) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, enabled } }))} />
+          <Toggle label="Frame" checked={l.frame} onChange={(frame) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, frame } }))} />
+          <Toggle label="Background" checked={l.background} onChange={(background) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, background } }))} />
+        </div>
       </div>
       <DirectionDial
         label="Light comes from"
@@ -53,7 +64,7 @@ export function LightingSection() {
         onChange={(direction) => setLight({ direction }, true)}
         onCommit={commitDoc}
       />
-      {(l.enabled || l.frame) && (
+      {lit && (
         <>
           <ColorSwatches label="Light colour" value={l.color} swatches={SWATCHES} onChange={(color) => setLight({ color }, true)} onCommit={commitDoc} />
           <Slider
@@ -115,11 +126,6 @@ export function LightingSection() {
               />
             </>
           )}
-          <Toggle
-            label="Light the background too"
-            checked={l.background}
-            onChange={(background) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, background } }))}
-          />
         </>
       )}
     </>

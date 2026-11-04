@@ -32,6 +32,9 @@ export const SIZE_PRESETS: { id: Exclude<SizePreset, 'custom'>; name: string; sq
   { id: 'gargantuan', name: 'Gargantuan', squares: 4 },
 ];
 
+/** Most room round the frame inside the picture (the outer spacing), per square: 25 % of a square. */
+export const MAX_OUTER_SPACING = 0.5;
+
 export const MIN_SQUARES = 0.5;
 export const MAX_SQUARES = 10;
 
@@ -103,10 +106,11 @@ export const DEFAULT_GRADIENT: Gradient = {
 
 export const copyGradient = (g: Gradient): Gradient => ({ ...g, stops: g.stops.map((s) => ({ ...s })) });
 
+// A new token has a dark colour behind its art (the old backing colour, before v12).
 export const DEFAULT_BACKGROUND: BackgroundLayer = {
-  kind: 'none',
+  kind: 'color',
   opacity: 1,
-  color: '#3a4a5c',
+  color: '#1d1f27',
   gradient: DEFAULT_GRADIENT,
   image: null,
   blur: 0,
@@ -123,8 +127,8 @@ export const DEFAULT_LIGHTING: LightingSettings = {
   color: '#ffe2b0',
   strength: 50,
   falloff: 40,
-  rim: { enabled: false, strength: 60, width: 30, softness: 35 },
-  background: true,
+  rim: { enabled: false, strength: 60, width: 30, softness: 60 },
+  background: false,
   frame: false,
 };
 
@@ -411,7 +415,7 @@ export function createDocument(name = 'Untitled token'): TokenDocument {
       outerSpacing: 0.1,
       innerSpacing: 0,
       backingColor: '#1d1f27',
-      backingOpacity: 1,
+      backingOpacity: 0,
       image: null,
       design: null,
     },

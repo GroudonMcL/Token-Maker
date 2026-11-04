@@ -19,7 +19,8 @@ import { revealSection } from '../layout/reveal';
 import { assetStore } from '../state/assets';
 import { commitDoc, docHistory, undo, updateDoc, useCanUndo, useDoc } from '../state/tokenStore';
 import { toast } from '../ui/toast';
-import { setTransform } from './artActions';
+import { setTransform, updateFrameAndArt } from './artActions';
+import { MAX_OUTER_SPACING } from '../document/defaults';
 import { draggedLabel } from './labelActions';
 import { extendStroke, pickColour, pointerPressure, startStroke, type StrokeContext } from './brush';
 import { selectDecoration, setBrush, setTool, toolStore, useTool } from './tools';
@@ -60,7 +61,8 @@ type Gesture =
   | { kind: 'bgScale'; zoom: number; centre: Point; startPoint: Point }
   | { kind: 'decor'; start: Decoration; from: Placement; x: number; y: number }
   | { kind: 'decorScale' | 'decorRotate'; start: Decoration; centre: Point; startPoint: Point }
-  | { kind: 'label'; start: LabelSettings; from: Point; x: number; y: number };
+  | { kind: 'label'; start: LabelSettings; from: Point; x: number; y: number }
+  | { kind: 'bounds'; spacing: number; d0: number };
 
 /**
  * The canvas: the token (drawn by the same renderer as the export), the whole
@@ -570,6 +572,31 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       setTransform(() => rotateAround(g.start, turn, anchor), { transient: true });
     }
   };
+  // ---- The red export square's handles (Export tab): more or less room round the token ----
+  const editBounds = useTool((s) => s.editBounds) && !!art && tool === 'move';
+  const boundsDist = (e: ReactPointerEvent) => {
+    const rect = stageRef.current!.getBoundingClientRect();
+    return Math.max(Math.abs(e.clientX - rect.left - cx), Math.abs(e.clientY - rect.top - cy), 1);
+  };
+  const startBoundsHandle = (e: ReactPointerEvent) => {
+    e.stopPropagation();
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    gesture.current = { kind: 'bounds', spacing: doc.frame.outerSpacing, d0: boundsDist(e) };
+    setDragging(true);
+  };
+  const moveBoundsHandle = (e: ReactPointerEvent) => {
+    const g = gesture.current;
+    if (!g || g.kind !== 'bounds') return;
+    // Dragging out makes the square bigger round the token: the frame keeps
+    // its size on screen relative to where the drag started, so the room
+    // round it (the outer spacing) grows.
+    const sq = doc.size.squares;
+    const m0 = Math.min(0.9, g.spacing / sq);
+    const m = 1 - ((1 - m0) * g.d0) / boundsDist(e);
+    const spacing = Math.round(Math.min(MAX_OUTER_SPACING, Math.max(0, m * sq)) * 1000) / 1000;
+    updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, outerSpacing: spacing } }), { transient: true });
+  };
+
   const endHandle = () => {
     if (!gesture.current) return;
     gesture.current = null;
@@ -688,9 +715,33 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       {art && (
         // The exported picture's edge: anything outside it is cut off.
         <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
-          <rect className="stage__bounds" data-testid="export-bounds" x={cx - R} y={cy - R} width={R * 2} height={R * 2} />
+          <rect className="stage__bounds" data-testid="export-bounds" data-editing={editBounds || undefined} x={cx - R} y={cy - R} width={R * 2} height={R * 2} />
         </svg>
       )}
+      {editBounds &&
+        [
+          { x: cx - R, y: cy - R },
+          { x: cx + R, y: cy - R },
+          { x: cx + R, y: cy + R },
+          { x: cx - R, y: cy + R },
+        ].map((p, i) => {
+          if (offScreen(p)) return null;
+          const q = keepIn(p);
+          return (
+            <span
+              key={i}
+              className="stage__handle stage__handle--bounds"
+              style={{ left: q.x, top: q.y, cursor: i % 2 ? 'nesw-resize' : 'nwse-resize' }}
+              data-testid={`bounds-handle-${i}`}
+              title="Drag to give the token more or less room inside the picture"
+              aria-hidden="true"
+              onPointerDown={startBoundsHandle}
+              onPointerMove={moveBoundsHandle}
+              onPointerUp={endHandle}
+              onPointerCancel={endHandle}
+            />
+          );
+        })}
       {art && corners.length === 4 && (
         <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
           <polygon className="stage__outline" points={corners.map((p) => `${p.x},${p.y}`).join(' ')} />
@@ -760,6 +811,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       {art &&
         tool === 'move' &&
         !selected &&
+        !editBounds &&
         corners.map((p, i) => {
           const q = keepIn(p);
           if (offScreen(p)) return null;
@@ -776,7 +828,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
             />
           );
         })}
-      {art && tool === 'move' && !selected && !offScreen(rotateAt) && (
+      {art && tool === 'move' && !selected && !editBounds && !offScreen(rotateAt) && (
         <span
           className="stage__handle stage__handle--rotate"
           style={{ left: rotateHandle.x, top: rotateHandle.y }}

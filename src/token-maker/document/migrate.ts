@@ -2,6 +2,7 @@
 // upgraded step by step, then everything is checked and filled in from the
 // defaults, so a damaged or partial file can never crash the editor.
 
+import { libraryFrameById } from '../render/libraryFrames';
 import { readFrameDesign } from '../frameMaker/share/frameDesign';
 import { builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
 import { cleanChoices } from '../frameMaker/project/colourSlots';
@@ -105,6 +106,26 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
     const inUse = frame.kind === 'image';
     const design = inUse ? builtInDesignFrame(source.id) : null;
     return { ...doc, frame: { ...frame, kind: inUse ? (design ? 'design' : 'code') : frame.kind, image: null, design: design ?? frame.design } };
+  },
+  // v11 → v12 (owner feedback): the frame's backing colour joined the Background tab. A token
+  // with no background gets its backing as a background colour, so it looks the same; the
+  // code-drawn effects the owner didn't keep become picture effects (or go, see retiredEffect).
+  11: (doc) => {
+    const frame = obj(doc.frame);
+    const bg = obj(doc.background);
+    const opacity = typeof frame.backingOpacity === 'number' ? frame.backingOpacity : 1;
+    const color = typeof frame.backingColor === 'string' ? frame.backingColor : '#1d1f27';
+    const none = (bg.kind ?? 'none') === 'none';
+    const background = none ? (opacity > 0 ? { ...bg, kind: 'color', color, opacity } : { ...bg, kind: 'none' }) : bg;
+    // "Light the background" only counted with the art lit; now it is a switch of its own.
+    const lighting = obj(doc.lighting);
+    return {
+      ...doc,
+      background,
+      lighting: { ...lighting, background: lighting.enabled === true && lighting.background !== false },
+      frame: { ...frame, backingOpacity: 0 },
+      effects: arr(doc.effects),
+    };
   },
 };
 
@@ -356,12 +377,12 @@ export function imageFrame(raw: unknown): ImageFrame | null {
   if (!isObject(raw)) return null;
   const src = obj(raw.source);
   const id = typeof src.id === 'string' ? src.id.slice(0, 80) : '';
-  if (!id || src.type !== 'upload') return null;
+  if (!id || (src.type !== 'upload' && !(src.type === 'library' && libraryFrameById(id)))) return null;
   const hole = Array.isArray(raw.hole) ? raw.hole.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [];
   if (hole.length < 6 || hole.length > MAX_HOLE_POINTS * 2 || hole.length % 2) return null;
   const nudge = obj(raw.nudge);
   return {
-    source: { type: src.type, id },
+    source: { type: src.type === 'library' ? 'library' : 'upload', id },
     name: str(raw.name, 'Picture frame').slice(0, 80),
     hole: hole.map((n) => Math.max(-1.5, Math.min(1.5, n))),
     outer: num(raw.outer, 1, 0, 1.5),
@@ -506,7 +527,7 @@ export function sanitize(raw: Json): TokenDocument {
       outerSpacing: num(frame.outerSpacing, d.frame.outerSpacing, 0, 1),
       innerSpacing: num(frame.innerSpacing, d.frame.innerSpacing, 0, 1),
       backingColor: hex(frame.backingColor, d.frame.backingColor),
-      backingOpacity: num(frame.backingOpacity, 1, 0, 1),
+      backingOpacity: num(frame.backingOpacity, 0, 0, 1),
       image: frameImage,
       design: frameDesign,
     },

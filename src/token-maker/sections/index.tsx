@@ -15,7 +15,6 @@ const loaders = {
   effects: () => import('./EffectsSection').then((m) => ({ default: m.EffectsSection })),
   frame: () => import('./FrameSection').then((m) => ({ default: m.FrameSection })),
   decorations: () => import('./DecorationsSection').then((m) => ({ default: m.DecorationsSection })),
-  size: () => import('./SizeSection').then((m) => ({ default: m.SizeSection })),
   label: () => import('./LabelSection').then((m) => ({ default: m.LabelSection })),
   presets: () => import('./PresetsSection').then((m) => ({ default: m.PresetsSection })),
   export: () => import('./ExportSection').then((m) => ({ default: m.ExportSection })),

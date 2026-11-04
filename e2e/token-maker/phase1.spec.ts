@@ -33,21 +33,21 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
-test('import an image and download a 256 px PNG', async ({ page, isMobile }) => {
+test('import an image and download a 512 px PNG', async ({ page, isMobile }) => {
   await upload(page);
   await expect(page.getByTestId('token-canvas')).toBeVisible();
   const out = await exportPng(page, !!isMobile);
   expect(out.name).toBe('Goblin-Boss.png');
-  expect(out.size).toEqual({ width: 256, height: 256 });
+  expect(out.size).toEqual({ width: 512, height: 512 });
 });
 
-test('Large tokens export at 512 px with the size shown', async ({ page, isMobile }) => {
+test('Large tokens export at 1024 px with the size shown', async ({ page, isMobile }) => {
   await upload(page);
   const panel = await openSection(page, 'Size');
   await panel.getByRole('radio', { name: 'Large' }).click();
-  await expect(page.getByTestId('pixel-size').first()).toHaveText('512 × 512 px');
+  await expect(page.getByTestId('pixel-size').first()).toHaveText('1024 × 1024 px');
   const out = await exportPng(page, !!isMobile);
-  expect(out.size).toEqual({ width: 512, height: 512 });
+  expect(out.size).toEqual({ width: 1024, height: 1024 });
 });
 
 test('pick a frame and undo it', async ({ page }) => {

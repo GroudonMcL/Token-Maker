@@ -103,7 +103,7 @@ test('six goblins share one style, each keeps its own crop, and download as a ZI
 
   for (const [name, bytes] of Object.entries(files)) {
     const p = await pixels(bytes);
-    expect([p.width, p.height], name).toEqual([256, 256]);
+    expect([p.width, p.height], name).toEqual([512, 512]);
     // Square tokens: a corner just inside the frame is solid in every one.
     expect(p.data[(4 * 64 + 4) * 4 + 3], name).toBeGreaterThan(200);
   }
@@ -128,7 +128,7 @@ test('every format and resolution matches the preview, with a safe file name', a
   const preview = await previewPng(page);
 
   const panel = await openSection(page, 'Export');
-  const sizes = { '128': 128, '256': 256, '512': 512 } as const;
+  const sizes = { '400': 400, '512': 512, '768': 768 } as const;
   for (const [format, ext] of [
     ['PNG', 'png'],
     ['WebP', 'webp'],
@@ -149,13 +149,13 @@ test('every format and resolution matches the preview, with a safe file name', a
   await expect(panel.getByRole('radio', { name: 'JPG', exact: true })).toHaveCount(0);
 
   // A custom size shows the final size, never more than 4096 px.
-  await panel.getByRole('radio', { name: 'Custom' }).click();
+  await panel.getByRole('radiogroup', { name: 'Pixels per square' }).getByRole('radio', { name: 'Custom' }).click();
   await panel.getByLabel('Custom pixels per square value').fill('5000');
   await panel.getByLabel('Custom pixels per square value').press('Enter');
   await expect(panel.getByTestId('export-size')).toContainText('4096 × 4096 px');
 
   // An edited file name is used.
-  await panel.getByRole('radio', { name: '128', exact: true }).click();
+  await panel.getByRole('radio', { name: '400', exact: true }).click();
   await panel.getByRole('radio', { name: 'PNG', exact: true }).click();
   await panel.getByLabel('File name').fill('my boss/token');
   const named = await download(page, () => panel.getByRole('button', { name: 'Download PNG' }).click());

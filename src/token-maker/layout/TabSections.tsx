@@ -3,6 +3,7 @@ import { Section } from '../components';
 import { SECTION_CONTENT } from '../sections';
 import { PANEL_TABS, sectionById, type PanelTab, type SectionId } from './sections';
 import { SectionPlaceholder } from './SectionPlaceholder';
+import { canReset, resetSection } from './sectionResets';
 
 /** The tab after this one, or null for the last. */
 const nextTab = (tab: PanelTab): PanelTab | null => PANEL_TABS[PANEL_TABS.indexOf(tab) + 1] ?? null;
@@ -39,6 +40,7 @@ export function TabSections({
             fixed={fixed}
             open={openSection === sid}
             onOpenChange={(o) => setOpenSection(o ? sid : null)}
+            onReset={canReset(sid) ? () => resetSection(sid) : undefined}
           >
             {Content ? <Content /> : <SectionPlaceholder text={s.placeholder} />}
           </Section>

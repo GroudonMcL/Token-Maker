@@ -85,15 +85,16 @@ describe('Decorations section', () => {
 });
 
 describe('Frame section: picture frames', () => {
-  it('with no frames uploaded, Picture offers an upload and keeps the frame in use', () => {
+  it('with no frames uploaded, Picture offers the built-in Essentials frames and an upload, and keeps the frame in use until one loads', () => {
     const { container } = render(<FrameSection />);
     const before = getDoc().frame;
     fireEvent.click(screen.getByRole('radio', { name: 'Picture' }));
     expect(screen.getByRole('button', { name: 'Upload a frame' })).toBeInTheDocument();
-    expect(screen.getByText(/No picture frames yet/)).toBeInTheDocument();
+    expect(screen.getByText('Essentials')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Glowing lava' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reset the hole' })).toBeNull();
     expect(getDoc().frame).toEqual(before);
-    controlsShown(container);
+    expect(container.querySelectorAll('[data-control]').length).toBeGreaterThanOrEqual(3);
     fireEvent.click(screen.getByRole('radio', { name: 'Drawn' }));
     expect(getDoc().frame.kind).toBe('code');
   });

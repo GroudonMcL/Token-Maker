@@ -16,11 +16,14 @@ export function SegmentedButtons<V extends string>({
   options,
   value,
   onChange,
+  equal = false,
 }: {
   label: string;
   options: readonly SegmentOption<V>[];
   value: V;
   onChange: (value: V) => void;
+  /** Every button the same width. */
+  equal?: boolean;
 }) {
   const labelId = useId();
   const { onKeyDown, itemProps } = useRovingRadio(
@@ -31,7 +34,7 @@ export function SegmentedButtons<V extends string>({
   return (
     <div className="segmented" data-control="segmented">
       <ControlLabel id={labelId} label={label} />
-      <div className="segmented__row" role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown}>
+      <div className={equal ? 'segmented__row segmented__row--equal' : 'segmented__row'} role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown}>
         {options.map((o, i) => (
           <button
             key={o.value}

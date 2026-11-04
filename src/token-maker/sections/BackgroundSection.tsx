@@ -94,7 +94,7 @@ export function BackgroundSection() {
         ]}
       />
 
-      {bg.kind === 'none' && <p className="control__hint">The backing colour (in Frame & shape) shows behind the art.</p>}
+      {bg.kind === 'none' && <p className="control__hint">Nothing behind the art: its see-through parts stay see-through.</p>}
 
       {bg.kind === 'color' && (
         <ColorSwatches

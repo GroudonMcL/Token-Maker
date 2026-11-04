@@ -91,7 +91,7 @@ test('a character on a blurred forest with a vignette and torchlight from below;
   const [bodyBefore] = await previewPixels(page, [BODY]);
   await panel.getByRole('button', { name: /Torchlight/ }).click();
   await expect(panel.getByRole('slider', { name: 'Light comes from' })).toHaveAttribute('aria-valuenow', '90');
-  await expect(panel.getByRole('switch', { name: 'Light the art' })).toHaveAttribute('aria-checked', 'true');
+  await expect(panel.getByRole('switch', { name: 'Art', exact: true })).toHaveAttribute('aria-checked', 'true');
   const [bodyAfter, skyLit] = await previewPixels(page, [BODY, SKY]);
   expect(near(bodyAfter!, bodyBefore!, 4)).toBe(false);
   // The forest is lit too: the lower part, nearer the torch, is warmer than the top.
