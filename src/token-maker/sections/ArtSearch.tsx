@@ -33,8 +33,10 @@ export function ArtSearch() {
           window.open(artSearchUrl(ART_SEARCH_SITES[0]!, term, noAi), '_blank', 'noopener,noreferrer');
         }}
       />
-      <Toggle label={`Add “${ART_SEARCH_EXTRA}”`} checked={addExtra} onChange={setAddExtra} />
-      <Toggle label="Leave out AI art" checked={noAi} onChange={setNoAi} />
+      <div className="toggle-pair">
+        <Toggle label={`Add “${ART_SEARCH_EXTRA}”`} checked={addExtra} onChange={setAddExtra} />
+        <Toggle label="Leave out AI art" checked={noAi} onChange={setNoAi} />
+      </div>
       <div className="art-search__sites" role="group" aria-label="Search on">
         {ART_SEARCH_SITES.map((site) =>
           term ? (

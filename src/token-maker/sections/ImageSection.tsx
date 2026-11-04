@@ -1,10 +1,14 @@
-import { RotateCcw } from 'lucide-react';
-import { Advanced, Slider, Toggle } from '../components';
+import { Pipette, RotateCcw, X } from 'lucide-react';
+import { useId } from 'react';
+import { Advanced, ControlLabel, Slider, Toggle } from '../components';
 import { DEFAULT_ADJUST } from '../document/defaults';
 import type { ImageAdjustments } from '../document/types';
+import { pickColourFor, setTool, useTool } from '../editor/tools';
+import { hasRecolor } from '../image/adjust';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
+import { parseHex, toHex } from '../render/color';
 
-type NumberKey = Exclude<keyof ImageAdjustments, 'invert'>;
+type NumberKey = Exclude<keyof ImageAdjustments, 'invert' | 'recolorColor' | 'recolorShift' | 'recolorBreadth'>;
 
 interface AdjustDef {
   key: NumberKey;
@@ -81,12 +85,13 @@ export function ImageSection() {
 
 function Adjustments() {
   const adjust = useDoc((d) => d.art.adjust);
-  const changed = JSON.stringify(adjust) !== JSON.stringify(DEFAULT_ADJUST);
+  const changed = JSON.stringify({ ...adjust, recolorBreadth: 0 }) !== JSON.stringify({ ...DEFAULT_ADJUST, recolorBreadth: 0 });
   return (
     <>
       {MAIN.map((def) => (
         <AdjustSlider key={def.key} def={def} value={adjust[def.key]} />
       ))}
+      <Recolour adjust={adjust} />
       <Advanced>
         {GROUPS.map((g) => (
           <div key={g.title} className="control-group">
@@ -103,5 +108,91 @@ function Adjustments() {
         Reset adjustments
       </button>
     </>
+  );
+}
+
+/** A colour turned `degrees` round the colour wheel (for the preview swatch). */
+function turned(hex: string, degrees: number): string {
+  const { r, g, b } = parseHex(hex);
+  const max = Math.max(r, g, b);
+  const c = max - Math.min(r, g, b);
+  if (!c) return hex;
+  let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+  h = (((h * 60 + degrees) % 360) + 360) % 360;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = max - c;
+  const k = Math.floor(h / 60);
+  const [rr, gg, bb] = k === 0 ? [c, x, 0] : k === 1 ? [x, c, 0] : k === 2 ? [0, c, x] : k === 3 ? [0, x, c] : k === 4 ? [x, 0, c] : [c, 0, x];
+  return toHex({ r: rr + m, g: gg + m, b: bb + m });
+}
+
+/**
+ * Recolour (owner request): choose a colour (with the picker, or from the
+ * picture with the eyedropper), then turn it to another colour; Breadth
+ * says how many colours around it change too.
+ */
+function Recolour({ adjust }: { adjust: ImageAdjustments }) {
+  const pickerId = useId();
+  const picking = useTool((s) => s.tool === 'eyedropper' && s.eyedropperFor === 'recolor');
+  const from = adjust.recolorColor;
+  const to = from ? turned(from, adjust.recolorShift) : null;
+  return (
+    <div className="control-group" data-control="recolour">
+      <h4 className="control-group__title">Recolour</h4>
+      <div className="control">
+        <ControlLabel htmlFor={pickerId} label="Colour to change" />
+        <div className="recolour__row">
+          <label className="swatch swatch--input" style={{ background: from ?? undefined }} title="Choose the colour to change">
+            <span className="visually-hidden">Colour to change</span>
+            <input
+              id={pickerId}
+              type="color"
+              value={from ?? '#b8322a'}
+              onChange={(e) => setAdjust({ recolorColor: e.target.value }, true)}
+              onBlur={commitDoc}
+            />
+            {!from && <span className="swatch__none" aria-hidden="true" />}
+          </label>
+          <button type="button" className="btn btn--small" aria-pressed={picking} onClick={() => (picking ? setTool('move') : pickColourFor('recolor'))}>
+            <Pipette size={14} aria-hidden="true" />
+            {picking ? 'Tap the picture…' : 'Pick from picture'}
+          </button>
+          {from && (
+            <>
+              <span className="recolour__arrow" aria-hidden="true">→</span>
+              <span className="swatch swatch--static" style={{ background: to! }} title={`Becomes ${to}`} aria-label={`Becomes ${to}`} role="img" />
+              <button type="button" className="icon-btn" aria-label="Stop recolouring" onClick={() => setAdjust({ recolorColor: null, recolorShift: 0 })}>
+                <X size={16} aria-hidden="true" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {from && (
+        <>
+          <Slider
+            label="New colour"
+            unit="°"
+            min={-180}
+            max={180}
+            value={adjust.recolorShift}
+            defaultValue={0}
+            onChange={(v) => setAdjust({ recolorShift: v }, true)}
+            onCommit={commitDoc}
+          />
+          <Slider
+            label="Breadth"
+            unit="%"
+            min={0}
+            max={100}
+            value={adjust.recolorBreadth}
+            defaultValue={DEFAULT_ADJUST.recolorBreadth}
+            onChange={(v) => setAdjust({ recolorBreadth: v }, true)}
+            onCommit={commitDoc}
+          />
+          {!hasRecolor(adjust) && <p className="control__hint">Drag New colour to change it.</p>}
+        </>
+      )}
+    </div>
   );
 }

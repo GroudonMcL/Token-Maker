@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import type { Gradient } from '../document/types';
 import { useStore } from 'zustand';
-import { ColorSwatches, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
+import { ColorSwatches, GradientEditor, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
 import { createHistoryStore } from '../state/history';
 
 describe('Slider', () => {
@@ -129,6 +130,61 @@ describe('ColorSwatches', () => {
     await userEvent.clear(hex);
     await userEvent.type(hex, 'ABCDEF{Enter}');
     expect(onChange).toHaveBeenLastCalledWith('#abcdef');
+  });
+});
+
+describe('GradientEditor', () => {
+  const gradient = (): Gradient => ({
+    type: 'linear',
+    angle: 90,
+    stops: [
+      { offset: 0, color: '#000000', opacity: 1 },
+      { offset: 1, color: '#ffffff', opacity: 1 },
+    ],
+  });
+  function Harness({ onChange }: { onChange: (g: Gradient) => void }) {
+    const [g, setG] = useState(gradient());
+    return (
+      <GradientEditor
+        value={g}
+        onChange={(next) => {
+          setG(next);
+          onChange(next);
+        }}
+        onCommit={() => {}}
+      />
+    );
+  }
+
+  it('has one marker per colour; clicking one opens its colour and opacity', async () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    expect(screen.getAllByRole('button', { name: /^Colour \d at/ })).toHaveLength(2);
+    expect(screen.queryByTestId('gradient-stop-editor')).toBeNull();
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'Enter' });
+    fireEvent.click(screen.getByTestId('gradient-marker-1'), { detail: 0 });
+    expect(screen.getByTestId('gradient-stop-editor')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: '#b8322a' }));
+    expect(onChange.mock.lastCall![0].stops[1].color).toBe('#b8322a');
+    fireEvent.change(screen.getByRole('slider', { name: /Opacity/ }), { target: { value: '40' } });
+    expect(onChange.mock.lastCall![0].stops[1].opacity).toBeCloseTo(0.4);
+    // Two colours is the least a gradient can have.
+    expect(screen.getByRole('button', { name: /Remove this colour/ })).toBeDisabled();
+  });
+
+  it('adds a colour where the bar is clicked, moves one with the arrow keys and removes it', () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    const bar = screen.getByTestId('gradient-bar');
+    bar.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 32, right: 200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) });
+    fireEvent.click(bar, { clientX: 100 });
+    const added = onChange.mock.lastCall![0] as Gradient;
+    expect(added.stops.map((s) => s.offset)).toEqual([0, 0.5, 1]);
+    expect(added.stops[1]!.color).toBe('#808080');
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'ArrowRight', shiftKey: true });
+    expect((onChange.mock.lastCall![0] as Gradient).stops[1]!.offset).toBeCloseTo(0.6);
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'Delete' });
+    expect((onChange.mock.lastCall![0] as Gradient).stops).toHaveLength(2);
   });
 });
 

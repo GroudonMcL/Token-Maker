@@ -1,7 +1,7 @@
-import { Brush, Eraser, RotateCcw, Undo2 } from 'lucide-react';
+import { Brush, Eraser, PaintbrushVertical, RotateCcw, Undo2 } from 'lucide-react';
 import { Advanced, ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
 import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setBrush, setTool, useTool } from '../editor/tools';
-import { updateDoc, useDoc } from '../state/tokenStore';
+import { undo, updateDoc, useCanUndo, useDoc } from '../state/tokenStore';
 
 /** The erase/restore brush, shown under background removal. */
 export function BrushControls() {
@@ -11,6 +11,8 @@ export function BrushControls() {
   const softness = useTool((s) => s.brushSoftness);
   const usePressure = useTool((s) => s.usePressure);
   const showRemoved = useTool((s) => s.showRemoved);
+  const showGhost = useTool((s) => s.showGhost);
+  const canUndo = useCanUndo();
   const strokeCount = useDoc((d) => d.art.strokes.length);
   const on = tool === 'brush';
 
@@ -30,7 +32,7 @@ export function BrushControls() {
         onChange={(m) => setBrush({ brushMode: m })}
         options={[
           { value: 'erase', label: 'Erase', icon: <Eraser size={16} /> },
-          { value: 'restore', label: 'Restore', icon: <Undo2 size={16} /> },
+          { value: 'restore', label: 'Restore', icon: <PaintbrushVertical size={16} /> },
         ]}
       />
       <Slider
@@ -54,16 +56,23 @@ export function BrushControls() {
         />
         <Toggle label="Pen pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
         <Toggle label="Show removed parts in red" checked={showRemoved} onChange={(v) => setBrush({ showRemoved: v })} />
+        <Toggle label="View ghost image" checked={showGhost} onChange={(v) => setBrush({ showGhost: v })} />
       </Advanced>
-      <button
-        type="button"
-        className="btn btn--ghost btn--small"
-        disabled={!strokeCount}
-        onClick={() => updateDoc((d) => ({ ...d, art: { ...d.art, strokes: [] } }))}
-      >
-        <RotateCcw size={16} aria-hidden="true" />
-        Clear brush strokes
-      </button>
+      <div className="button-row">
+        <button type="button" className="btn btn--ghost btn--small" disabled={!canUndo} onClick={undo}>
+          <Undo2 size={16} aria-hidden="true" />
+          Undo
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost btn--small"
+          disabled={!strokeCount}
+          onClick={() => updateDoc((d) => ({ ...d, art: { ...d.art, strokes: [] } }))}
+        >
+          <RotateCcw size={16} aria-hidden="true" />
+          Clear brush strokes
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { Eraser, Paintbrush, RotateCcw } from 'lucide-react';
+import { useLayoutEffect } from 'react';
 import { Advanced, ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
 import type { PopOutSettings } from '../document/types';
-import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setBrush, setTool, useTool } from '../editor/tools';
+import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setAutoTool, setBrush, setTool, toolStore, useTool } from '../editor/tools';
 import { updateDoc, useDoc } from '../state/tokenStore';
 
 const setPopOut = (patch: Partial<PopOutSettings>) => updateDoc((d) => ({ ...d, art: { ...d.art, popOut: { ...d.art.popOut, ...patch } } }));
@@ -20,6 +21,13 @@ export function PopOutSection() {
   const softness = useTool((s) => s.brushSoftness);
   const usePressure = useTool((s) => s.usePressure);
   const showMask = useTool((s) => s.showPopOut);
+  // The pop-out brush turns on when this section opens (before it is drawn) and off when it is left.
+  useLayoutEffect(() => {
+    if (hasArt && toolStore.getState().tool === 'move') setAutoTool('popout');
+    return () => {
+      if (toolStore.getState().tool === 'popout') setAutoTool('move');
+    };
+  }, [hasArt]);
   if (!hasArt) return <p className="control__hint">Add an image first, then paint the parts that should break over the border.</p>;
   const on = tool === 'popout';
 

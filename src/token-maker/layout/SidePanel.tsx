@@ -8,11 +8,13 @@ export function SidePanel({
   panelId,
   openSection,
   setOpenSection,
+  setTab,
 }: {
   tab: PanelTab;
   panelId: string;
   openSection: SectionId | null;
   setOpenSection: (id: SectionId | null) => void;
+  setTab: (id: string) => void;
 }) {
   const ref = useRef<HTMLElement>(null);
   // A new tab starts at its top.
@@ -26,7 +28,7 @@ export function SidePanel({
   return (
     <aside ref={ref} className="side-panel" aria-label="Token settings">
       <div className="side-panel__tab" id={panelId} role="tabpanel" aria-label={tab.label}>
-        <TabSections tab={tab} openSection={openSection} setOpenSection={setOpenSection} />
+        <TabSections tab={tab} openSection={openSection} setOpenSection={setOpenSection} onNext={setTab} />
       </div>
     </aside>
   );

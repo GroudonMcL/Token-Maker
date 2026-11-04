@@ -69,7 +69,7 @@ index.html, src/shell/        The main page: each app in its own frame, the app 
 token-maker/index.html        Token Maker's page   → src/token-maker/
 frame-maker/index.html       Frame Maker's page  → src/frame-maker/
 server/, functions/, worker/  Token Maker's image proxy for web imports
-public/                       Fonts, backgrounds, pictures, help pictures and the favicon
+public/                       Fonts, backgrounds, pictures and the favicon
 scripts/token-maker/, scripts/frame-maker/   Each app's scripts
 e2e/shell, e2e/token-maker, e2e/frame-maker  End-to-end tests
 docs/token-maker/, docs/frame-maker/         Each app's design documents

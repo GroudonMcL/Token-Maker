@@ -4,7 +4,7 @@ import { useStore } from 'zustand';
 import { ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
 import { DEFAULT_REMOVAL } from '../document/defaults';
 import type { BackgroundRemoval } from '../document/types';
-import { setTool, useTool } from '../editor/tools';
+import { pickColourFor, setTool, useTool } from '../editor/tools';
 import { forgetAiMask, runAiRemoval, useAiStatus, useHasAiMask } from '../image/aiRemoval';
 import { DRAFT_SIDE, sourcePixels } from '../image/processedArt';
 import { detectEdgeColor } from '../image/removal';
@@ -57,7 +57,7 @@ export function BackgroundRemovalControls() {
 }
 
 function FlatColour({ removal, art }: { removal: BackgroundRemoval; art: RenderSource | undefined }) {
-  const tool = useTool((s) => s.tool);
+  const picking = useTool((s) => s.tool === 'eyedropper' && s.eyedropperFor === 'removal');
   const detected = useMemo(() => {
     if (!art) return null;
     const [r, g, b] = detectEdgeColor(sourcePixels(art, DRAFT_SIDE));
@@ -76,9 +76,9 @@ function FlatColour({ removal, art }: { removal: BackgroundRemoval; art: RenderS
           </span>
         </div>
         <div className="button-row">
-          <button type="button" className="btn" aria-pressed={tool === 'eyedropper'} onClick={() => setTool(tool === 'eyedropper' ? 'move' : 'eyedropper')}>
+          <button type="button" className="btn" aria-pressed={picking} onClick={() => (picking ? setTool('move') : pickColourFor('removal'))}>
             <Pipette size={16} aria-hidden="true" />
-            {tool === 'eyedropper' ? 'Tap the picture…' : 'Pick colour'}
+            {picking ? 'Tap the picture…' : 'Pick colour'}
           </button>
           <button type="button" className="btn" disabled={!removal.color} onClick={() => setRemoval({ color: null })}>
             <Sparkles size={16} aria-hidden="true" />

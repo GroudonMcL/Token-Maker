@@ -95,7 +95,7 @@ function WideBody() {
       <ToolRail active={nav.tab} panelId={panelId} onChoose={nav.setTab} />
       <CanvasArea phone={false} />
       <PanelResizer width={panelWidth} onChange={setPanelWidth} panel={() => bodyRef.current?.querySelector('.side-panel') ?? null} />
-      <SidePanel tab={nav.tab} panelId={panelId} openSection={nav.openSection} setOpenSection={nav.setOpenSection} />
+      <SidePanel tab={nav.tab} panelId={panelId} openSection={nav.openSection} setOpenSection={nav.setOpenSection} setTab={nav.setTab} />
     </div>
   );
 }

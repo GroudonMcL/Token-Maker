@@ -28,7 +28,63 @@ const COLOUR_KEYS = [
 ] as const;
 
 export function hasColourAdjustments(a: ImageAdjustments): boolean {
-  return a.invert || COLOUR_KEYS.some((k) => a[k] !== 0);
+  return a.invert || COLOUR_KEYS.some((k) => a[k] !== 0) || hasRecolor(a);
+}
+
+/** Recolour is on: a colour is chosen and turned. */
+export const hasRecolor = (a: Pick<ImageAdjustments, 'recolorColor' | 'recolorShift'>) => !!a.recolorColor && a.recolorShift !== 0;
+
+/** How far either side of the chosen hue (in degrees) a breadth of 0–100 reaches. */
+export const recolorReach = (breadth: number) => 6 + (Math.min(100, Math.max(0, breadth)) / 100) * 84;
+
+/** Hue in degrees (0–360) of an RGB colour, and its chroma (0–255). */
+function hueOf(r: number, g: number, b: number): [number, number] {
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const c = max - min;
+  if (c === 0) return [0, 0];
+  let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+  h *= 60;
+  return [h < 0 ? h + 360 : h, c];
+}
+
+/**
+ * Recolour (owner request): colours near the chosen one turn round the
+ * colour wheel by `recolorShift`, keeping their lightness and strength.
+ * Colours within half the reach change fully, fading out to the edge of
+ * it; greys and nearly grey colours barely change, as they have no colour
+ * to turn.
+ */
+function recolor(d: Uint8ClampedArray, a: ImageAdjustments): void {
+  const t = parseInt(a.recolorColor!.slice(1), 16);
+  const [h0, c0] = hueOf((t >> 16) & 255, (t >> 8) & 255, t & 255);
+  if (c0 === 0) return; // a grey has no hue to match
+  const reach = recolorReach(a.recolorBreadth);
+  const full = reach / 2;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i]!;
+    const g = d[i + 1]!;
+    const b = d[i + 2]!;
+    const [h, c] = hueOf(r, g, b);
+    if (c < 6) continue;
+    let dist = Math.abs(h - h0);
+    if (dist > 180) dist = 360 - dist;
+    if (dist >= reach) continue;
+    let w = dist <= full ? 1 : 1 - (dist - full) / (reach - full);
+    w = w * w * (3 - 2 * w); // smooth edge
+    w *= Math.min(1, c / 48);
+    // Turn the hue, keeping value (max) and chroma.
+    let nh = (h + a.recolorShift * w) % 360;
+    if (nh < 0) nh += 360;
+    const max = Math.max(r, g, b);
+    const x = c * (1 - Math.abs(((nh / 60) % 2) - 1));
+    const m = max - c;
+    const k = Math.floor(nh / 60);
+    const [rr, gg, bb] = k === 0 ? [c, x, 0] : k === 1 ? [x, c, 0] : k === 2 ? [0, c, x] : k === 3 ? [0, x, c] : k === 4 ? [x, 0, c] : [c, 0, x];
+    d[i] = rr + m;
+    d[i + 1] = gg + m;
+    d[i + 2] = bb + m;
+  }
 }
 
 // sRGB ↔ linear light, for exposure (which works like a camera's: in stops).
@@ -59,13 +115,16 @@ function hueMatrix(degrees: number): number[] {
 const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v);
 
 /**
- * Applies the colour adjustments in place, in this order: exposure,
+ * Applies the colour adjustments in place, in this order: recolour, exposure,
  * brightness/contrast, highlights/shadows, temperature/tint, hue,
  * saturation, vibrance, sepia, grayscale, invert.
  */
 export function adjustColours(buffer: PixelBuffer, a: ImageAdjustments): void {
   if (!hasColourAdjustments(a)) return;
   const d = buffer.data;
+  // Recolour first, so it matches the colours as picked from the picture.
+  if (hasRecolor(a)) recolor(d, a);
+  if (!a.invert && COLOUR_KEYS.every((k) => a[k] === 0)) return;
 
   const gain = 2 ** (a.exposure / 50); // ±2 stops
   const bright = (a.brightness / 100) * 255 * 0.5;

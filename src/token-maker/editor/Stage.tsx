@@ -1,10 +1,10 @@
-import { Check, Eraser, ImagePlus, Paintbrush, ScanSearch, TriangleAlert, Undo2 } from 'lucide-react';
+import { Check, Eraser, ImagePlus, Paintbrush, PaintbrushVertical, ScanSearch, TriangleAlert, Undo2 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
 import type { ArtTransform, Decoration, LabelSettings, MaskStroke, PopOutStroke, TokenDocument } from '../document/types';
 import { aiStore } from '../image/aiRemoval';
 import { requestFullArt, useProcessedVersion } from '../image/artWorker';
-import { maskOverlay, popOutOverlay } from '../image/maskOverlay';
+import { ghostOverlay, maskOverlay, popOutOverlay } from '../image/maskOverlay';
 import { popOutMask } from '../image/popOut';
 import { artEdits } from '../image/process';
 import { DRAFT_SIDE, peekProcessedArt, processedArt, sourcePixels } from '../image/processedArt';
@@ -12,11 +12,12 @@ import { artCorners, baseScale, imageClipPolygon, imagePointAt, rotateAround, zo
 import { decorationCorners, decorationGeometry, nearestSnap, placements, type Placement } from '../render/decorations';
 import { labelPlacement } from '../render/label';
 import { renderToken } from '../render/render';
+import { backgroundAssetId } from '../render/background';
 import { useFontVersion } from '../fonts/fontLoader';
 import { pointInPolygon, type Point } from '../render/shapes';
 import { revealSection } from '../layout/reveal';
 import { assetStore } from '../state/assets';
-import { commitDoc, docHistory, updateDoc, useDoc } from '../state/tokenStore';
+import { commitDoc, docHistory, undo, updateDoc, useCanUndo, useDoc } from '../state/tokenStore';
 import { toast } from '../ui/toast';
 import { setTransform } from './artActions';
 import { draggedLabel } from './labelActions';
@@ -56,6 +57,7 @@ type Gesture =
   | { kind: 'brush'; target: 'mask'; stroke: MaskStroke; index: number }
   | { kind: 'brush'; target: 'popout'; stroke: PopOutStroke; index: number }
   | { kind: 'background'; x: number; y: number; offsetX: number; offsetY: number }
+  | { kind: 'bgScale'; zoom: number; centre: Point; startPoint: Point }
   | { kind: 'decor'; start: Decoration; from: Placement; x: number; y: number }
   | { kind: 'decorScale' | 'decorRotate'; start: Decoration; centre: Point; startPoint: Point }
   | { kind: 'label'; start: LabelSettings; from: Point; x: number; y: number };
@@ -81,6 +83,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
   const brushSize = useTool((s) => s.brushSize);
   const showRemoved = useTool((s) => s.showRemoved);
   const showPopOut = useTool((s) => s.showPopOut);
+  const showGhost = useTool((s) => s.showGhost);
   const painting = tool === 'brush' || tool === 'popout';
   const selectedId = useTool((s) => s.selectedDecoration);
   const selected = doc.decorations.find((d) => d.id === selectedId && d.visible) ?? null;
@@ -222,6 +225,16 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
         }
         const ctx = maskCanvas.getContext('2d');
         if (ctx) ctx.clearRect(0, 0, w, h);
+        if (ctx && art && display?.mask && tool === 'brush' && showGhost && clip.length) {
+          // A see-through copy of the parts the brush has removed, as a guide (inside the opening).
+          ctx.save();
+          ctx.beginPath();
+          clip.forEach((p, i) => ctx[i ? 'lineTo' : 'moveTo']((cx + p.x * R) * dpr, (cy + p.y * R) * dpr));
+          ctx.closePath();
+          ctx.clip();
+          drawArt(ctx, ghostOverlay(art.image, display.mask, display.maskWidth, display.maskHeight), dpr);
+          ctx.restore();
+        }
         if (ctx && art && display?.mask && tool === 'brush' && showRemoved && clip.length) {
           // Only inside the frame's opening, where the art shows.
           ctx.save();
@@ -242,7 +255,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     return () => cancelAnimationFrame(frame);
     // clip and drawArt are derived from doc
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [box, R, cx, cy, doc, assets, art, display, tool, showRemoved, showPopOut, fontVersion, settling]);
+  }, [box, R, cx, cy, doc, assets, art, display, tool, showRemoved, showPopOut, showGhost, fontVersion, settling]);
 
   const strokeContext = (): StrokeContext | null =>
     art ? { transform: doc.art.transform, width: art.width, height: art.height, clip, R } : null;
@@ -337,16 +350,18 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     startPan();
   };
 
-  /** Eyedropper: the tapped colour becomes the background colour to remove. */
+  /** Eyedropper: the tapped colour becomes the background colour to remove, or the colour to recolour. */
   const pickBackground = (clientX: number, clientY: number) => {
     if (!art) return;
     const q = imagePointAt(doc.art.transform, art.width, art.height, clip, toUnits(clientX, clientY));
     const colour = pickColour(sourcePixels(art, DRAFT_SIDE), q.x, q.y);
+    const recolor = toolStore.getState().eyedropperFor === 'recolor';
     if (!colour) {
-      toast('Tap on the picture to pick its background colour.', 'error');
+      toast(recolor ? 'Tap on the picture to pick the colour to change.' : 'Tap on the picture to pick its background colour.', 'error');
       return;
     }
-    updateDoc((d) => ({ ...d, art: { ...d.art, removal: { ...d.art.removal, enabled: true, color: colour } } }));
+    if (recolor) updateDoc((d) => ({ ...d, art: { ...d.art, adjust: { ...d.art.adjust, recolorColor: colour } } }));
+    else updateDoc((d) => ({ ...d, art: { ...d.art, removal: { ...d.art.removal, enabled: true, color: colour } } }));
     setTool('move');
   };
 
@@ -562,6 +577,42 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     commitDoc();
   };
 
+  // ---- The background picture's outline and resize handles, while it is being moved ----
+  const bgSrc = doc.background.kind === 'image' ? assets.get(backgroundAssetId(doc) ?? '') : undefined;
+  const bgCorners = (() => {
+    if (!bgSrc || tool !== 'background' || !clip.length) return [];
+    const bg = doc.background;
+    const s = baseScale(bgSrc.width, bgSrc.height, clip) * bg.zoom;
+    const hw = (bgSrc.width / 2) * s;
+    const hh = (bgSrc.height / 2) * s;
+    const mx = cx + bg.offsetX * R;
+    const my = cy + bg.offsetY * R;
+    return [
+      { x: mx - hw * R, y: my - hh * R },
+      { x: mx + hw * R, y: my - hh * R },
+      { x: mx + hw * R, y: my + hh * R },
+      { x: mx - hw * R, y: my + hh * R },
+    ];
+  })();
+  const startBgHandle = (e: ReactPointerEvent) => {
+    e.stopPropagation();
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    const rect = stageRef.current!.getBoundingClientRect();
+    const bg = doc.background;
+    gesture.current = { kind: 'bgScale', zoom: bg.zoom, centre: { x: cx + bg.offsetX * R, y: cy + bg.offsetY * R }, startPoint: { x: e.clientX - rect.left, y: e.clientY - rect.top } };
+    setDragging(true);
+  };
+  const moveBgHandle = (e: ReactPointerEvent) => {
+    const g = gesture.current;
+    if (!g || g.kind !== 'bgScale') return;
+    const rect = stageRef.current!.getBoundingClientRect();
+    const p = { x: e.clientX - rect.left - g.centre.x, y: e.clientY - rect.top - g.centre.y };
+    const from = { x: g.startPoint.x - g.centre.x, y: g.startPoint.y - g.centre.y };
+    const factor = Math.hypot(p.x, p.y) / Math.max(1, Math.hypot(from.x, from.y));
+    const zoom = Math.round(Math.min(8, Math.max(0.2, g.zoom * factor)) * 1000) / 1000;
+    updateDoc((d) => ({ ...d, background: { ...d.background, zoom } }), { transient: true });
+  };
+
   // ---- The selected decoration's outline and its resize and rotate handles ----
   const geo = decorationGeometry(doc);
   const decorPlacement = selected ? placements({ ...selected, mirror: false }, geo)[0]! : null;
@@ -644,6 +695,29 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
         <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
           <polygon className="stage__outline" points={corners.map((p) => `${p.x},${p.y}`).join(' ')} />
         </svg>
+      )}
+      {bgCorners.length === 4 && (
+        <>
+          <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
+            <polygon className="stage__outline stage__outline--background" data-testid="background-outline" points={bgCorners.map((p) => `${p.x},${p.y}`).join(' ')} />
+          </svg>
+          {bgCorners.map((p, i) => {
+            const q = keepIn(p);
+            if (offScreen(p)) return null;
+            return (
+              <span
+                key={i}
+                className="stage__handle stage__handle--scale"
+                style={{ left: q.x, top: q.y }}
+                data-testid={`background-scale-handle-${i}`}
+                onPointerDown={startBgHandle}
+                onPointerMove={moveBgHandle}
+                onPointerUp={endHandle}
+                onPointerCancel={endHandle}
+              />
+            );
+          })}
+        </>
       )}
       {movingLabel && doc.label && (
         <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
@@ -774,6 +848,8 @@ function ToolBar({ bottom }: { bottom: number }) {
   const tool = useTool((s) => s.tool);
   const mode = useTool((s) => s.brushMode);
   const popOutMode = useTool((s) => s.popOutMode);
+  const eyedropperFor = useTool((s) => s.eyedropperFor);
+  const canUndo = useCanUndo();
   const names: Record<string, string> = { brush: 'Brush', background: 'Move background', popout: 'Pop-out brush', eyedropper: 'Eyedropper' };
   return (
     <div className="stage__toolbar" role="toolbar" aria-label={names[tool]} style={{ bottom }}>
@@ -787,6 +863,10 @@ function ToolBar({ bottom }: { bottom: number }) {
             <Eraser size={16} aria-hidden="true" />
             Erase
           </button>
+          <button type="button" className="stage__tool-btn" aria-label="Undo the last change" disabled={!canUndo} onClick={undo}>
+            <Undo2 size={16} aria-hidden="true" />
+            Undo
+          </button>
         </>
       ) : tool === 'brush' ? (
         <>
@@ -795,14 +875,18 @@ function ToolBar({ bottom }: { bottom: number }) {
             Erase
           </button>
           <button type="button" className="stage__tool-btn" aria-pressed={mode === 'restore'} onClick={() => setBrush({ brushMode: 'restore' })}>
-            <Undo2 size={16} aria-hidden="true" />
+            <PaintbrushVertical size={16} aria-hidden="true" />
             Restore
+          </button>
+          <button type="button" className="stage__tool-btn" aria-label="Undo the last change" disabled={!canUndo} onClick={undo}>
+            <Undo2 size={16} aria-hidden="true" />
+            Undo
           </button>
         </>
       ) : tool === 'background' ? (
-        <span className="stage__tool-hint">Drag to move the background</span>
+        <span className="stage__tool-hint">Drag to move the background, or a corner to resize it</span>
       ) : (
-        <span className="stage__tool-hint">Tap the background colour</span>
+        <span className="stage__tool-hint">{eyedropperFor === 'recolor' ? 'Tap the colour to change' : 'Tap the background colour'}</span>
       )}
       <button type="button" className="btn btn--primary btn--small" onClick={() => setTool('move')}>
         <Check size={16} aria-hidden="true" />

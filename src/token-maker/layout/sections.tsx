@@ -62,7 +62,7 @@ export const SECTIONS: readonly SectionDef[] = [
   { id: 'export', title: 'Export', icon: icon(Download), placeholder: 'Format, resolution, download and copy.' },
 ];
 
-export type TabGroup = 'Art' | 'Look' | 'Finish';
+export type TabGroup = 'Picture' | 'Style' | 'Finish';
 
 /**
  * The panel's tabs: the tool rail on the left on desktop and tablet, the
@@ -77,20 +77,20 @@ export interface PanelTab {
   sections: SectionId[];
 }
 
-export const TAB_GROUPS: readonly TabGroup[] = ['Art', 'Look', 'Finish'];
+export const TAB_GROUPS: readonly TabGroup[] = ['Picture', 'Style', 'Finish'];
 
 export const PANEL_TABS: readonly PanelTab[] = [
-  { id: 'import', label: 'Import', group: 'Art', icon: icon(ImagePlus), sections: ['import'] },
-  { id: 'colour', label: 'Colour', group: 'Art', icon: icon(SlidersHorizontal), sections: ['image'] },
-  { id: 'cutout', label: 'Cut-out', group: 'Art', icon: icon(Scissors), sections: ['cutout'] },
-  { id: 'background', label: 'Background', group: 'Art', icon: icon(Mountain), sections: ['background'] },
-  { id: 'popout', label: 'Pop-out', group: 'Art', icon: icon(Maximize2), sections: ['popout'] },
-  { id: 'frame', label: 'Frame', group: 'Look', icon: icon(Frame), sections: ['frame'] },
-  { id: 'lighting', label: 'Light', group: 'Look', icon: icon(Sun), sections: ['lighting'] },
-  { id: 'shadows', label: 'Shadow', group: 'Look', icon: icon(Contrast), sections: ['shadows'] },
-  { id: 'effects', label: 'Effects', group: 'Look', icon: icon(WandSparkles), sections: ['effects'] },
-  { id: 'decor', label: 'Decor', group: 'Look', icon: icon(Gem), sections: ['decorations'] },
-  { id: 'label', label: 'Label', group: 'Look', icon: icon(Tag), sections: ['label'] },
+  { id: 'import', label: 'Import', group: 'Picture', icon: icon(ImagePlus), sections: ['import'] },
+  { id: 'colour', label: 'Colour', group: 'Picture', icon: icon(SlidersHorizontal), sections: ['image'] },
+  { id: 'cutout', label: 'Cut-out', group: 'Picture', icon: icon(Scissors), sections: ['cutout'] },
+  { id: 'background', label: 'Background', group: 'Picture', icon: icon(Mountain), sections: ['background'] },
+  { id: 'popout', label: 'Pop-out', group: 'Picture', icon: icon(Maximize2), sections: ['popout'] },
+  { id: 'frame', label: 'Frame', group: 'Style', icon: icon(Frame), sections: ['frame'] },
+  { id: 'lighting', label: 'Light', group: 'Style', icon: icon(Sun), sections: ['lighting'] },
+  { id: 'shadows', label: 'Shadow', group: 'Style', icon: icon(Contrast), sections: ['shadows'] },
+  { id: 'effects', label: 'Effects', group: 'Style', icon: icon(WandSparkles), sections: ['effects'] },
+  { id: 'decor', label: 'Decor', group: 'Style', icon: icon(Gem), sections: ['decorations'] },
+  { id: 'label', label: 'Label', group: 'Style', icon: icon(Tag), sections: ['label'] },
   { id: 'size', label: 'Size', group: 'Finish', icon: icon(Ruler), sections: ['size'] },
   { id: 'presets', label: 'Presets', group: 'Finish', icon: icon(Bookmark), sections: ['presets'] },
   { id: 'export', label: 'Export', group: 'Finish', icon: icon(Download), sections: ['export'] },

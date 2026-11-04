@@ -85,9 +85,16 @@ test('paint part of the art over the frame; it moves with the art, and the expor
   const size = panel.getByRole('textbox', { name: 'Pop-out brush size value' });
   await size.fill('90');
   await size.press('Enter');
-  await panel.getByRole('button', { name: 'Paint pop-out' }).click();
+  // Opening Pop-out turns its brush on.
+  await expect(panel.getByRole('button', { name: /^Painting/ })).toHaveAttribute('aria-pressed', 'true');
   const toolbar = page.getByRole('toolbar', { name: 'Pop-out brush' });
   await expect(toolbar).toBeVisible();
+  // On a phone the sheet stays open with the brush on; lower it to reach the bottom of the token.
+  if (m) {
+    await page.getByRole('button', { name: 'Resize settings panel' }).click();
+    await expect(page.locator('.bottom-sheet')).toHaveAttribute('data-snap', 'peek');
+    await page.waitForTimeout(400);
+  }
   await stroke(page, m, ON_FRAME[1]);
   await toolbar.getByRole('button', { name: 'Done' }).click();
 

@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from '../ui/toast';
 import { importWithMessage } from './importWithMessage';
@@ -27,7 +27,7 @@ export function SampleButton() {
         }
       }}
     >
-      <Sparkles size={18} aria-hidden="true" />
+      <UserRound size={18} aria-hidden="true" />
       Try a sample
     </button>
   );

@@ -61,6 +61,9 @@ export const DEFAULT_ADJUST: ImageAdjustments = {
   grayscale: 0,
   sepia: 0,
   invert: false,
+  recolorColor: null,
+  recolorShift: 0,
+  recolorBreadth: 30,
 };
 
 export const DEFAULT_REMOVAL: BackgroundRemoval = { enabled: false, color: null, intensity: 20, softness: 15, enclosed: true, method: 'colour' };

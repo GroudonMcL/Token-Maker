@@ -25,7 +25,7 @@ export function ImportSection() {
         <p className="control__hint">
           {batchOn
             ? 'Choose or drop several pictures at once. Each one joins the batch with the shared style.'
-            : 'Or drag an image anywhere onto the page, or paste it with Ctrl+V.'}
+            : 'Or drag or paste an image into this page.'}
         </p>
       </div>
       <ArtSearch />

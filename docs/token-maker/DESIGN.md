@@ -152,7 +152,6 @@ Rules:
 
 ## 6. Features
 
-Every section heading has a **? help tip** (see §11); the controls inside a section show their help as a tooltip on their name.
 
 ### 6.1 Importing an image
 
@@ -440,7 +439,7 @@ Type scale: 12 / 13 / 15 (body) / 18 (section titles) / 22 / 28 px.
 
 **Sizes:** controls are at least 32 px tall with a mouse and **44 px on touch screens** (`--hit`). Top bar 52 px, bottom bar 56 px, side panel 360 px (290 px on tablets).
 
-**Components** (in `src/components/`, demonstrated at `/kit`): collapsible `Section` with an `Advanced` sub-drop-down, `Slider` (shows its value, accepts typed numbers, one undo step per drag, and a small notch under the track marking the default value), `ColorSwatches` (swatches + picker + hex box), `SegmentedButtons`, `TileGrid` (grouped picture tiles, like the frame picker), `ImageStrip`, `Toggle`, `HelpTip`. Every one takes a required `helpId`.
+**Components** (in `src/components/`, demonstrated at `/kit`): collapsible `Section` with an `Advanced` sub-drop-down, `Slider` (shows its value, accepts typed numbers, one undo step per drag, and a small notch under the track marking the default value), `ColorSwatches` (swatches + picker + hex box), `SegmentedButtons`, `TileGrid` (grouped picture tiles, like the frame picker), `ImageStrip`, `Toggle`, `GradientEditor` (a bar showing the gradient with one marker per colour: drag to move, click to set colour and opacity, click the bar to add).
 
 **Motion:** 120 ms for hovers, 220 ms for opening and closing, all switched off for `prefers-reduced-motion`.
 
@@ -463,11 +462,7 @@ Type scale: 12 / 13 / 15 (body) / 18 (section titles) / 22 / 28 px.
 
 ## 11. Help tips ("?")
 
-- A `?` icon next to every **section heading** (and the top-bar items). *(Changed after Phase 1: controls inside a section — Brightness, Contrast, Thickness, the toolbar's zoom slider, Advanced… — no longer get their own `?`; it was too cluttered. Their help shows as a card when the control's name is hovered, or long-pressed on a touch screen, including any before/after picture the entry has (`src/components/LabelTip.tsx`), and every control still needs a help entry.)*
-- Hover (desktop) or tap (touch) opens a small card: one or two plain sentences + a before/after picture or short looping clip (WebP/MP4, small file size).
-- *(Phase 10: every help entry has a before/after picture, named after its id (`frame.thickness` → `public/help/frame-thickness.webp`), with alt text; the ones outside the Image and Effects sections are drawn by `scripts/help-token-pictures.ts` with the real renderer, and the help test fails if any is missing.)*
-- *(Phase 3: the Image section's before/after pictures are drawn by `npm run help-images` with the real image code, into `public/help/`. A test checks every help picture exists, and that every Image control has one. Phase 6: the same script draws a before/after for every effect and Effects control with the real renderer; the picker's effect names open those cards.)*
-- All help content lives in one file (e.g. `src/help/helpContent.ts`) keyed by control id, so it's easy to edit and spot missing entries. A test fails if a control has no help entry.
+*(Removed after owner feedback: the app is self-explanatory, so there are no `?` buttons, no hover or long-press help cards, no help text file and no before/after help pictures. Icon-only buttons keep a short plain name for screen readers and as a tooltip.)*
 
 ---
 

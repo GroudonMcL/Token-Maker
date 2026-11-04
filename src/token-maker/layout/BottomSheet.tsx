@@ -100,6 +100,11 @@ export function BottomSheet() {
     let before: SheetSnap | null = null;
     return toolStore.subscribe((state, prev) => {
       if (state.tool === prev.tool) return;
+      // A tool the tab turned on by itself (Background, Pop-out) leaves the sheet where it is.
+      if (state.autoTool || prev.autoTool) {
+        before = null;
+        return;
+      }
       if (prev.tool === 'move') {
         before = snapRef.current;
         setSnap('peek');
@@ -110,9 +115,11 @@ export function BottomSheet() {
     });
   }, []);
 
-  // Keep the active tab button visible in the scrolling tab row.
+  // Keep the active tab button visible in the scrolling tab row, and start a new tab at its top.
   useEffect(() => {
     sheetRef.current?.querySelector(`[data-tab="${tab}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const content = sheetRef.current?.querySelector('.bottom-sheet__content');
+    if (content) content.scrollTop = 0;
   }, [tab]);
 
   const active = nav.tab;
@@ -163,7 +170,7 @@ export function BottomSheet() {
         ))}
       </div>
       <div className="bottom-sheet__content" id={panelId} role="tabpanel" aria-label={active.label} hidden={snap === 'peek' && dragHeight === null}>
-        <TabSections tab={active} openSection={nav.openSection} setOpenSection={nav.setOpenSection} />
+        <TabSections tab={active} openSection={nav.openSection} setOpenSection={nav.setOpenSection} onNext={chooseTab} />
       </div>
     </div>
   );
