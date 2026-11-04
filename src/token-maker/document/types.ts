@@ -324,33 +324,15 @@ export type EffectKind =
   // Glows
   | 'innerGlow'
   | 'outerGlow'
-  // Elemental
-  | 'fire'
-  | 'frost'
-  | 'poison'
-  | 'lightning'
-  | 'necrotic'
-  | 'radiant'
-  // Condition looks
-  | 'bloodied'
-  | 'petrified'
-  | 'ethereal'
-  | 'frightened'
-  | 'poisoned'
-  | 'charmed'
-  | 'unconscious'
   // Atmosphere
   | 'mist'
-  | 'embers'
-  | 'sparkles'
   | 'smoke'
   // Overlays (the old Foreground section, v8)
   | 'vignette'
   | 'gradient'
   | 'edgeShadow'
-  | 'foliage'
-  | 'cobwebs'
-  // A picture: a built-in sprite or the user's own (v8)
+  // A picture: a built-in one or the user's own (v8). Since v12 the built-in pictures
+  // are also the elemental effects, conditions and more (render/pictureLibrary.ts).
   | 'picture';
 
 /** Where a picture (a picture effect or decoration) comes from: built in, or the user's own upload kept in IndexedDB. */

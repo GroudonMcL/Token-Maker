@@ -23,6 +23,7 @@
     "tm:label-sheet": "tsx scripts/token-maker/label-sheet.ts",
     "tm:raster-frames": "tsx scripts/token-maker/raster-frames.ts",
     "tm:frame-thumbs": "tsx scripts/token-maker/frame-thumbs.ts",
+    "tm:picture-thumbs": "tsx scripts/token-maker/picture-thumbs.ts",
     "fm:frame-sheet": "tsx scripts/frame-maker/frame-sheet.ts",
     "fm:effects-sheet": "tsx scripts/frame-maker/effects-sheet.ts",
     "fm:screenshots": "tsx scripts/frame-maker/screenshots.ts",

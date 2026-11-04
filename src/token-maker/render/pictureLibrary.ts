@@ -6,15 +6,30 @@
 
 import type { BlendMode, EffectPlacement, PictureSource, SnapPoint } from '../document/types';
 
+/** The effect picker's groups (document/defaults.ts lists them in order). */
+export type EffectPictureGroup = 'Elemental' | 'Conditions' | 'Atmosphere' | 'Overlays' | 'Pictures';
+
 /** How scattered copies of a picture effect turn. */
 export type PictureOrient = 'random' | 'outward' | 'upright';
 
 export interface LibraryEffectPicture {
   id: string;
   name: string;
+  /** Where the effect picker lists it. */
+  group: EffectPictureGroup;
   orient: PictureOrient;
-  /** Starting settings. */
-  defaults: { placement: EffectPlacement; color: string; blend: BlendMode; size: number; spread: number; intensity: number };
+  /** Starting settings. A picture with its own colours starts with `tint: false`; one stretched over the area with `layout: 'fill'`. */
+  defaults: {
+    placement: EffectPlacement;
+    color: string;
+    blend: BlendMode;
+    size: number;
+    spread: number;
+    intensity: number;
+    layout?: 'scatter' | 'fill';
+    tint?: boolean;
+    blur?: number;
+  };
   swatches: string[];
 }
 
@@ -36,7 +51,8 @@ const fx = (
   orient: PictureOrient,
   defaults: LibraryEffectPicture['defaults'],
   swatches: string[] = [],
-): LibraryEffectPicture => ({ id: `fx-${id}`, name, orient, defaults, swatches: [defaults.color, ...swatches.filter((c) => c !== defaults.color)] });
+  group: EffectPictureGroup = 'Pictures',
+): LibraryEffectPicture => ({ id: `fx-${id}`, name, group, orient, defaults, swatches: [defaults.color, ...swatches.filter((c) => c !== defaults.color)] });
 
 /** Picture effects: white sprites, coloured by the effect's colour and scattered round the token. */
 export const EFFECT_PICTURES: readonly LibraryEffectPicture[] = [
@@ -147,6 +163,8 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
 ];
 
 export const pictureUrl = (id: string) => `/pictures/${id}.webp`;
+/** A small copy for the pickers' tiles (scripts/token-maker/picture-thumbs.ts), so the panels don't load every full-size picture. */
+export const pictureThumbUrl = (id: string) => `/pictures/thumbs/${id}.webp`;
 
 /** The asset-store key of a picture. */
 export const pictureAssetId = (source: PictureSource) => `picture:${source.type}:${source.id}`;

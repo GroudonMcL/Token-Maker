@@ -191,24 +191,7 @@ export const EFFECTS: EffectInfo[] = [
   fx('outerGlow', 'Outer glow', 'Glows', { placement: 'border', intensity: 90, color: '#6fc3ff', size: 0.16, spread: 25 }, ['#ffd76a', '#ff6a3d', '#76ff4a', '#b06aff', '#ffffff']),
   fx('innerGlow', 'Inner glow', 'Glows', { placement: 'over', intensity: 80, color: '#6fc3ff', size: 0.16, spread: 15 }, ['#ffd76a', '#ff6a3d', '#76ff4a', '#b06aff', '#ffffff']),
 
-  fx('fire', 'Fire', 'Elemental', { placement: 'border', intensity: 95, color: '#ff7a1a', size: 0.2, spread: 70 }, ['#ff3b1a', '#ffb347', '#4aa8ff', '#76ff4a', '#c05aff']),
-  fx('frost', 'Frost', 'Elemental', { placement: 'border', intensity: 95, color: '#bfe8ff', size: 0.16, spread: 70 }, ['#ffffff', '#7fd0ff', '#9be7e0']),
-  fx('poison', 'Poison', 'Elemental', { placement: 'border', intensity: 95, color: '#7bd23a', size: 0.16, spread: 60 }, ['#a8e23a', '#3ad27b', '#b05ad2']),
-  fx('lightning', 'Lightning', 'Elemental', { placement: 'border', intensity: 95, color: '#8fd0ff', size: 0.18, spread: 50 }, ['#ffffff', '#ffe36a', '#c08aff', '#76ff4a']),
-  fx('necrotic', 'Necrotic', 'Elemental', { placement: 'border', intensity: 90, color: '#5b2a86', size: 0.2, spread: 60 }, ['#2a1a3a', '#3f8a4a', '#1a1a1a']),
-  fx('radiant', 'Radiant', 'Elemental', { placement: 'border', intensity: 90, color: '#ffd76a', size: 0.22, spread: 60 }, ['#fff4c4', '#ffffff', '#ffb347']),
-
-  fx('bloodied', 'Bloodied', 'Conditions', { placement: 'over', intensity: 85, color: '#8a0b0b', size: 0.2, spread: 50 }, ['#5a0606', '#3a6a1a', '#2a2a6a']),
-  fx('petrified', 'Petrified', 'Conditions', { placement: 'over', intensity: 90, color: '#8d8a84', size: 0.2, spread: 50 }, ['#a59a86', '#6c6f75', '#7a6a5a']),
-  fx('ethereal', 'Ethereal', 'Conditions', { placement: 'over', intensity: 65, color: '#cfe6ff', size: 0.2, spread: 50 }, ['#ffffff', '#b8f0e0', '#e0c8ff']),
-  fx('frightened', 'Frightened', 'Conditions', { placement: 'over', intensity: 80, color: '#4a4fa8', size: 0.2, spread: 50 }, ['#2a2a4a', '#5a2a6a', '#2a5a6a']),
-  fx('poisoned', 'Poisoned', 'Conditions', { placement: 'over', intensity: 80, color: '#7cc22a', size: 0.12, spread: 50 }, ['#a8d22a', '#4ac27c', '#9a5ad2']),
-  fx('charmed', 'Charmed', 'Conditions', { placement: 'over', intensity: 85, color: '#ff6fb5', size: 0.14, spread: 50 }, ['#ff3b6a', '#ff9ad2', '#c08aff']),
-  fx('unconscious', 'Unconscious', 'Conditions', { placement: 'over', intensity: 80, color: '#1a1d2e', size: 0.14, spread: 50 }, ['#000000', '#2a1a3a']),
-
   fx('mist', 'Mist', 'Atmosphere', { placement: 'over', intensity: 80, color: '#dfe6ef', size: 0.3, spread: 50 }, ['#ffffff', '#c9d6c0', '#b7c4e0', '#8a7aa0']),
-  fx('embers', 'Embers', 'Atmosphere', { placement: 'over', intensity: 90, color: '#ff8a2a', size: 0.12, spread: 50 }, ['#ffd24a', '#ff4a2a', '#76ff4a', '#6ac0ff']),
-  fx('sparkles', 'Sparkles', 'Atmosphere', { placement: 'over', intensity: 90, color: '#fff4c4', size: 0.12, spread: 50 }, ['#ffffff', '#ffd76a', '#9fd8ff', '#ff9ad2']),
   fx('smoke', 'Smoke', 'Atmosphere', { placement: 'over', intensity: 75, color: '#9a9ca6', size: 0.3, spread: 50 }, ['#d6d8de', '#4a4c56', '#2a2a30', '#76ff4a']),
 
   fx('vignette', 'Vignette', 'Overlays', { placement: 'over', intensity: 85, color: '#120c08', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, blend: 'multiply' }, ['#000000', '#1b2233', '#3a0d0d', '#ffffff'], ['color', 'spread', 'softness'], { spread: 'Size' }),
@@ -221,8 +204,6 @@ export const EFFECTS: EffectInfo[] = [
     ['gradient'],
   ),
   fx('edgeShadow', 'Edge shadow', 'Overlays', { placement: 'over', intensity: 80, color: '#000000', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, angle: 90, blend: 'multiply' }, ['#1b1020', '#0b1a2a', '#2a1a0b'], ['color', 'angle', 'spread', 'softness'], { spread: 'Reach', angle: 'Side' }),
-  fx('foliage', 'Foliage', 'Overlays', { placement: 'over', intensity: 100, color: '#2f5a24', size: OVERLAY_BASE_SIZE, spread: 35, angle: 90 }, ['#4d7a2a', '#7a8a2a', '#8a4a1a', '#3a3a2a'], ['color', 'angle', 'spread', 'size', 'seed'], { spread: 'Reach', size: 'Leaf size', angle: 'Grows from' }),
-  fx('cobwebs', 'Cobwebs', 'Overlays', { placement: 'over', intensity: 80, color: '#e8e8ea', size: OVERLAY_BASE_SIZE, spread: 40, angle: 225, blend: 'screen' }, ['#c9ccd6', '#9a9aa6'], ['color', 'angle', 'spread', 'size', 'seed'], { spread: 'Size', size: 'Web size', angle: 'Corner' }),
 
   // Picture effects use the settings of the picture picked (src/render/pictureLibrary.ts).
   fx('picture', 'Picture', 'Pictures', { placement: 'over', intensity: 90, color: '#ffffff', size: 0.3, spread: 40 }, ['#ffd76a', '#ff6a3d', '#6fc3ff', '#76ff4a', '#b06aff', '#8a0b0b'], ['picture', 'color', 'size', 'spread', 'seed'], { size: 'Picture size', spread: 'Amount' }),
@@ -258,7 +239,7 @@ export function newPictureEffect(image: PictureSource, id?: string): EffectLayer
   const lib = image.type === 'library' ? effectPicture(image.id) : undefined;
   // The user's own picture keeps its colours and fills the opening until they choose otherwise.
   if (!lib) return { ...e, image, tint: false, layout: 'fill', spread: 100, intensity: 100 };
-  return { ...e, image, ...lib.defaults };
+  return { ...e, image, ...lib.defaults, layout: lib.defaults.layout ?? 'scatter', tint: lib.defaults.tint ?? true, blur: lib.defaults.blur ?? 0 };
 }
 
 // ---- Phase 7: decorations ----
