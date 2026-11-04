@@ -2,7 +2,6 @@ import { Check, Eraser, ImagePlus, Paintbrush, ScanSearch, TriangleAlert, Undo2 
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useStore } from 'zustand';
 import type { ArtTransform, Decoration, LabelSettings, MaskStroke, PopOutStroke, TokenDocument } from '../document/types';
-import { HelpTip } from '../components/HelpTip';
 import { aiStore } from '../image/aiRemoval';
 import { requestFullArt, useProcessedVersion } from '../image/artWorker';
 import { maskOverlay, popOutOverlay } from '../image/maskOverlay';
@@ -276,7 +275,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
 
   const onPointerDown = (e: ReactPointerEvent) => {
     if (!art) return;
-    if ((e.target as HTMLElement).closest('.float-toolbar, .stage__handle, .stage__help, .stage__toolbar, .stage__view, button, a, input')) return;
+    if ((e.target as HTMLElement).closest('.float-toolbar, .stage__handle, .stage__toolbar, .stage__view, button, a, input')) return;
     // Middle button, or Space + drag: look around the zoomed view instead of moving the art.
     if (e.button === 1 || (e.button === 0 && spaceHeld)) {
       e.preventDefault();
@@ -747,16 +746,10 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
           View <span className="num">{Math.round(view.scale * 100)}%</span> · Reset
         </button>
       )}
-      {art && (
-        <div className="stage__help" data-control="stage" data-help-id="canvas.stage" style={{ bottom: reserveBottom + 12 }}>
-          <HelpTip id="canvas.stage" />
-        </div>
-      )}
       {!art && (
         <div className="stage__empty" style={{ top: cy, left: cx, maxWidth: Math.max(260, R * 1.5) }}>
           <p className="canvas-area__hint">
             <strong>Drop, paste or upload an image</strong>
-            <span>to start your token</span>
           </p>
           <div className="stage__empty-actions">
             <UploadButton>

@@ -1,7 +1,7 @@
 /*
  * Token Maker UI styles. All colours, fonts and sizes come from tokens.css.
  * Sections: base · buttons · layout (editor, top bar, canvas, panel, sheet,
- * bottom bar) · components · help tips · pages.
+ * bottom bar) · components · pages.
  */
 
 /* ---------- Base ---------- */
@@ -548,12 +548,6 @@ button:disabled {
   }
 }
 
-.stage__help {
-  position: absolute;
-  right: var(--space-3);
-  z-index: 1;
-}
-
 /* The welcome card, over the middle of the empty token (Phase 10). */
 .stage__empty {
   position: absolute;
@@ -607,7 +601,7 @@ button:disabled {
   color: var(--text);
   box-shadow: var(--shadow-lg);
   font-size: var(--text-sm);
-  animation: help-in var(--dur) var(--ease);
+  animation: fade-in var(--dur) var(--ease);
 }
 
 .toast[data-tone='error'] {
@@ -1823,71 +1817,7 @@ input[type='range']::-moz-range-thumb {
   transform: translateX(16px);
 }
 
-/* ---------- Help tips ---------- */
-.help-tip {
-  position: relative;
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-/* bigger invisible touch target */
-.help-tip::before {
-  content: '';
-  position: absolute;
-  inset: calc((20px - var(--hit)) / 2);
-}
-
-.help-tip:hover,
-.help-tip[aria-expanded='true'] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.help-card {
-  position: fixed;
-  z-index: 100;
-  display: grid;
-  gap: var(--space-1);
-  width: min(280px, calc(100vw - 16px));
-  padding: var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text);
-  box-shadow: var(--shadow-lg);
-  font-size: var(--text-sm);
-  line-height: 1.45;
-  animation: help-in var(--dur-fast) var(--ease);
-}
-
-.help-card__title {
-  font-size: var(--text-sm);
-}
-
-.help-card__text {
-  color: var(--text-muted);
-}
-
-.help-card__media {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin-top: var(--space-1);
-  border-radius: var(--radius-sm);
-}
-
-@keyframes help-in {
+@keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(-4px);

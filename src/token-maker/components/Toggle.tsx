@@ -1,39 +1,31 @@
 import { useId } from 'react';
-import type { HelpId } from '../help/helpContent';
-import { HelpTip } from './HelpTip';
-import { LabelTip } from './LabelTip';
 
-/** An on/off switch with its label. Top-bar switches add a "?" button; in the panel the label's hover card gives the help. */
+/** An on/off switch with its label. */
 export function Toggle({
   label,
-  helpId,
   checked,
   onChange,
   disabled,
   compact,
-  helpButton,
 }: {
   label: string;
-  helpId: HelpId;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   /** Hide the visible label (still read by screen readers). */
   compact?: boolean;
-  /** Show a "?" button (top bar). */
-  helpButton?: boolean;
 }) {
   const id = useId();
   return (
-    <div className="toggle" data-control="toggle" data-help-id={helpId}>
+    <div className="toggle" data-control="toggle">
       {compact ? (
         <label htmlFor={id} className="visually-hidden">
           {label}
         </label>
       ) : (
-        <LabelTip helpId={helpId} htmlFor={id} className="toggle__label">
+        <label htmlFor={id} className="toggle__label">
           {label}
-        </LabelTip>
+        </label>
       )}
       <button
         id={id}
@@ -46,7 +38,6 @@ export function Toggle({
       >
         <span className="toggle__thumb" />
       </button>
-      {helpButton && <HelpTip id={helpId} />}
     </div>
   );
 }

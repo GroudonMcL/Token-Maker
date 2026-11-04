@@ -16,7 +16,6 @@ export function TabSections({ tab, openSection, setOpenSection }: { tab: PanelTa
             key={sid}
             id={`section-${sid}`}
             title={s.title}
-            helpId={s.helpId}
             icon={s.icon}
             fixed={fixed}
             open={openSection === sid}

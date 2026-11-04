@@ -1,7 +1,6 @@
 import { FlipHorizontal2, FlipVertical2, Maximize, Minimize, RotateCcw, RotateCw, ZoomIn } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { artActions } from '../editor/artActions';
-import { getHelp, type HelpId } from '../help/helpContent';
 import { ZOOM_MAX } from '../render/geometry';
 import { commitDoc, useDoc } from '../state/tokenStore';
 
@@ -22,7 +21,7 @@ export function FloatingToolbar({ disabled }: { disabled: boolean }) {
   const value = Math.min(hi, Math.max(lo, toSlider(t.zoom)));
   return (
     <div className="float-toolbar" role="toolbar" aria-label="Image tools">
-      <div className="float-toolbar__zoom" data-control="zoom" data-help-id="toolbar.zoom">
+      <div className="float-toolbar__zoom" data-control="zoom">
         <ZoomIn size={16} aria-hidden="true" />
         <span className="slider__track">
           <input
@@ -51,40 +50,38 @@ export function FloatingToolbar({ disabled }: { disabled: boolean }) {
         </span>
       </div>
       <span className="float-toolbar__sep" aria-hidden="true" />
-      <ToolButton helpId="toolbar.rotate" disabled={disabled} icon={<RotateCw size={18} />} onClick={artActions.rotate90} />
-      <ToolButton helpId="toolbar.flip" disabled={disabled} icon={<FlipVertical2 size={18} />} pressed={t.flipX} onClick={artActions.flipX} />
-      <ToolButton helpId="toolbar.flipV" disabled={disabled} icon={<FlipHorizontal2 size={18} />} pressed={t.flipY} onClick={artActions.flipY} />
+      <ToolButton label="Rotate" disabled={disabled} icon={<RotateCw size={18} />} onClick={artActions.rotate90} />
+      <ToolButton label="Flip sideways" disabled={disabled} icon={<FlipVertical2 size={18} />} pressed={t.flipX} onClick={artActions.flipX} />
+      <ToolButton label="Flip upside down" disabled={disabled} icon={<FlipHorizontal2 size={18} />} pressed={t.flipY} onClick={artActions.flipY} />
       <span className="float-toolbar__sep" aria-hidden="true" />
-      <ToolButton helpId="toolbar.fit" disabled={disabled} icon={<Minimize size={18} />} onClick={artActions.fit} />
-      <ToolButton helpId="toolbar.fill" disabled={disabled} icon={<Maximize size={18} />} onClick={artActions.fill} />
-      <ToolButton helpId="toolbar.reset" disabled={disabled} icon={<RotateCcw size={18} />} onClick={artActions.reset} />
+      <ToolButton label="Fit" disabled={disabled} icon={<Minimize size={18} />} onClick={artActions.fit} />
+      <ToolButton label="Fill" disabled={disabled} icon={<Maximize size={18} />} onClick={artActions.fill} />
+      <ToolButton label="Reset" disabled={disabled} icon={<RotateCcw size={18} />} onClick={artActions.reset} />
     </div>
   );
 }
 
 function ToolButton({
-  helpId,
+  label,
   icon,
   disabled,
   pressed,
   onClick,
 }: {
-  helpId: HelpId;
+  label: string;
   icon: ReactNode;
   disabled?: boolean;
   pressed?: boolean;
   onClick?: () => void;
 }) {
-  const h = getHelp(helpId);
   return (
     <button
       type="button"
       className="icon-btn"
-      aria-label={h.title}
+      aria-label={label}
       aria-pressed={pressed}
-      title={`${h.title}: ${h.text}`}
+      title={label}
       data-control="tool"
-      data-help-id={helpId}
       disabled={disabled}
       onClick={onClick}
     >

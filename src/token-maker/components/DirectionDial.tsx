@@ -1,5 +1,4 @@
 import { useId, useRef, type KeyboardEvent, type PointerEvent } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 import { sideName } from './sides';
 
@@ -12,7 +11,6 @@ import { sideName } from './sides';
  */
 export function DirectionDial({
   label,
-  helpId,
   value,
   onChange,
   onCommit,
@@ -20,7 +18,6 @@ export function DirectionDial({
   describe = (d) => `from ${sideName(d)}`,
 }: {
   label: string;
-  helpId: HelpId;
   value: number;
   onChange: (deg: number) => void;
   onCommit?: (deg: number) => void;
@@ -55,8 +52,8 @@ export function DirectionDial({
 
   const rad = (value * Math.PI) / 180;
   return (
-    <div className="dial" data-control="dial" data-help-id={helpId}>
-      <ControlLabel id={labelId} label={label} helpId={helpId} aside={<span className="dial__value">{describe(value)}</span>} />
+    <div className="dial" data-control="dial">
+      <ControlLabel id={labelId} label={label} aside={<span className="dial__value">{describe(value)}</span>} />
       <div
         ref={ref}
         className="dial__ring"

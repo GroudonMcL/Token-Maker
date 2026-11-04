@@ -35,14 +35,13 @@ export function BackgroundRemovalControls() {
   return (
     <div className="control-group">
       <h4 className="control-group__title">Background removal</h4>
-      <Toggle label="Remove background" helpId="image.removeBg" checked={removal.enabled} onChange={(v) => setRemoval({ enabled: v })} />
+      <Toggle label="Remove background" checked={removal.enabled} onChange={(v) => setRemoval({ enabled: v })} />
       {removal.enabled && (
         <>
-          <SegmentedButtons label="How" helpId="background.removeMethod" value={removal.method} options={METHODS} onChange={(method) => setRemoval({ method })} />
+          <SegmentedButtons label="How" value={removal.method} options={METHODS} onChange={(method) => setRemoval({ method })} />
           {removal.method === 'colour' ? <FlatColour removal={removal} art={art} /> : <AiCutOut assetId={assetId} art={art} />}
           <Slider
             label="Edge softness"
-            helpId="image.softness"
             defaultValue={DEFAULT_REMOVAL.softness}
             min={0}
             max={100}
@@ -67,8 +66,8 @@ function FlatColour({ removal, art }: { removal: BackgroundRemoval; art: RenderS
   const colour = removal.color ?? detected ?? '#ffffff';
   return (
     <>
-      <div className="control" data-control="bg-colour" data-help-id="image.bgColour">
-        <ControlLabel label="Background colour" helpId="image.bgColour" />
+      <div className="control" data-control="bg-colour">
+        <ControlLabel label="Background colour" />
         <div className="bg-colour">
           <span className="bg-colour__swatch" style={{ background: colour }} aria-hidden="true" />
           <span className="bg-colour__text">
@@ -89,7 +88,6 @@ function FlatColour({ removal, art }: { removal: BackgroundRemoval; art: RenderS
       </div>
       <Slider
         label="Intensity"
-        helpId="image.intensity"
         defaultValue={DEFAULT_REMOVAL.intensity}
         min={0}
         max={100}
@@ -97,7 +95,7 @@ function FlatColour({ removal, art }: { removal: BackgroundRemoval; art: RenderS
         onChange={(v) => setRemoval({ intensity: v }, true)}
         onCommit={commitDoc}
       />
-      <Toggle label="Remove enclosed gaps too" helpId="image.enclosed" checked={removal.enclosed} onChange={(enclosed) => setRemoval({ enclosed })} />
+      <Toggle label="Remove enclosed gaps too" checked={removal.enclosed} onChange={(enclosed) => setRemoval({ enclosed })} />
     </>
   );
 }
@@ -110,8 +108,8 @@ function AiCutOut({ assetId, art }: { assetId: string; art: RenderSource | undef
     void forgetAiMask(assetId).then(() => runAiRemoval(assetId, art));
   };
   return (
-    <div className="control" data-control="ai-removal" data-help-id="background.aiRemove">
-      <ControlLabel label="AI cut-out" helpId="background.aiRemove" />
+    <div className="control" data-control="ai-removal">
+      <ControlLabel label="AI cut-out" />
       {status?.state === 'working' ? (
         <>
           <p className="control__hint" role="status">

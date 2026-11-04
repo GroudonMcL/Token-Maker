@@ -16,8 +16,8 @@ export function ArtSearch() {
   const [noAi, setNoAi] = useState(true);
   const term = artSearchTerm(text, addExtra);
   return (
-    <div className="control" data-control="art-search" data-help-id="import.search">
-      <ControlLabel htmlFor={id} label="Find art online" helpId="import.search" />
+    <div className="control" data-control="art-search">
+      <ControlLabel htmlFor={id} label="Find art online" />
       <input
         id={id}
         className="text-input"
@@ -33,8 +33,8 @@ export function ArtSearch() {
           window.open(artSearchUrl(ART_SEARCH_SITES[0]!, term, noAi), '_blank', 'noopener,noreferrer');
         }}
       />
-      <Toggle label={`Add “${ART_SEARCH_EXTRA}”`} helpId="import.search" checked={addExtra} onChange={setAddExtra} />
-      <Toggle label="Leave out AI art" helpId="import.noAi" checked={noAi} onChange={setNoAi} />
+      <Toggle label={`Add “${ART_SEARCH_EXTRA}”`} checked={addExtra} onChange={setAddExtra} />
+      <Toggle label="Leave out AI art" checked={noAi} onChange={setNoAi} />
       <div className="art-search__sites" role="group" aria-label="Search on">
         {ART_SEARCH_SITES.map((site) =>
           term ? (

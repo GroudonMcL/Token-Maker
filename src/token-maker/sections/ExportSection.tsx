@@ -35,7 +35,6 @@ export function ExportSection() {
     <>
       <SegmentedButtons
         label="Format"
-        helpId="export.format"
         value={s.format}
         onChange={(format: ExportFormat) => setExportSettings({ format })}
         options={FORMAT_IDS.map((f) => ({ value: f, label: FORMATS[f].label }))}
@@ -47,7 +46,6 @@ export function ExportSection() {
 
       <SegmentedButtons
         label="Pixels per square"
-        helpId="export.resolution"
         value={pxChoice}
         onChange={(v: PxChoice) => {
           setCustomPicked(v === 'custom');
@@ -58,7 +56,6 @@ export function ExportSection() {
       {pxChoice === 'custom' && (
         <Slider
           label="Custom pixels per square"
-          helpId="export.customPx"
           min={MIN_CUSTOM_PX}
           max={MAX_CUSTOM_PX}
           step={1}
@@ -76,8 +73,8 @@ export function ExportSection() {
         {capped ? ` — capped at the largest size, ${side} px.` : '.'}
       </p>
 
-      <div className="control" data-control="file-name" data-help-id="export.fileName">
-        <ControlLabel htmlFor={fileId} label="File name" helpId="export.fileName" />
+      <div className="control" data-control="file-name">
+        <ControlLabel htmlFor={fileId} label="File name" />
         <div className="file-name">
           <input
             id={fileId}
@@ -100,7 +97,7 @@ export function ExportSection() {
           <Download size={18} aria-hidden="true" />
           Download {info.label}
         </button>
-        <div data-control="copy" data-help-id="export.copy">
+        <div data-control="copy">
           <button type="button" className="btn btn--wide" onClick={copyCurrentToken} disabled={!hasArt || busy}>
             <ClipboardCopy size={18} aria-hidden="true" />
             Copy to clipboard
@@ -108,7 +105,7 @@ export function ExportSection() {
           {!canCopyImages() && <p className="control__hint">This browser can&apos;t copy pictures; use Download instead.</p>}
         </div>
         {batchOn && (
-          <div data-control="export-all" data-help-id="export.all">
+          <div data-control="export-all">
             <button type="button" className="btn btn--primary btn--wide" onClick={exportAllTokens} disabled={!batchCount || busy}>
               <FolderArchive size={18} aria-hidden="true" />
               Export all as ZIP ({batchCount})
@@ -118,10 +115,9 @@ export function ExportSection() {
       </div>
 
       {info.lossy && (
-        <Advanced helpId="export.advanced">
+        <Advanced>
           <Slider
             label="Quality"
-            helpId="export.quality"
             min={1}
             max={100}
             unit="%"

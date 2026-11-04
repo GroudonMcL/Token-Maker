@@ -61,7 +61,7 @@ export function LabelSection() {
 
   if (!label) {
     return (
-      <div className="control" data-control="label-add" data-help-id="label.add">
+      <div className="control" data-control="label-add">
         <button type="button" className="btn btn--wide" onClick={() => setLabelOn(true)}>
           Add a label
         </button>
@@ -74,10 +74,9 @@ export function LabelSection() {
   const set = (patch: Partial<LabelSettings>, transient = false) => updateLabel(patch, transient);
   return (
     <>
-      <Toggle label="Show a label" helpId="label.add" checked onChange={() => setLabelOn(false)} />
+      <Toggle label="Show a label" checked onChange={() => setLabelOn(false)} />
       <TileGrid
         label="Shape"
-        helpId="label.shape"
         value={l.shape}
         onChange={(v) => setLabelShape(v as LabelShape)}
         tiles={LABEL_SHAPES.map((s) => ({ id: s.id, label: s.name, preview: <ShapeIcon shape={s.id} /> }))}
@@ -86,7 +85,6 @@ export function LabelSection() {
       <FontPicker value={l.font} sample={labelText({ label: l, name })} />
       <Slider
         label="Text size"
-        helpId="label.size"
         unit="% of a square"
         min={4}
         max={40}
@@ -96,9 +94,9 @@ export function LabelSection() {
         onChange={(v) => set({ size: fromPct(v) }, true)}
         onCommit={commitDoc}
       />
-      <ColorSwatches label="Text colour" helpId="label.color" value={l.color} swatches={TEXT_SWATCHES} onChange={(color) => set({ color }, true)} onCommit={commitDoc} />
-      <div className="control control--row" data-control="label-style" data-help-id="label.style">
-        <ControlLabel label="Style" helpId="label.style" />
+      <ColorSwatches label="Text colour" value={l.color} swatches={TEXT_SWATCHES} onChange={(color) => set({ color }, true)} onCommit={commitDoc} />
+      <div className="control control--row" data-control="label-style">
+        <ControlLabel label="Style" />
         <div className="label-style">
           <button type="button" className="icon-btn" aria-pressed={l.bold} aria-label="Bold" onClick={() => set({ bold: !l.bold })}>
             <Bold size={16} aria-hidden="true" />
@@ -110,7 +108,6 @@ export function LabelSection() {
       </div>
       <SegmentedButtons
         label="Alignment"
-        helpId="label.align"
         value={l.align}
         onChange={(align) => set({ align })}
         options={[
@@ -121,7 +118,6 @@ export function LabelSection() {
       />
       <SegmentedButtons
         label="Position"
-        helpId="label.place"
         value={l.place}
         onChange={setLabelPlace}
         options={[
@@ -133,7 +129,6 @@ export function LabelSection() {
       {l.place === 'free' && ring && (
         <Slider
           label="Round the ring"
-          helpId="label.angle"
           unit="°"
           min={0}
           max={360}
@@ -147,7 +142,6 @@ export function LabelSection() {
         <>
           <Slider
             label="Sideways"
-            helpId="label.x"
             unit="%"
             min={-100}
             max={100}
@@ -158,7 +152,6 @@ export function LabelSection() {
           />
           <Slider
             label="Up or down"
-            helpId="label.y"
             unit="%"
             min={-100}
             max={100}
@@ -170,7 +163,6 @@ export function LabelSection() {
           <AnchorPicker value={l.anchor} />
           <Slider
             label="Rotation"
-            helpId="label.rotation"
             unit="°"
             min={-180}
             max={180}
@@ -185,7 +177,6 @@ export function LabelSection() {
       {ring ? (
         <Slider
           label="Most of the ring it covers"
-          helpId="label.arc"
           unit="°"
           min={30}
           max={360}
@@ -198,7 +189,6 @@ export function LabelSection() {
         <>
           <Slider
             label="Width"
-            helpId="label.width"
             unit="% of a square"
             min={20}
             max={200}
@@ -210,7 +200,6 @@ export function LabelSection() {
           {l.shape === 'banner' && (
             <Slider
               label="Bend"
-              helpId="label.curve"
               min={-100}
               max={100}
               value={Math.round(l.curve)}
@@ -222,7 +211,6 @@ export function LabelSection() {
           {l.shape === 'box' && (
             <SegmentedButtons
               label="Corners"
-              helpId="label.corners"
               value={l.corners}
               onChange={(corners) => set({ corners })}
               options={[
@@ -233,10 +221,9 @@ export function LabelSection() {
           )}
           {l.shape !== 'plain' && (
             <>
-          <ColorSwatches label="Shape colour" helpId="label.fill" value={l.fill} swatches={FILL_SWATCHES} onChange={(fill) => set({ fill }, true)} onCommit={commitDoc} />
+          <ColorSwatches label="Shape colour" value={l.fill} swatches={FILL_SWATCHES} onChange={(fill) => set({ fill }, true)} onCommit={commitDoc} />
           <Slider
             label="Shape opacity"
-            helpId="label.opacity"
             unit="%"
             min={0}
             max={100}
@@ -247,7 +234,6 @@ export function LabelSection() {
           />
           <Slider
             label="Shape outline"
-            helpId="label.outline"
             unit="% of a square"
             min={0}
             max={6}
@@ -260,7 +246,6 @@ export function LabelSection() {
           {l.outline.width > 0 && (
             <ColorSwatches
               label="Outline colour"
-              helpId="label.outlineColor"
               value={l.outline.color}
               swatches={LINE_SWATCHES}
               onChange={(color) => set({ outline: { ...l.outline, color } }, true)}
@@ -273,7 +258,6 @@ export function LabelSection() {
       )}
       <Slider
         label="Text outline"
-        helpId="label.textOutline"
         unit="% of a square"
         min={0}
         max={6}
@@ -286,14 +270,13 @@ export function LabelSection() {
       {l.textOutline.width > 0 && (
         <ColorSwatches
           label="Text outline colour"
-          helpId="label.textOutlineColor"
           value={l.textOutline.color}
           swatches={LINE_SWATCHES}
           onChange={(color) => set({ textOutline: { ...l.textOutline, color } }, true)}
           onCommit={commitDoc}
         />
       )}
-      <Toggle label="Shrink long names to fit" helpId="label.shrink" checked={l.shrinkToFit} onChange={(shrinkToFit) => set({ shrinkToFit })} />
+      <Toggle label="Shrink long names to fit" checked={l.shrinkToFit} onChange={(shrinkToFit) => set({ shrinkToFit })} />
     </>
   );
 }
@@ -315,8 +298,8 @@ const ANCHORS: { value: LabelAnchor; label: string }[] = [
 function AnchorPicker({ value }: { value: LabelAnchor }) {
   const labelId = useId();
   return (
-    <div className="control" data-control="label-anchor" data-help-id="label.anchor">
-      <ControlLabel id={labelId} label="Anchor point" helpId="label.anchor" />
+    <div className="control" data-control="label-anchor">
+      <ControlLabel id={labelId} label="Anchor point" />
       <div className="snap-grid" role="radiogroup" aria-labelledby={labelId}>
         {ANCHORS.map((a) => (
           <button key={a.value} type="button" role="radio" aria-checked={value === a.value} className="snap-grid__btn" data-anchor={a.value} title={a.label} onClick={() => setLabelAnchor(a.value)}>
@@ -333,8 +316,8 @@ function LabelTextInput({ text, name }: { text: string | null; name: string }) {
   const id = useId();
   const [editing, setEditing] = useState<string | null>(null);
   return (
-    <div className="control" data-control="label-text" data-help-id="label.text">
-      <ControlLabel htmlFor={id} label="Text" helpId="label.text" />
+    <div className="control" data-control="label-text">
+      <ControlLabel htmlFor={id} label="Text" />
       <input
         id={id}
         className="text-input"
@@ -383,8 +366,8 @@ function FontPicker({ value, sample }: { value: string; sample: string }) {
   };
   const own = isUploadedFont(value) && !missing;
   return (
-    <div className="control font-picker" data-control="label-font" data-help-id="label.font">
-      <ControlLabel id={labelId} label="Font" helpId="label.font" aside={fontInfo(value)?.name ?? options.find((o) => o.id === value)?.name ?? 'Missing font'} />
+    <div className="control font-picker" data-control="label-font">
+      <ControlLabel id={labelId} label="Font" aside={fontInfo(value)?.name ?? options.find((o) => o.id === value)?.name ?? 'Missing font'} />
       <div className="font-picker__list" role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown}>
         {options.map((o, i) => [
           i === FONTS.length && (
@@ -407,7 +390,7 @@ function FontPicker({ value, sample }: { value: string; sample: string }) {
         ])}
       </div>
       {missing && <p className="control__hint">This label's font isn't saved in this browser, so a stand-in is used. Upload it again or pick another.</p>}
-      <div className="control--row font-picker__actions" data-control="label-font-upload" data-help-id="label.uploadFont">
+      <div className="control--row font-picker__actions" data-control="label-font-upload">
         <button type="button" className="btn btn--small" disabled={busy} onClick={() => input.current?.click()}>
           <Upload size={14} aria-hidden="true" />
           Upload a font

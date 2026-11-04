@@ -2,15 +2,10 @@ import 'fake-indexeddb/auto';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { newLabel, RING_TEXT_STYLE } from '../document/defaults';
 import { FONTS } from '../fonts/catalog';
-import { helpContent } from '../help/helpContent';
 import { getDoc, resetDoc, undo, updateDoc } from '../state/tokenStore';
 import { LabelSection } from './LabelSection';
 
-const helpIds = (container: HTMLElement) => {
-  const ids = [...container.querySelectorAll('[data-control]')].map((el) => el.getAttribute('data-help-id'));
-  expect(ids.length).toBeGreaterThan(5);
-  for (const id of ids) expect(Object.keys(helpContent)).toContain(id);
-};
+const controlsShown = (container: HTMLElement) => expect(container.querySelectorAll('[data-control]').length).toBeGreaterThan(5);
 
 beforeEach(() => resetDoc());
 
@@ -40,7 +35,7 @@ describe('Label section', () => {
     fireEvent.click(shapes.getByRole('radio', { name: 'Box' }));
     expect(getDoc().label).toMatchObject({ shape: 'box', color: newLabel().color });
     expect(screen.getByRole('radiogroup', { name: 'Corners' })).toBeInTheDocument();
-    helpIds(container);
+    controlsShown(container);
   });
 
   it('the text box sets the words; emptied, the label shows the name again', () => {

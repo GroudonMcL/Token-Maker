@@ -50,16 +50,6 @@ test.describe('app shell', () => {
     expect(tab.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('help tips open by click or tap and close with Escape', async ({ page, isMobile }) => {
-    await page.goto('/token-maker/');
-    const tip = isMobile
-      ? page.getByRole('button', { name: 'Help: Batch mode' })
-      : page.getByRole('complementary').getByRole('button', { name: 'Help: Import' });
-    await tip.click();
-    await expect(page.getByRole('tooltip')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('tooltip')).toBeHidden();
-  });
 
   test('the ad slot is off', async ({ page }) => {
     await page.goto('/token-maker/');

@@ -1,5 +1,4 @@
 import { useId, useState } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 import { useRovingRadio } from './useRovingRadio';
 
@@ -8,14 +7,12 @@ const HEX = /^#[0-9a-f]{6}$/i;
 /** Ready-made colour swatches plus a picker and hex box for any colour. */
 export function ColorSwatches({
   label,
-  helpId,
   value,
   swatches,
   onChange,
   onCommit,
 }: {
   label: string;
-  helpId: HelpId;
   value: string;
   swatches: readonly string[];
   onChange: (hex: string) => void;
@@ -43,8 +40,8 @@ export function ColorSwatches({
   };
 
   return (
-    <div className="swatches" data-control="swatches" data-help-id={helpId}>
-      <ControlLabel id={labelId} label={label} helpId={helpId} />
+    <div className="swatches" data-control="swatches">
+      <ControlLabel id={labelId} label={label} />
       <div className="swatches__row">
         <div className="swatches__list" role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown}>
           {swatches.map((s, i) => (

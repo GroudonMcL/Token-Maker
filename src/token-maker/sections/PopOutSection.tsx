@@ -28,8 +28,8 @@ export function PopOutSection() {
       <p className="control__hint">
         Zoom or move the art so the horns, head or weapon reach over the frame, then paint over them. Removing the background first keeps it from popping out too.
       </p>
-      <div className="control" data-control="popout-brush" data-help-id="popout.brush">
-        <ControlLabel label="Pop-out brush" helpId="popout.brush" />
+      <div className="control" data-control="popout-brush">
+        <ControlLabel label="Pop-out brush" />
         <button type="button" className={`btn btn--wide${on ? ' btn--primary' : ''}`} aria-pressed={on} onClick={() => setTool(on ? 'move' : 'popout')}>
           <Paintbrush size={18} aria-hidden="true" />
           {on ? 'Painting: paint over the parts to pop out' : 'Paint pop-out'}
@@ -37,7 +37,6 @@ export function PopOutSection() {
       </div>
       <SegmentedButtons
         label="Pop-out brush does"
-        helpId="popout.mode"
         value={mode}
         onChange={(m) => setBrush({ popOutMode: m })}
         options={[
@@ -47,7 +46,6 @@ export function PopOutSection() {
       />
       <Slider
         label="Pop-out brush size"
-        helpId="popout.size"
         unit="px"
         defaultValue={TOOL_DEFAULTS.brushSize}
         min={BRUSH_MIN}
@@ -55,12 +53,11 @@ export function PopOutSection() {
         value={size}
         onChange={(v) => setBrush({ brushSize: v })}
       />
-      <Toggle label="Show the pop-out mask" helpId="popout.show" checked={showMask} onChange={(v) => setBrush({ showPopOut: v })} />
-      <Toggle label="Pop-out on" helpId="popout.enabled" checked={popOut.enabled} onChange={(enabled) => setPopOut({ enabled })} />
-      <Advanced helpId="popout.advanced">
+      <Toggle label="Show the pop-out mask" checked={showMask} onChange={(v) => setBrush({ showPopOut: v })} />
+      <Toggle label="Pop-out on" checked={popOut.enabled} onChange={(enabled) => setPopOut({ enabled })} />
+      <Advanced>
         <Slider
           label="Pop-out brush softness"
-          helpId="popout.softness"
           unit="%"
           defaultValue={TOOL_DEFAULTS.brushSoftness}
           min={0}
@@ -68,7 +65,7 @@ export function PopOutSection() {
           value={softness}
           onChange={(v) => setBrush({ brushSoftness: v })}
         />
-        <Toggle label="Pen pressure" helpId="image.pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
+        <Toggle label="Pen pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
       </Advanced>
       <button type="button" className="btn btn--ghost btn--small" disabled={!popOut.strokes.length} onClick={() => setPopOut({ strokes: [] })}>
         <RotateCcw size={16} aria-hidden="true" />

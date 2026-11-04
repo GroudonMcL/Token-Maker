@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { useStore } from 'zustand';
-import { ColorSwatches, HelpTip, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
+import { ColorSwatches, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
 import { createHistoryStore } from '../state/history';
 
 describe('Slider', () => {
@@ -11,7 +11,6 @@ describe('Slider', () => {
     return (
       <Slider
         label="Brightness"
-        helpId="kit.slider"
         min={-100}
         max={100}
         value={v}
@@ -46,12 +45,12 @@ describe('Slider', () => {
   });
 
   it('shows the current value', () => {
-    render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} onChange={() => {}} />);
+    render(<Slider label="Hue" min={0} max={10} value={7} onChange={() => {}} />);
     expect(screen.getByRole('textbox', { name: 'Hue value' })).toHaveValue('7');
   });
 
   it('marks the default value with a notch, and has no "?" button of its own', () => {
-    const { container } = render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} defaultValue={5} onChange={() => {}} />);
+    const { container } = render(<Slider label="Hue" min={0} max={10} value={7} defaultValue={5} onChange={() => {}} />);
     expect(container.querySelector('.slider__notch')).toHaveStyle({ left: 'calc(var(--thumb) / 2 + (100% - var(--thumb)) * 0.5)' });
     // Its only button is the reset button.
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Reset Hue']);
@@ -61,7 +60,7 @@ describe('Slider', () => {
     const store = createHistoryStore(7);
     const Wired = () => {
       const v = useStore(store, (s) => s.present);
-      return <Slider label="Hue" helpId="kit.slider" min={0} max={10} value={v} defaultValue={5} onChange={(x) => store.getState().set(x, { transient: true })} onCommit={() => store.getState().commit()} />;
+      return <Slider label="Hue" min={0} max={10} value={v} defaultValue={5} onChange={(x) => store.getState().set(x, { transient: true })} onCommit={() => store.getState().commit()} />;
     };
     render(<Wired />);
     await userEvent.click(screen.getByRole('button', { name: 'Reset Hue' }));
@@ -71,7 +70,7 @@ describe('Slider', () => {
   });
 
   it('has no reset button without a default value', () => {
-    render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} onChange={() => {}} />);
+    render(<Slider label="Hue" min={0} max={10} value={7} onChange={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 });
@@ -79,7 +78,7 @@ describe('Slider', () => {
 describe('Section', () => {
   it('collapses and expands, with a closed Advanced drop-down', async () => {
     render(
-      <Section title="Image" helpId="section.image" advanced={<p>Hue stuff</p>}>
+      <Section title="Image" advanced={<p>Hue stuff</p>}>
         <p>Main stuff</p>
       </Section>,
     );
@@ -101,7 +100,6 @@ describe('SegmentedButtons', () => {
       return (
         <SegmentedButtons
           label="Shape"
-          helpId="kit.segmented"
           value={v}
           onChange={setV}
           options={[
@@ -124,7 +122,7 @@ describe('SegmentedButtons', () => {
 describe('ColorSwatches', () => {
   it('picks a swatch and accepts a typed hex code', async () => {
     const onChange = vi.fn();
-    render(<ColorSwatches label="Colour" helpId="kit.swatches" value="#111111" swatches={['#111111', '#222222']} onChange={onChange} />);
+    render(<ColorSwatches label="Colour" value="#111111" swatches={['#111111', '#222222']} onChange={onChange} />);
     await userEvent.click(screen.getByRole('radio', { name: '#222222' }));
     expect(onChange).toHaveBeenLastCalledWith('#222222');
     const hex = screen.getByRole('textbox', { name: 'Colour hex code' });
@@ -140,7 +138,6 @@ describe('TileGrid and ImageStrip', () => {
     render(
       <TileGrid
         label="Frame"
-        helpId="kit.tiles"
         value="a"
         onChange={onChange}
         tiles={[
@@ -155,7 +152,7 @@ describe('TileGrid and ImageStrip', () => {
   });
 
   it('shows an empty message with no images', () => {
-    render(<ImageStrip label="Images" helpId="kit.strip" images={[]} value={undefined} onChange={() => {}} emptyText="Nothing here" />);
+    render(<ImageStrip label="Images" images={[]} value={undefined} onChange={() => {}} emptyText="Nothing here" />);
     expect(screen.getByText('Nothing here')).toBeInTheDocument();
   });
 });
@@ -163,25 +160,9 @@ describe('TileGrid and ImageStrip', () => {
 describe('Toggle', () => {
   it('is a switch', async () => {
     const onChange = vi.fn();
-    render(<Toggle label="Batch" helpId="topbar.batch" checked={false} onChange={onChange} />);
+    render(<Toggle label="Batch" checked={false} onChange={onChange} />);
     await userEvent.click(screen.getByRole('switch', { name: 'Batch' }));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 });
 
-describe('HelpTip', () => {
-  it('opens on click, describes the button for screen readers, and closes with Escape', async () => {
-    render(<HelpTip id="section.image" />);
-    const btn = screen.getByRole('button', { name: 'Help: Colour' });
-    expect(btn).toHaveAccessibleDescription(/Adjust brightness/);
-    expect(screen.getByRole('tooltip', { hidden: true })).not.toBeVisible();
-    await userEvent.click(btn);
-    expect(btn).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('tooltip')).toBeVisible();
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    });
-    expect(btn).toHaveAttribute('aria-expanded', 'false');
-    expect(btn).toHaveFocus();
-  });
-});

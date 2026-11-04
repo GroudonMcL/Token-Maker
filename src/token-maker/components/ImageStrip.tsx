@@ -1,5 +1,4 @@
 import { useId, useState } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 import { useRovingRadio } from './useRovingRadio';
 
@@ -18,7 +17,6 @@ export interface StripImage {
  */
 export function ImageStrip({
   label,
-  helpId,
   images,
   value,
   onChange,
@@ -27,7 +25,6 @@ export function ImageStrip({
   busyId,
 }: {
   label: string;
-  helpId: HelpId;
   images: readonly StripImage[];
   value: string | undefined;
   onChange: (id: string) => void;
@@ -47,8 +44,8 @@ export function ImageStrip({
   );
   const hide = (id: string) => setHidden((s) => new Set(s).add(id));
   return (
-    <div className="image-strip" data-control="strip" data-help-id={helpId}>
-      <ControlLabel id={labelId} label={label} helpId={helpId} />
+    <div className="image-strip" data-control="strip">
+      <ControlLabel id={labelId} label={label} />
       {visible.length === 0 ? (
         <p className="image-strip__empty">{emptyText}</p>
       ) : (

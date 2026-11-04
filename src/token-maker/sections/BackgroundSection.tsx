@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { ColorSwatches, GradientEditor, SegmentedButtons, Slider, TileGrid } from '../components';
 import { DEFAULT_BACKGROUND } from '../document/defaults';
 import type { BackgroundAdjustments, BackgroundKind, BackgroundLayer } from '../document/types';
-import type { HelpId } from '../help/helpContent';
 import { setTool, useTool } from '../editor/tools';
 import { UploadButton } from '../editor/UploadButton';
 import { BACKGROUND_LIBRARY, libraryBackground, libraryThumbUrl } from '../render/backgroundLibrary';
@@ -17,12 +16,12 @@ const COLOR_SWATCHES = ['#1d1f27', '#3a4a5c', '#2b3a22', '#4a2f22', '#5b2d7a', '
 type Source = 'library' | 'asset' | 'art';
 
 /** The picture's colour sliders (v11). */
-const COLOUR_SLIDERS: { key: keyof BackgroundAdjustments; label: string; helpId: HelpId; min: number; max: number; unit?: string }[] = [
-  { key: 'brightness', label: 'Brightness', helpId: 'background.brightness', min: -100, max: 100 },
-  { key: 'contrast', label: 'Contrast', helpId: 'background.contrast', min: -100, max: 100 },
-  { key: 'saturation', label: 'Saturation', helpId: 'background.saturation', min: -100, max: 100 },
-  { key: 'hue', label: 'Hue', helpId: 'background.hue', min: -180, max: 180, unit: '°' },
-  { key: 'temperature', label: 'Temperature', helpId: 'background.temperature', min: -100, max: 100 },
+const COLOUR_SLIDERS: { key: keyof BackgroundAdjustments; label: string; min: number; max: number; unit?: string }[] = [
+  { key: 'brightness', label: 'Brightness', min: -100, max: 100 },
+  { key: 'contrast', label: 'Contrast', min: -100, max: 100 },
+  { key: 'saturation', label: 'Saturation', min: -100, max: 100 },
+  { key: 'hue', label: 'Hue', min: -180, max: 180, unit: '°' },
+  { key: 'temperature', label: 'Temperature', min: -100, max: 100 },
 ];
 
 const setBackground = (patch: Partial<BackgroundLayer>, transient = false) =>
@@ -49,7 +48,6 @@ export function BackgroundSection() {
     <>
       <SegmentedButtons
         label="Background"
-        helpId="background.kind"
         value={bg.kind}
         onChange={(kind: BackgroundKind) => setBackground({ kind })}
         options={[
@@ -65,7 +63,6 @@ export function BackgroundSection() {
       {bg.kind === 'color' && (
         <ColorSwatches
           label="Colour"
-          helpId="background.color"
           value={bg.color}
           swatches={COLOR_SWATCHES}
           onChange={(color) => setBackground({ color }, true)}
@@ -78,7 +75,6 @@ export function BackgroundSection() {
           value={bg.gradient}
           onChange={(gradient, transient) => setBackground({ gradient }, transient)}
           onCommit={commitDoc}
-          helpIds={{ type: 'background.gradientType', angle: 'background.gradientAngle', colors: 'background.gradientColors', stops: 'background.gradientStops' }}
         />
       )}
 
@@ -86,7 +82,6 @@ export function BackgroundSection() {
         <>
           <SegmentedButtons
             label="Picture from"
-            helpId="background.source"
             value={source}
             onChange={(s: Source) => {
               setChosen(s);
@@ -103,7 +98,6 @@ export function BackgroundSection() {
           {source === 'library' && (
             <TileGrid
               label="Built-in pictures"
-              helpId="background.library"
               value={bg.image?.type === 'library' ? bg.image.id : ''}
               onChange={pickLibrary}
               tiles={BACKGROUND_LIBRARY.map((b) => ({
@@ -117,7 +111,7 @@ export function BackgroundSection() {
           {source === 'library' && <LibraryCredit id={bg.image?.type === 'library' ? bg.image.id : null} />}
           {source === 'asset' && (
             <>
-              <div className="control" data-control="background-upload" data-help-id="background.upload">
+              <div className="control" data-control="background-upload">
                 <UploadButton className="btn btn--wide" target="background">
                   <Upload size={18} aria-hidden="true" />
                   Upload a background
@@ -129,7 +123,6 @@ export function BackgroundSection() {
           {source === 'art' && !hasArt && <p className="control__hint">Add an image first: its enlarged, blurred copy fills the background.</p>}
           <Slider
             label="Blur"
-            helpId="background.blur"
             min={0}
             max={100}
             value={bg.blur}
@@ -139,7 +132,6 @@ export function BackgroundSection() {
           />
           <Slider
             label="Zoom"
-            helpId="background.zoom"
             unit="%"
             min={50}
             max={400}
@@ -151,7 +143,6 @@ export function BackgroundSection() {
           />
           <Slider
             label="Move left or right"
-            helpId="background.offsetX"
             unit="%"
             min={-100}
             max={100}
@@ -162,7 +153,6 @@ export function BackgroundSection() {
           />
           <Slider
             label="Move up or down"
-            helpId="background.offsetY"
             unit="%"
             min={-100}
             max={100}
@@ -171,7 +161,7 @@ export function BackgroundSection() {
             onChange={(v) => setBackground({ offsetY: v / 100 }, true)}
             onCommit={commitDoc}
           />
-          <div className="control control--row" data-control="background-move" data-help-id="background.move">
+          <div className="control control--row" data-control="background-move">
             <button
               type="button"
               className="btn btn--small"
@@ -198,7 +188,6 @@ export function BackgroundSection() {
               <Slider
                 key={def.key}
                 label={def.label}
-                helpId={def.helpId}
                 unit={def.unit}
                 min={def.min}
                 max={def.max}
@@ -224,7 +213,6 @@ export function BackgroundSection() {
       {bg.kind !== 'none' && (
         <Slider
           label="Opacity"
-          helpId="background.opacity"
           unit="%"
           min={0}
           max={100}

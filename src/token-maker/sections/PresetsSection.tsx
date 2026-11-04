@@ -91,8 +91,8 @@ export function PresetsSection() {
 
   return (
     <>
-      <div className="tile-grid preset-tiles" data-control="preset-builtins" data-help-id="presets.builtIn">
-        <ControlLabel label="Built-in presets" helpId="presets.builtIn" />
+      <div className="tile-grid preset-tiles" data-control="preset-builtins">
+        <ControlLabel label="Built-in presets" />
         <div className="tile-grid__tiles" role="group" aria-label="Built-in presets">
           {BUILT_IN_PRESETS.map((p) => {
             const thumb = presetThumbnail(p);
@@ -108,8 +108,8 @@ export function PresetsSection() {
         </div>
       </div>
 
-      <div className="control" data-control="preset-save" data-help-id="presets.save">
-        <ControlLabel htmlFor={nameId} label="Save this look" helpId="presets.save" />
+      <div className="control" data-control="preset-save">
+        <ControlLabel htmlFor={nameId} label="Save this look" />
         <form
           className="preset-save"
           onSubmit={(e) => {
@@ -125,8 +125,8 @@ export function PresetsSection() {
         </form>
       </div>
 
-      <div className="control" data-control="preset-list" data-help-id="presets.yours">
-        <ControlLabel label="Your presets" helpId="presets.yours" />
+      <div className="control" data-control="preset-list">
+        <ControlLabel label="Your presets" />
         {presets.length === 0 ? (
           <p className="control__hint">Nothing saved yet. Style a token, then save its look above. Your art is never saved in a preset.</p>
         ) : (
@@ -176,8 +176,8 @@ export function PresetsSection() {
         )}
       </div>
 
-      <div className="control" data-control="preset-import" data-help-id="presets.import">
-        <ControlLabel htmlFor={pasteId} label="Add a shared preset" helpId="presets.import" />
+      <div className="control" data-control="preset-import">
+        <ControlLabel htmlFor={pasteId} label="Add a shared preset" />
         <textarea
           id={pasteId}
           className="preset-code"

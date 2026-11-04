@@ -18,7 +18,6 @@ export function SizeSection() {
     <>
       <SegmentedButtons
         label="Creature size"
-        helpId="size.preset"
         value={size.preset}
         onChange={setPreset}
         options={[...SIZE_PRESETS.map((s) => ({ value: s.id, label: s.name })), { value: 'custom' as const, label: 'Custom' }]}
@@ -26,7 +25,6 @@ export function SizeSection() {
       {size.preset === 'custom' && (
         <Slider
           label="Squares across"
-          helpId="size.custom"
           min={MIN_SQUARES}
           max={MAX_SQUARES}
           step={0.5}

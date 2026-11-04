@@ -1,6 +1,5 @@
 import { Plus, X } from 'lucide-react';
 import type { Gradient, GradientStop } from '../document/types';
-import type { HelpId } from '../help/helpContent';
 import { mix } from '../render/color';
 import { Advanced } from './Section';
 import { ColorSwatches } from './ColorSwatches';
@@ -20,12 +19,10 @@ export function GradientEditor({
   value: g,
   onChange,
   onCommit,
-  helpIds,
 }: {
   value: Gradient;
   onChange: (g: Gradient, transient?: boolean) => void;
   onCommit: () => void;
-  helpIds: { type: HelpId; angle: HelpId; colors: HelpId; stops: HelpId };
 }) {
   const first = g.stops[0]!;
   const last = g.stops[g.stops.length - 1]!;
@@ -46,7 +43,6 @@ export function GradientEditor({
     <div className="gradient-editor">
       <SegmentedButtons
         label="Gradient type"
-        helpId={helpIds.type}
         value={g.type}
         onChange={(type) => onChange({ ...g, type })}
         options={[
@@ -57,7 +53,6 @@ export function GradientEditor({
       {g.type === 'linear' && (
         <Slider
           label="Angle"
-          helpId={helpIds.angle}
           unit="°"
           min={0}
           max={359}
@@ -69,7 +64,6 @@ export function GradientEditor({
       )}
       <ColorSwatches
         label={g.type === 'radial' ? 'Middle colour' : 'Start colour'}
-        helpId={helpIds.colors}
         value={first.color}
         swatches={SWATCHES}
         onChange={(color) => setStop(0, { color }, true)}
@@ -77,14 +71,13 @@ export function GradientEditor({
       />
       <ColorSwatches
         label={g.type === 'radial' ? 'Outer colour' : 'End colour'}
-        helpId={helpIds.colors}
         value={last.color}
         swatches={SWATCHES}
         onChange={(color) => setStop(g.stops.length - 1, { color }, true)}
         onCommit={onCommit}
       />
       <Advanced>
-        <div className="gradient-stops" data-control="gradient-stops" data-help-id={helpIds.stops}>
+        <div className="gradient-stops" data-control="gradient-stops">
           {g.stops.map((s, i) => (
             <div key={i} className="gradient-stop">
               <div className="gradient-stop__head">
@@ -109,7 +102,6 @@ export function GradientEditor({
               </div>
               <Slider
                 label="Position"
-                helpId={helpIds.stops}
                 unit="%"
                 min={0}
                 max={100}
@@ -123,7 +115,6 @@ export function GradientEditor({
               />
               <Slider
                 label="Opacity"
-                helpId={helpIds.stops}
                 unit="%"
                 min={0}
                 max={100}

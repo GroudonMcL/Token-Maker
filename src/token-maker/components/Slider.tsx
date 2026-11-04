@@ -1,6 +1,5 @@
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 
 /**
@@ -14,7 +13,6 @@ import { ControlLabel } from './ControlLabel';
  */
 export function Slider({
   label,
-  helpId,
   value,
   min,
   max,
@@ -26,7 +24,6 @@ export function Slider({
   onCommit,
 }: {
   label: string;
-  helpId: HelpId;
   value: number;
   min: number;
   max: number;
@@ -90,11 +87,10 @@ export function Slider({
   const defaultPct = defaultValue === undefined ? null : ((Math.min(max, Math.max(min, defaultValue)) - min) / (max - min)) * 100;
 
   return (
-    <div className="slider" data-control="slider" data-help-id={helpId}>
+    <div className="slider" data-control="slider">
       <ControlLabel
         htmlFor={id}
         label={label}
-        helpId={helpId}
         aside={
           <span className="slider__value">
             {defaultValue !== undefined && (

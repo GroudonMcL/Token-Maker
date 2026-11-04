@@ -17,8 +17,8 @@ export function BrushControls() {
   return (
     <div className="control-group">
       <h4 className="control-group__title">Erase / restore brush</h4>
-      <div className="control" data-control="brush" data-help-id="image.brush">
-        <ControlLabel label="Brush" helpId="image.brush" />
+      <div className="control" data-control="brush">
+        <ControlLabel label="Brush" />
         <button type="button" className={`btn btn--wide${on ? ' btn--primary' : ''}`} aria-pressed={on} onClick={() => setTool(on ? 'move' : 'brush')}>
           <Brush size={18} aria-hidden="true" />
           {on ? 'Brush on: paint on the picture' : 'Use the brush'}
@@ -26,7 +26,6 @@ export function BrushControls() {
       </div>
       <SegmentedButtons
         label="Brush does"
-        helpId="image.brushMode"
         value={mode}
         onChange={(m) => setBrush({ brushMode: m })}
         options={[
@@ -36,7 +35,6 @@ export function BrushControls() {
       />
       <Slider
         label="Brush size"
-        helpId="image.brushSize"
         unit="px"
         defaultValue={TOOL_DEFAULTS.brushSize}
         min={BRUSH_MIN}
@@ -44,10 +42,9 @@ export function BrushControls() {
         value={size}
         onChange={(v) => setBrush({ brushSize: v })}
       />
-      <Advanced helpId="image.brushAdvanced">
+      <Advanced>
         <Slider
           label="Softness"
-          helpId="image.brushSoftness"
           unit="%"
           defaultValue={TOOL_DEFAULTS.brushSoftness}
           min={0}
@@ -55,8 +52,8 @@ export function BrushControls() {
           value={softness}
           onChange={(v) => setBrush({ brushSoftness: v })}
         />
-        <Toggle label="Pen pressure" helpId="image.pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
-        <Toggle label="Show removed parts in red" helpId="image.showRemoved" checked={showRemoved} onChange={(v) => setBrush({ showRemoved: v })} />
+        <Toggle label="Pen pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
+        <Toggle label="Show removed parts in red" checked={showRemoved} onChange={(v) => setBrush({ showRemoved: v })} />
       </Advanced>
       <button
         type="button"

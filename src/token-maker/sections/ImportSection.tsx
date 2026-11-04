@@ -17,7 +17,7 @@ export function ImportSection() {
   const [editing, setEditing] = useState<string | null>(null);
   return (
     <>
-      <div className="control" data-control="upload" data-help-id="import.upload">
+      <div className="control" data-control="upload">
         <UploadButton className="btn btn--wide">
           <Upload size={18} aria-hidden="true" />
           {batchOn ? 'Upload images' : 'Upload image'}
@@ -30,8 +30,8 @@ export function ImportSection() {
       </div>
       <ArtSearch />
       <WebAddress />
-      <div className="control" data-control="name" data-help-id="import.name">
-        <ControlLabel htmlFor={id} label="Token name" helpId="import.name" />
+      <div className="control" data-control="name">
+        <ControlLabel htmlFor={id} label="Token name" />
         <input
           id={id}
           className="text-input"
@@ -77,7 +77,6 @@ export function WebAddress({ target = 'art', hint: plainHint = 'Paste a link to 
       <form
         className="control"
         data-control="web-address"
-        data-help-id="import.web"
         onSubmit={(e) => {
           e.preventDefault();
           if (!text.trim()) return;
@@ -87,7 +86,7 @@ export function WebAddress({ target = 'art', hint: plainHint = 'Paste a link to 
           else importFromAddress(text, 'box', target);
         }}
       >
-        <ControlLabel htmlFor={id} label="Web address" helpId="import.web" />
+        <ControlLabel htmlFor={id} label="Web address" />
         <div className="web-address__row">
           <input
             id={id}
@@ -133,7 +132,6 @@ export function WebAddress({ target = 'art', hint: plainHint = 'Paste a link to 
         <div className="web-pictures">
           <ImageStrip
             label={`Pictures on ${hostOf(address)}`}
-            helpId="import.pagePictures"
             images={images.map((img) => ({ id: img.url, src: img.url, alt: img.alt ?? '', fallbackSrc: proxiedImageUrl(img.url) }))}
             value={picked}
             onChange={(url) => void pickWebImage(url)}

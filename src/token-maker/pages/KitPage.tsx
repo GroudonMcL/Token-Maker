@@ -85,28 +85,25 @@ export function KitPage() {
       <div className="kit">
         <Section
           title="Image"
-          helpId="section.image"
           defaultOpen
           advanced={
-            <Slider label="Hue" helpId="kit.slider" min={-180} max={180} unit="°" value={doc.hue} onChange={(v) => live({ hue: v })} onCommit={commit} />
+            <Slider label="Hue" min={-180} max={180} unit="°" value={doc.hue} onChange={(v) => live({ hue: v })} onCommit={commit} />
           }
         >
           <Slider
             label="Brightness"
-            helpId="kit.slider"
             min={-100}
             max={100}
             value={doc.brightness}
             onChange={(v) => live({ brightness: v })}
             onCommit={commit}
           />
-          <Toggle label="Rim light" helpId="kit.toggle" checked={doc.rim} onChange={(v) => once({ rim: v })} />
+          <Toggle label="Rim light" checked={doc.rim} onChange={(v) => once({ rim: v })} />
         </Section>
 
-        <Section title="Frame & shape" helpId="section.frame" defaultOpen>
+        <Section title="Frame & shape" defaultOpen>
           <SegmentedButtons
             label="Shape"
-            helpId="kit.segmented"
             value={doc.shape}
             onChange={(v) => once({ shape: v })}
             options={[
@@ -115,10 +112,9 @@ export function KitPage() {
               { value: 'square', label: 'Square', icon: <Square size={16} /> },
             ]}
           />
-          <TileGrid label="Frame style" helpId="kit.tiles" tiles={TILES} value={doc.frame} onChange={(v) => once({ frame: v })} />
+          <TileGrid label="Frame style" tiles={TILES} value={doc.frame} onChange={(v) => once({ frame: v })} />
           <ColorSwatches
             label="Frame colour"
-            helpId="kit.swatches"
             swatches={SWATCHES}
             value={doc.colour}
             onChange={(v) => live({ colour: v })}
@@ -126,10 +122,9 @@ export function KitPage() {
           />
         </Section>
 
-        <Section title="Import" helpId="section.import" defaultOpen>
+        <Section title="Import" defaultOpen>
           <ImageStrip
             label="Images on the page"
-            helpId="kit.strip"
             images={stripEmpty ? [] : IMAGES}
             value={doc.image}
             onChange={(v) => once({ image: v })}

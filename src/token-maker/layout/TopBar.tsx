@@ -34,7 +34,7 @@ export function TopBar({ compact }: { compact: boolean }) {
         }
       />
       <div className="topbar__spacer" />
-      <Toggle label="Batch" helpId="topbar.batch" checked={batch} onChange={setBatch} helpButton />
+      <Toggle label="Batch" checked={batch} onChange={setBatch} />
       <div className="topbar__group" role="group" aria-label="History">
         <button type="button" className="icon-btn" aria-label="Undo" title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={undo}>
           <Undo2 size={18} />
@@ -48,7 +48,7 @@ export function TopBar({ compact }: { compact: boolean }) {
         {!compact && <span>New</span>}
         {compact && <span className="visually-hidden">New</span>}
       </button>
-      <div className="topbar__group" data-control="theme" data-help-id="topbar.theme">
+      <div className="topbar__group" data-control="theme">
         <PanelSettings />
         <PalettePicker />
       </div>

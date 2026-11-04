@@ -2,7 +2,6 @@ import 'fake-indexeddb/auto';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createDocument } from '../document/defaults';
 import { selectDecoration } from '../editor/tools';
-import { helpContent } from '../help/helpContent';
 import { createPreset, presetToCode } from '../presets/preset';
 import { savedPresets } from '../presets/presetStore';
 import { getDoc, resetDoc, undo } from '../state/tokenStore';
@@ -24,11 +23,7 @@ vi.mock('../state/frameLibrary', async (original) => ({
   }),
 }));
 
-const helpIds = (container: HTMLElement) => {
-  const ids = [...container.querySelectorAll('[data-control]')].map((el) => el.getAttribute('data-help-id'));
-  expect(ids.length).toBeGreaterThan(3);
-  for (const id of ids) expect(Object.keys(helpContent)).toContain(id);
-};
+const controlsShown = (container: HTMLElement) => expect(container.querySelectorAll('[data-control]').length).toBeGreaterThan(3);
 
 beforeEach(() => {
   resetDoc();
@@ -82,10 +77,10 @@ describe('Decorations section', () => {
     expect(getDoc().decorations).toHaveLength(1);
   });
 
-  it('every control has a help entry', () => {
+  it('shows its controls', () => {
     const { container } = render(<DecorationsSection />);
     fireEvent.click(screen.getByRole('button', { name: /^Shield$/ }));
-    helpIds(container);
+    controlsShown(container);
   });
 });
 
@@ -98,7 +93,7 @@ describe('Frame section: picture frames', () => {
     expect(screen.getByText(/No picture frames yet/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reset the hole' })).toBeNull();
     expect(getDoc().frame).toEqual(before);
-    helpIds(container);
+    controlsShown(container);
     fireEvent.click(screen.getByRole('radio', { name: 'Drawn' }));
     expect(getDoc().frame.kind).toBe('code');
   });
@@ -126,7 +121,7 @@ describe('Frame section: built-in Frame Maker designs (v11)', () => {
     expect(screen.getByRole('radio', { name: 'Drawn' })).toBeChecked();
     expect(screen.getByTestId('current-frame')).toHaveTextContent('Rope');
     expect(screen.queryByText('Frame colour')).toBeNull();
-    helpIds(container);
+    controlsShown(container);
     undo();
     // Back to the frame a new token starts with: the Simple design.
     expect(getDoc().frame.kind).toBe('design');
@@ -209,7 +204,7 @@ describe('Presets section', () => {
     const writes: string[] = [];
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (t: string) => void writes.push(t) } });
     const { container } = render(<PresetsSection />);
-    helpIds(container);
+    controlsShown(container);
     fireEvent.change(screen.getByLabelText('Save this look'), { target: { value: 'Blue thing' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     const list = await screen.findByRole('list', { name: 'Your presets' });

@@ -2,7 +2,6 @@ import { RotateCcw } from 'lucide-react';
 import { Advanced, Slider, Toggle } from '../components';
 import { DEFAULT_ADJUST } from '../document/defaults';
 import type { ImageAdjustments } from '../document/types';
-import type { HelpId } from '../help/helpContent';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 
 type NumberKey = Exclude<keyof ImageAdjustments, 'invert'>;
@@ -10,48 +9,47 @@ type NumberKey = Exclude<keyof ImageAdjustments, 'invert'>;
 interface AdjustDef {
   key: NumberKey;
   label: string;
-  helpId: HelpId;
   min: number;
   max: number;
   unit?: string;
 }
 
 const MAIN: AdjustDef[] = [
-  { key: 'brightness', label: 'Brightness', helpId: 'image.brightness', min: -100, max: 100 },
-  { key: 'contrast', label: 'Contrast', helpId: 'image.contrast', min: -100, max: 100 },
-  { key: 'saturation', label: 'Saturation', helpId: 'image.saturation', min: -100, max: 100 },
+  { key: 'brightness', label: 'Brightness', min: -100, max: 100 },
+  { key: 'contrast', label: 'Contrast', min: -100, max: 100 },
+  { key: 'saturation', label: 'Saturation', min: -100, max: 100 },
 ];
 
 const GROUPS: { title: string; items: AdjustDef[] }[] = [
   {
     title: 'Colour',
     items: [
-      { key: 'hue', label: 'Hue', helpId: 'image.hue', min: -180, max: 180, unit: '°' },
-      { key: 'temperature', label: 'Temperature', helpId: 'image.temperature', min: -100, max: 100 },
-      { key: 'tint', label: 'Tint', helpId: 'image.tint', min: -100, max: 100 },
+      { key: 'hue', label: 'Hue', min: -180, max: 180, unit: '°' },
+      { key: 'temperature', label: 'Temperature', min: -100, max: 100 },
+      { key: 'tint', label: 'Tint', min: -100, max: 100 },
     ],
   },
   {
     title: 'Light',
     items: [
-      { key: 'exposure', label: 'Exposure', helpId: 'image.exposure', min: -100, max: 100 },
-      { key: 'highlights', label: 'Highlights', helpId: 'image.highlights', min: -100, max: 100 },
-      { key: 'shadows', label: 'Shadows', helpId: 'image.shadows', min: -100, max: 100 },
+      { key: 'exposure', label: 'Exposure', min: -100, max: 100 },
+      { key: 'highlights', label: 'Highlights', min: -100, max: 100 },
+      { key: 'shadows', label: 'Shadows', min: -100, max: 100 },
     ],
   },
   {
     title: 'Detail',
     items: [
-      { key: 'sharpness', label: 'Sharpness', helpId: 'image.sharpness', min: 0, max: 100 },
-      { key: 'blur', label: 'Blur', helpId: 'image.blur', min: 0, max: 100 },
+      { key: 'sharpness', label: 'Sharpness', min: 0, max: 100 },
+      { key: 'blur', label: 'Blur', min: 0, max: 100 },
     ],
   },
   {
     title: 'Style',
     items: [
-      { key: 'vibrance', label: 'Vibrance', helpId: 'image.vibrance', min: -100, max: 100 },
-      { key: 'grayscale', label: 'Grayscale', helpId: 'image.grayscale', min: 0, max: 100, unit: '%' },
-      { key: 'sepia', label: 'Sepia', helpId: 'image.sepia', min: 0, max: 100, unit: '%' },
+      { key: 'vibrance', label: 'Vibrance', min: -100, max: 100 },
+      { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, unit: '%' },
+      { key: 'sepia', label: 'Sepia', min: 0, max: 100, unit: '%' },
     ],
   },
 ];
@@ -63,7 +61,6 @@ function AdjustSlider({ def, value }: { def: AdjustDef; value: number }) {
   return (
     <Slider
       label={def.label}
-      helpId={def.helpId}
       min={def.min}
       max={def.max}
       unit={def.unit}
@@ -90,14 +87,14 @@ function Adjustments() {
       {MAIN.map((def) => (
         <AdjustSlider key={def.key} def={def} value={adjust[def.key]} />
       ))}
-      <Advanced helpId="image.advanced">
+      <Advanced>
         {GROUPS.map((g) => (
           <div key={g.title} className="control-group">
             <h4 className="control-group__title">{g.title}</h4>
             {g.items.map((def) => (
               <AdjustSlider key={def.key} def={def} value={adjust[def.key]} />
             ))}
-            {g.title === 'Style' && <Toggle label="Invert" helpId="image.invert" checked={adjust.invert} onChange={(v) => setAdjust({ invert: v })} />}
+            {g.title === 'Style' && <Toggle label="Invert" checked={adjust.invert} onChange={(v) => setAdjust({ invert: v })} />}
           </div>
         ))}
       </Advanced>

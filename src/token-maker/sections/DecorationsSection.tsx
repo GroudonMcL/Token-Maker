@@ -74,8 +74,8 @@ export function DecorationsSection() {
 
   return (
     <>
-      <div className="tile-grid" data-control="decoration-add" data-help-id="decorations.add">
-        <ControlLabel label="Add a decoration" helpId="decorations.add" />
+      <div className="tile-grid" data-control="decoration-add">
+        <ControlLabel label="Add a decoration" />
         <div className="tile-grid__groups">
           <div className="tile-grid__group" role="group" aria-label="Ornaments">
             <div className="tile-grid__group-name">Ornaments</div>
@@ -127,7 +127,7 @@ export function DecorationsSection() {
                   )}
                 </div>
                 {group === 'Pictures' && (
-                  <div className="control control--row" data-control="decoration-upload" data-help-id="decorations.picture">
+                  <div className="control control--row" data-control="decoration-upload">
                     <button type="button" className="btn btn--small" disabled={full} onClick={() => fileInput.current?.click()}>
                       <Upload size={14} aria-hidden="true" />
                       Use your own picture
@@ -249,10 +249,9 @@ function DecorationCard({
       </div>
       <div className="overlay-card__body" id={bodyId} hidden={!open}>
         <SnapPicker d={d} />
-        <Toggle label="Mirror on the other side" helpId="decorations.mirror" checked={d.mirror} onChange={(mirror) => update(d.id, { mirror })} />
+        <Toggle label="Mirror on the other side" checked={d.mirror} onChange={(mirror) => update(d.id, { mirror })} />
         <Slider
           label="Size"
-          helpId="decorations.size"
           unit="% of a square"
           min={2}
           max={100}
@@ -264,7 +263,6 @@ function DecorationCard({
         />
         <Slider
           label="Rotation"
-          helpId="decorations.rotation"
           unit="°"
           min={-180}
           max={180}
@@ -273,13 +271,12 @@ function DecorationCard({
           onChange={(rotation) => update(d.id, { rotation }, true)}
           onCommit={commitDoc}
         />
-        {d.kind === 'picture' && <Toggle label="Colour it in" helpId="decorations.tint" checked={d.tint} onChange={(tint) => update(d.id, { tint })} />}
+        {d.kind === 'picture' && <Toggle label="Colour it in" checked={d.tint} onChange={(tint) => update(d.id, { tint })} />}
         {(d.kind !== 'picture' || d.tint) && (
-          <ColorSwatches label="Tint" helpId="decorations.color" value={d.color} swatches={swatches} onChange={(color) => update(d.id, { color }, true)} onCommit={commitDoc} />
+          <ColorSwatches label="Tint" value={d.color} swatches={swatches} onChange={(color) => update(d.id, { color }, true)} onCommit={commitDoc} />
         )}
         <Slider
           label="Opacity"
-          helpId="decorations.opacity"
           unit="%"
           min={0}
           max={100}
@@ -288,8 +285,8 @@ function DecorationCard({
           onChange={(v) => update(d.id, { opacity: v / 100 }, true)}
           onCommit={commitDoc}
         />
-        <Toggle label="Flip" helpId="decorations.flip" checked={d.flip} onChange={(flip) => update(d.id, { flip })} />
-        <Toggle label="Under the frame" helpId="decorations.underFrame" checked={d.underFrame} onChange={(underFrame) => update(d.id, { underFrame })} />
+        <Toggle label="Flip" checked={d.flip} onChange={(flip) => update(d.id, { flip })} />
+        <Toggle label="Under the frame" checked={d.underFrame} onChange={(underFrame) => update(d.id, { underFrame })} />
       </div>
     </li>
   );
@@ -307,8 +304,8 @@ function SnapPicker({ d }: { d: Decoration }) {
     } else update(d.id, { place, rotation: d.place === 'free' ? 0 : d.rotation });
   };
   return (
-    <div className="control" data-control="decoration-place" data-help-id="decorations.place">
-      <ControlLabel id={labelId} label="Position" helpId="decorations.place" />
+    <div className="control" data-control="decoration-place">
+      <ControlLabel id={labelId} label="Position" />
       <div className="snap-grid" role="radiogroup" aria-labelledby={labelId}>
         {GRID.map((g) => (
           <button key={g.place} type="button" role="radio" aria-checked={d.place === g.place} className="snap-grid__btn" data-place={g.place} onClick={() => choose(g.place)}>
