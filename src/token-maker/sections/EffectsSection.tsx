@@ -1,11 +1,9 @@
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Shuffle, Trash2, Upload } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Advanced, ColorSwatches, ControlLabel, DirectionDial, GradientEditor, SegmentedButtons, Slider, Toggle } from '../components';
-import { LabelTip } from '../components/LabelTip';
 import { EFFECT_GROUPS, EFFECTS, effectInfo, MAX_EFFECTS, newEffect, newPictureEffect, type EffectControl } from '../document/defaults';
 import type { BlendMode, EffectKind, EffectLayer, EffectPlacement } from '../document/types';
 import { addPictureEffect, uploadPictureEffect } from '../editor/pictureActions';
-import type { HelpId } from '../help/helpContent';
 import { EFFECT_PICTURES, effectPicture, pictureUrl } from '../render/pictureLibrary';
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
@@ -33,9 +31,6 @@ const LAYOUTS = [
 /** Per-square values are shown as a percentage of one grid square (1 unit = half a square). */
 const toPct = (v: number) => Math.round(v * 50 * 10) / 10;
 const fromPct = (p: number) => p / 50;
-
-/** The help entry (with its before/after picture) for each kind of effect. */
-const effectHelpId = (kind: EffectKind) => `effect.${kind}` as HelpId;
 
 const update = (id: string, patch: Partial<EffectLayer>, transient = false) =>
   updateDoc((d) => ({ ...d, effects: d.effects.map((e) => (e.id === id ? { ...e, ...patch } : e)) }), { transient });
@@ -95,8 +90,8 @@ export function EffectsSection() {
   const shown = effects.map((e, i) => ({ e, i })).reverse();
   return (
     <>
-      <div className="tile-grid" data-control="effect-add" data-help-id="effects.add">
-        <ControlLabel label="Add an effect" helpId="effects.add" />
+      <div className="tile-grid" data-control="effect-add">
+        <ControlLabel label="Add an effect" />
         <div className="tile-grid__groups">
           {EFFECT_GROUPS.map((group) => (
             <div key={group} className="tile-grid__group" role="group" aria-label={group}>
@@ -116,9 +111,7 @@ export function EffectsSection() {
                         <span className="tile__preview tile__preview--dark" aria-hidden="true">
                           <img src={pictureUrl(p.id)} alt="" width={44} height={44} loading="lazy" />
                         </span>
-                        <LabelTip helpId="effect.picture" className="tile__label">
-                          {p.name}
-                        </LabelTip>
+                        <span className="tile__label">{p.name}</span>
                       </button>
                     ))}
                     {uploads.map((p) => (
@@ -126,9 +119,7 @@ export function EffectsSection() {
                         <span className="tile__preview tile__preview--dark" aria-hidden="true">
                           <img src={p.url} alt="" width={44} height={44} />
                         </span>
-                        <LabelTip helpId="effect.picture" className="tile__label">
-                          {p.name}
-                        </LabelTip>
+                        <span className="tile__label">{p.name}</span>
                       </button>
                     ))}
                   </>
@@ -138,15 +129,13 @@ export function EffectsSection() {
                       <span className="tile__preview" aria-hidden="true">
                         {thumbs?.get(x.kind) ? <img src={thumbs.get(x.kind)} alt="" width={44} height={44} /> : <span className="tile__blank" />}
                       </span>
-                      <LabelTip helpId={effectHelpId(x.kind)} className="tile__label">
-                        {x.name}
-                      </LabelTip>
+                      <span className="tile__label">{x.name}</span>
                     </button>
                   ))
                 )}
               </div>
               {group === 'Pictures' && (
-                <div className="control control--row" data-control="effect-upload" data-help-id="effects.upload">
+                <div className="control control--row" data-control="effect-upload">
                   <button type="button" className="btn btn--small" disabled={full} onClick={() => fileInput.current?.click()}>
                     <Upload size={14} aria-hidden="true" />
                     Use your own picture
@@ -245,10 +234,9 @@ function EffectCard({
         </button>
       </div>
       <div className="overlay-card__body" id={bodyId} hidden={!open}>
-        <SegmentedButtons label="Placement" helpId="effects.placement" value={e.placement} options={PLACEMENTS} onChange={(placement) => update(e.id, { placement })} />
+        <SegmentedButtons label="Placement" value={e.placement} options={PLACEMENTS} onChange={(placement) => update(e.id, { placement })} />
         <Slider
           label="Intensity"
-          helpId="effects.intensity"
           unit="%"
           min={0}
           max={100}
@@ -259,7 +247,6 @@ function EffectCard({
         />
         <Slider
           label="Blur"
-          helpId="effects.blur"
           unit="% of a square"
           min={0}
           max={25}
@@ -274,31 +261,28 @@ function EffectCard({
             value={e.gradient}
             onChange={(gradient, transient) => update(e.id, { gradient }, transient)}
             onCommit={commitDoc}
-            helpIds={{ type: 'background.gradientType', angle: 'background.gradientAngle', colors: 'background.gradientColors', stops: 'background.gradientStops' }}
           />
         )}
         {uses('picture') && (
           <>
-            <SegmentedButtons label="Layout" helpId="effects.layout" value={e.layout} options={LAYOUTS} onChange={(layout) => update(e.id, { layout })} />
-            <Toggle label="Colour it in" helpId="effects.tint" checked={e.tint} onChange={(tint) => update(e.id, { tint })} />
+            <SegmentedButtons label="Layout" value={e.layout} options={LAYOUTS} onChange={(layout) => update(e.id, { layout })} />
+            <Toggle label="Colour it in" checked={e.tint} onChange={(tint) => update(e.id, { tint })} />
           </>
         )}
-        {showColor && <ColorSwatches label="Colour" helpId="effects.color" value={e.color} swatches={swatches} onChange={(color) => update(e.id, { color }, true)} onCommit={commitDoc} />}
+        {showColor && <ColorSwatches label="Colour" value={e.color} swatches={swatches} onChange={(color) => update(e.id, { color }, true)} onCommit={commitDoc} />}
         {uses('angle') && (
           <DirectionDial
             label={label('angle', 'Side')}
-            helpId="effects.angle"
             value={e.angle}
             describe={sideWords}
             onChange={(angle) => update(e.id, { angle }, true)}
             onCommit={commitDoc}
           />
         )}
-        <Advanced helpId="effects.advanced">
+        <Advanced>
           {uses('size') && (e.kind !== 'picture' || e.layout === 'scatter') && (
             <Slider
               label={label('size', 'Size')}
-              helpId="effects.size"
               unit="% of a square"
               min={0}
               max={e.kind === 'picture' ? 100 : 50}
@@ -312,7 +296,6 @@ function EffectCard({
           {uses('spread') && (e.kind !== 'picture' || e.layout === 'scatter') && (
             <Slider
               label={label('spread', 'Spread')}
-              helpId="effects.spread"
               unit="%"
               min={0}
               max={100}
@@ -325,7 +308,6 @@ function EffectCard({
           {uses('softness') && (
             <Slider
               label="Softness"
-              helpId="effects.softness"
               unit="%"
               min={0}
               max={100}
@@ -335,8 +317,8 @@ function EffectCard({
               onCommit={commitDoc}
             />
           )}
-          <div className="control" data-control="blend" data-help-id="effects.blend">
-            <ControlLabel htmlFor={blendId} label="Blend mode" helpId="effects.blend" />
+          <div className="control" data-control="blend">
+            <ControlLabel htmlFor={blendId} label="Blend mode" />
             <select id={blendId} className="text-input" value={e.blend} onChange={(ev) => update(e.id, { blend: ev.target.value as BlendMode })}>
               {BLENDS.map((b) => (
                 <option key={b.value} value={b.value}>
@@ -346,7 +328,7 @@ function EffectCard({
             </select>
           </div>
           {uses('seed') && (e.kind !== 'picture' || e.layout === 'scatter') && (
-            <button type="button" className="btn btn--ghost btn--small" data-control="button" data-help-id="effects.shuffle" onClick={() => update(e.id, { seed: (e.seed % 9999) + 1 })}>
+            <button type="button" className="btn btn--ghost btn--small" data-control="button" onClick={() => update(e.id, { seed: (e.seed % 9999) + 1 })}>
               <Shuffle size={14} aria-hidden="true" />
               Shuffle
             </button>

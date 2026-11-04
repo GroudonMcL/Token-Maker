@@ -391,8 +391,10 @@ function adjustments(raw: Json): ImageAdjustments {
   const out = { ...DEFAULT_ADJUST };
   for (const key of Object.keys(DEFAULT_ADJUST) as (keyof ImageAdjustments)[]) {
     if (key === 'invert') out.invert = bool(raw.invert, false);
+    else if (key === 'recolorColor') out.recolorColor = raw.recolorColor === null || raw.recolorColor === undefined ? null : hex(raw.recolorColor, '#ffffff');
+    else if (key === 'recolorBreadth') out.recolorBreadth = num(raw.recolorBreadth, DEFAULT_ADJUST.recolorBreadth, 0, 100);
     else {
-      const [min, max] = key === 'hue' ? [-180, 180] : ['sharpness', 'blur', 'grayscale', 'sepia'].includes(key) ? [0, 100] : [-100, 100];
+      const [min, max] = key === 'hue' || key === 'recolorShift' ? [-180, 180] : ['sharpness', 'blur', 'grayscale', 'sepia'].includes(key) ? [0, 100] : [-100, 100];
       out[key] = num(raw[key], 0, min, max);
     }
   }

@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import type { Gradient } from '../document/types';
 import { useStore } from 'zustand';
-import { ColorSwatches, HelpTip, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
+import { ColorSwatches, GradientEditor, ImageStrip, SegmentedButtons, Section, Slider, TileGrid, Toggle } from '.';
 import { createHistoryStore } from '../state/history';
 
 describe('Slider', () => {
@@ -11,7 +12,6 @@ describe('Slider', () => {
     return (
       <Slider
         label="Brightness"
-        helpId="kit.slider"
         min={-100}
         max={100}
         value={v}
@@ -46,12 +46,12 @@ describe('Slider', () => {
   });
 
   it('shows the current value', () => {
-    render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} onChange={() => {}} />);
+    render(<Slider label="Hue" min={0} max={10} value={7} onChange={() => {}} />);
     expect(screen.getByRole('textbox', { name: 'Hue value' })).toHaveValue('7');
   });
 
   it('marks the default value with a notch, and has no "?" button of its own', () => {
-    const { container } = render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} defaultValue={5} onChange={() => {}} />);
+    const { container } = render(<Slider label="Hue" min={0} max={10} value={7} defaultValue={5} onChange={() => {}} />);
     expect(container.querySelector('.slider__notch')).toHaveStyle({ left: 'calc(var(--thumb) / 2 + (100% - var(--thumb)) * 0.5)' });
     // Its only button is the reset button.
     expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Reset Hue']);
@@ -61,7 +61,7 @@ describe('Slider', () => {
     const store = createHistoryStore(7);
     const Wired = () => {
       const v = useStore(store, (s) => s.present);
-      return <Slider label="Hue" helpId="kit.slider" min={0} max={10} value={v} defaultValue={5} onChange={(x) => store.getState().set(x, { transient: true })} onCommit={() => store.getState().commit()} />;
+      return <Slider label="Hue" min={0} max={10} value={v} defaultValue={5} onChange={(x) => store.getState().set(x, { transient: true })} onCommit={() => store.getState().commit()} />;
     };
     render(<Wired />);
     await userEvent.click(screen.getByRole('button', { name: 'Reset Hue' }));
@@ -71,7 +71,7 @@ describe('Slider', () => {
   });
 
   it('has no reset button without a default value', () => {
-    render(<Slider label="Hue" helpId="kit.slider" min={0} max={10} value={7} onChange={() => {}} />);
+    render(<Slider label="Hue" min={0} max={10} value={7} onChange={() => {}} />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 });
@@ -79,7 +79,7 @@ describe('Slider', () => {
 describe('Section', () => {
   it('collapses and expands, with a closed Advanced drop-down', async () => {
     render(
-      <Section title="Image" helpId="section.image" advanced={<p>Hue stuff</p>}>
+      <Section title="Image" advanced={<p>Hue stuff</p>}>
         <p>Main stuff</p>
       </Section>,
     );
@@ -101,7 +101,6 @@ describe('SegmentedButtons', () => {
       return (
         <SegmentedButtons
           label="Shape"
-          helpId="kit.segmented"
           value={v}
           onChange={setV}
           options={[
@@ -124,7 +123,7 @@ describe('SegmentedButtons', () => {
 describe('ColorSwatches', () => {
   it('picks a swatch and accepts a typed hex code', async () => {
     const onChange = vi.fn();
-    render(<ColorSwatches label="Colour" helpId="kit.swatches" value="#111111" swatches={['#111111', '#222222']} onChange={onChange} />);
+    render(<ColorSwatches label="Colour" value="#111111" swatches={['#111111', '#222222']} onChange={onChange} />);
     await userEvent.click(screen.getByRole('radio', { name: '#222222' }));
     expect(onChange).toHaveBeenLastCalledWith('#222222');
     const hex = screen.getByRole('textbox', { name: 'Colour hex code' });
@@ -134,13 +133,67 @@ describe('ColorSwatches', () => {
   });
 });
 
+describe('GradientEditor', () => {
+  const gradient = (): Gradient => ({
+    type: 'linear',
+    angle: 90,
+    stops: [
+      { offset: 0, color: '#000000', opacity: 1 },
+      { offset: 1, color: '#ffffff', opacity: 1 },
+    ],
+  });
+  function Harness({ onChange }: { onChange: (g: Gradient) => void }) {
+    const [g, setG] = useState(gradient());
+    return (
+      <GradientEditor
+        value={g}
+        onChange={(next) => {
+          setG(next);
+          onChange(next);
+        }}
+        onCommit={() => {}}
+      />
+    );
+  }
+
+  it('has one marker per colour; clicking one opens its colour and opacity', async () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    expect(screen.getAllByRole('button', { name: /^Colour \d at/ })).toHaveLength(2);
+    expect(screen.queryByTestId('gradient-stop-editor')).toBeNull();
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'Enter' });
+    fireEvent.click(screen.getByTestId('gradient-marker-1'), { detail: 0 });
+    expect(screen.getByTestId('gradient-stop-editor')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: '#b8322a' }));
+    expect(onChange.mock.lastCall![0].stops[1].color).toBe('#b8322a');
+    fireEvent.change(screen.getByRole('slider', { name: /Opacity/ }), { target: { value: '40' } });
+    expect(onChange.mock.lastCall![0].stops[1].opacity).toBeCloseTo(0.4);
+    // Two colours is the least a gradient can have.
+    expect(screen.getByRole('button', { name: /Remove this colour/ })).toBeDisabled();
+  });
+
+  it('adds a colour where the bar is clicked, moves one with the arrow keys and removes it', () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} />);
+    const bar = screen.getByTestId('gradient-bar');
+    bar.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 32, right: 200, bottom: 32, x: 0, y: 0, toJSON: () => ({}) });
+    fireEvent.click(bar, { clientX: 100 });
+    const added = onChange.mock.lastCall![0] as Gradient;
+    expect(added.stops.map((s) => s.offset)).toEqual([0, 0.5, 1]);
+    expect(added.stops[1]!.color).toBe('#808080');
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'ArrowRight', shiftKey: true });
+    expect((onChange.mock.lastCall![0] as Gradient).stops[1]!.offset).toBeCloseTo(0.6);
+    fireEvent.keyDown(screen.getByTestId('gradient-marker-1'), { key: 'Delete' });
+    expect((onChange.mock.lastCall![0] as Gradient).stops).toHaveLength(2);
+  });
+});
+
 describe('TileGrid and ImageStrip', () => {
   it('selects a tile', async () => {
     const onChange = vi.fn();
     render(
       <TileGrid
         label="Frame"
-        helpId="kit.tiles"
         value="a"
         onChange={onChange}
         tiles={[
@@ -155,7 +208,7 @@ describe('TileGrid and ImageStrip', () => {
   });
 
   it('shows an empty message with no images', () => {
-    render(<ImageStrip label="Images" helpId="kit.strip" images={[]} value={undefined} onChange={() => {}} emptyText="Nothing here" />);
+    render(<ImageStrip label="Images" images={[]} value={undefined} onChange={() => {}} emptyText="Nothing here" />);
     expect(screen.getByText('Nothing here')).toBeInTheDocument();
   });
 });
@@ -163,25 +216,9 @@ describe('TileGrid and ImageStrip', () => {
 describe('Toggle', () => {
   it('is a switch', async () => {
     const onChange = vi.fn();
-    render(<Toggle label="Batch" helpId="topbar.batch" checked={false} onChange={onChange} />);
+    render(<Toggle label="Batch" checked={false} onChange={onChange} />);
     await userEvent.click(screen.getByRole('switch', { name: 'Batch' }));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 });
 
-describe('HelpTip', () => {
-  it('opens on click, describes the button for screen readers, and closes with Escape', async () => {
-    render(<HelpTip id="section.image" />);
-    const btn = screen.getByRole('button', { name: 'Help: Colour' });
-    expect(btn).toHaveAccessibleDescription(/Adjust brightness/);
-    expect(screen.getByRole('tooltip', { hidden: true })).not.toBeVisible();
-    await userEvent.click(btn);
-    expect(btn).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('tooltip')).toBeVisible();
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    });
-    expect(btn).toHaveAttribute('aria-expanded', 'false');
-    expect(btn).toHaveFocus();
-  });
-});

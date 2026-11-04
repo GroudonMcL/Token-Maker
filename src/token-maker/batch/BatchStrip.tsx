@@ -31,7 +31,7 @@ export function BatchStrip({ place }: { place: { top: number } | { bottom: numbe
   const active = items.find((it) => it.id === state.activeId);
 
   return (
-    <div className="batch-strip" style={place} data-at={'top' in place ? 'top' : 'bottom'} data-control="batch-strip" data-help-id="batch.strip">
+    <div className="batch-strip" style={place} data-at={'top' in place ? 'top' : 'bottom'} data-control="batch-strip">
       {items.length ? (
         <div className="batch-strip__list" role="radiogroup" aria-label="Tokens in the batch" onKeyDown={onKeyDown}>
           {items.map((it, i) => (

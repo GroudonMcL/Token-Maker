@@ -53,7 +53,6 @@ export function FrameSection() {
     <>
       <SegmentedButtons
         label="Frame type"
-        helpId="frame.kind"
         value={kind}
         onChange={(k) => {
           setPictureChosen(k === 'image');
@@ -75,7 +74,6 @@ export function FrameSection() {
       {kind === 'image' ? <PictureFrame image={frame.kind === 'image' ? frame.image : null} /> : kind === 'design' ? <DesignFramePanel design={frame.design} /> : <DrawnFrame />}
       <ColorSwatches
         label="Backing colour"
-        helpId="frame.backingColor"
         value={frame.backingColor}
         swatches={BACKING_SWATCHES}
         onChange={(c) => updateDoc((d) => ({ ...d, frame: { ...d.frame, backingColor: c } }), { transient: true })}
@@ -83,7 +81,6 @@ export function FrameSection() {
       />
       <Slider
         label="Backing opacity"
-        helpId="frame.backingOpacity"
         unit="%"
         defaultValue={100}
         min={0}
@@ -110,7 +107,6 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
       {uploads.length > 0 ? (
         <TileGrid
           label="Picture frame"
-          helpId="frame.picture"
           value={image?.source.id ?? ''}
           onChange={(id) => void pickImageFrame({ type: 'upload', id }, uploads.find((f) => f.id === id)?.name ?? 'My frame')}
           tiles={uploads.map((f) => ({ id: f.id, label: f.name, preview: <img src={f.url} alt="" width={44} height={44} /> }))}
@@ -118,7 +114,7 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
       ) : (
         <p className="control__hint">No picture frames yet. Upload a PNG ring with a see-through middle.</p>
       )}
-      <div className="control control--row" data-control="frame-upload" data-help-id="frame.upload">
+      <div className="control control--row" data-control="frame-upload">
         <button type="button" className="btn btn--small" onClick={() => input.current?.click()}>
           <Upload size={14} aria-hidden="true" />
           Upload a frame
@@ -157,7 +153,6 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
         <>
           <Slider
             label="Hole size"
-            helpId="frame.holeSize"
             unit="%"
             defaultValue={100}
             min={50}
@@ -168,7 +163,6 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
           />
           <Slider
             label="Move hole sideways"
-            helpId="frame.holeX"
             unit="%"
             defaultValue={0}
             min={-25}
@@ -180,7 +174,6 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
           />
           <Slider
             label="Move hole up or down"
-            helpId="frame.holeY"
             unit="%"
             defaultValue={0}
             min={-25}
@@ -190,7 +183,7 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
             onChange={(v) => nudgeHole({ y: v / 50 }, true)}
             onCommit={commitDoc}
           />
-          <div className="control" data-control="frame-hole-reset" data-help-id="frame.holeReset">
+          <div className="control" data-control="frame-hole-reset">
             <button type="button" className="btn btn--ghost btn--small" disabled={!nudged} onClick={() => nudgeHole({ x: 0, y: 0, scale: 1 })}>
               <RotateCcw size={14} aria-hidden="true" />
               Reset the hole
@@ -235,7 +228,6 @@ function DesignFramePanel({ design }: { design: DesignFrame | null }) {
       {tiles.length > 0 ? (
         <TileGrid
           label="Frame Maker design"
-          helpId="frame.design"
           value={design?.id ?? ''}
           onChange={(id) => {
             const d = tiles.find((t) => t.id === id);
@@ -250,7 +242,7 @@ function DesignFramePanel({ design }: { design: DesignFrame | null }) {
       ) : (
         <p className="control__hint">No designs yet. Make one in Frame Maker, save it, and open the .framemaker.json file here.</p>
       )}
-      <div className="control control--row" data-control="frame-design-open" data-help-id="frame.designOpen">
+      <div className="control control--row" data-control="frame-design-open">
         <button type="button" className="btn btn--small" onClick={() => input.current?.click()}>
           <FolderOpen size={14} aria-hidden="true" />
           Open a Frame Maker design
@@ -288,7 +280,6 @@ function ShapeControl() {
   return (
     <SegmentedButtons
       label="Shape"
-      helpId="frame.shape"
       value={shape}
       onChange={(s) => updateFrameAndArt((d) => ({ ...d, shape: s }))}
       options={SHAPES.map((s) => ({ value: s.id, label: s.name, icon: SHAPE_ICONS[s.id], iconOnly: true }))}
@@ -305,7 +296,6 @@ function BandSliders() {
     <>
       <Slider
         label="Thickness"
-        helpId="frame.thickness"
         unit="% of a square"
         defaultValue={toPct(DEFAULTS.thickness)}
         min={0}
@@ -318,7 +308,6 @@ function BandSliders() {
       />
       <Slider
         label="Outer spacing"
-        helpId="frame.outerSpacing"
         unit="% of a square"
         defaultValue={toPct(DEFAULTS.outerSpacing)}
         min={0}
@@ -330,7 +319,6 @@ function BandSliders() {
       />
       <Slider
         label="Inner spacing"
-        helpId="frame.innerSpacing"
         unit="% of a square"
         defaultValue={toPct(DEFAULTS.innerSpacing)}
         min={0}
@@ -360,7 +348,6 @@ function BuiltInColours({ id }: { id: string }) {
         <ColorSwatches
           key={slot.id}
           label={slot.name}
-          helpId="frame.color"
           value={chosen?.[slot.id] ?? slot.default}
           swatches={[slot.default, ...FRAME_SWATCHES.filter((c) => c !== slot.default)]}
           onChange={(c) => setColour(slot.id, c)}
@@ -476,7 +463,6 @@ function DrawnFrame() {
       ) : (
         <ColorSwatches
           label="Frame colour"
-          helpId="frame.color"
           value={frame.color}
           swatches={FRAME_SWATCHES}
           onChange={(c) => updateDoc((d) => ({ ...d, frame: { ...d.frame, color: c } }), { transient: true })}
@@ -486,7 +472,6 @@ function DrawnFrame() {
       {accent && (
         <ColorSwatches
           label="Frame highlights colour"
-          helpId="frame.highlight"
           value={frame.highlightColor ?? accent}
           swatches={[accent, ...HIGHLIGHT_SWATCHES.filter((c) => c !== accent)]}
           onChange={(c) => setFrame({ highlightColor: c }, true)}

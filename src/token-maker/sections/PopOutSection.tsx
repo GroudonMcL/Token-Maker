@@ -1,7 +1,8 @@
 import { Eraser, Paintbrush, RotateCcw } from 'lucide-react';
+import { useLayoutEffect } from 'react';
 import { Advanced, ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
 import type { PopOutSettings } from '../document/types';
-import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setBrush, setTool, useTool } from '../editor/tools';
+import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setAutoTool, setBrush, setTool, toolStore, useTool } from '../editor/tools';
 import { updateDoc, useDoc } from '../state/tokenStore';
 
 const setPopOut = (patch: Partial<PopOutSettings>) => updateDoc((d) => ({ ...d, art: { ...d.art, popOut: { ...d.art.popOut, ...patch } } }));
@@ -20,6 +21,13 @@ export function PopOutSection() {
   const softness = useTool((s) => s.brushSoftness);
   const usePressure = useTool((s) => s.usePressure);
   const showMask = useTool((s) => s.showPopOut);
+  // The pop-out brush turns on when this section opens (before it is drawn) and off when it is left.
+  useLayoutEffect(() => {
+    if (hasArt && toolStore.getState().tool === 'move') setAutoTool('popout');
+    return () => {
+      if (toolStore.getState().tool === 'popout') setAutoTool('move');
+    };
+  }, [hasArt]);
   if (!hasArt) return <p className="control__hint">Add an image first, then paint the parts that should break over the border.</p>;
   const on = tool === 'popout';
 
@@ -28,8 +36,8 @@ export function PopOutSection() {
       <p className="control__hint">
         Zoom or move the art so the horns, head or weapon reach over the frame, then paint over them. Removing the background first keeps it from popping out too.
       </p>
-      <div className="control" data-control="popout-brush" data-help-id="popout.brush">
-        <ControlLabel label="Pop-out brush" helpId="popout.brush" />
+      <div className="control" data-control="popout-brush">
+        <ControlLabel label="Pop-out brush" />
         <button type="button" className={`btn btn--wide${on ? ' btn--primary' : ''}`} aria-pressed={on} onClick={() => setTool(on ? 'move' : 'popout')}>
           <Paintbrush size={18} aria-hidden="true" />
           {on ? 'Painting: paint over the parts to pop out' : 'Paint pop-out'}
@@ -37,7 +45,6 @@ export function PopOutSection() {
       </div>
       <SegmentedButtons
         label="Pop-out brush does"
-        helpId="popout.mode"
         value={mode}
         onChange={(m) => setBrush({ popOutMode: m })}
         options={[
@@ -47,7 +54,6 @@ export function PopOutSection() {
       />
       <Slider
         label="Pop-out brush size"
-        helpId="popout.size"
         unit="px"
         defaultValue={TOOL_DEFAULTS.brushSize}
         min={BRUSH_MIN}
@@ -55,12 +61,11 @@ export function PopOutSection() {
         value={size}
         onChange={(v) => setBrush({ brushSize: v })}
       />
-      <Toggle label="Show the pop-out mask" helpId="popout.show" checked={showMask} onChange={(v) => setBrush({ showPopOut: v })} />
-      <Toggle label="Pop-out on" helpId="popout.enabled" checked={popOut.enabled} onChange={(enabled) => setPopOut({ enabled })} />
-      <Advanced helpId="popout.advanced">
+      <Toggle label="Show the pop-out mask" checked={showMask} onChange={(v) => setBrush({ showPopOut: v })} />
+      <Toggle label="Pop-out on" checked={popOut.enabled} onChange={(enabled) => setPopOut({ enabled })} />
+      <Advanced>
         <Slider
           label="Pop-out brush softness"
-          helpId="popout.softness"
           unit="%"
           defaultValue={TOOL_DEFAULTS.brushSoftness}
           min={0}
@@ -68,7 +73,7 @@ export function PopOutSection() {
           value={softness}
           onChange={(v) => setBrush({ brushSoftness: v })}
         />
-        <Toggle label="Pen pressure" helpId="image.pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
+        <Toggle label="Pen pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
       </Advanced>
       <button type="button" className="btn btn--ghost btn--small" disabled={!popOut.strokes.length} onClick={() => setPopOut({ strokes: [] })}>
         <RotateCcw size={16} aria-hidden="true" />

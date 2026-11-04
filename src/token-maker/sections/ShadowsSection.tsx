@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ColorSwatches, ControlLabel, DirectionDial, SegmentedButtons, Slider, Toggle } from '../components';
 import { createDocument, DROP_SHADOW_STYLES } from '../document/defaults';
 import type { InnerShadow, OuterShadow, ShadowSettings } from '../document/types';
-import type { HelpId } from '../help/helpContent';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 
 const SHADOW_DEFAULTS = createDocument().shadows;
@@ -46,7 +45,6 @@ export function ShadowsSection() {
     <>
       <SegmentedButtons
         label="Shadow"
-        helpId="shadows.which"
         value={which}
         onChange={setWhich}
         options={[
@@ -55,13 +53,12 @@ export function ShadowsSection() {
           { value: 'inner', label: 'Inner', icon: dot('inner') },
         ]}
       />
-      {which === 'outer' && <CastShadow which="outer" title="Drop shadow" toggleLabel="Drop shadow" helpId="shadows.outer" shadow={shadows.outer} lightFrom={lightFrom} />}
+      {which === 'outer' && <CastShadow which="outer" title="Drop shadow" toggleLabel="Drop shadow" shadow={shadows.outer} lightFrom={lightFrom} />}
       {which === 'popOut' && (
         <CastShadow
           which="popOut"
           title="Pop-out shadow"
           toggleLabel="Pop-out shadow"
-          helpId="shadows.popOut"
           shadow={shadows.popOut}
           lightFrom={lightFrom}
           hint={hasPopOut ? undefined : 'Shows once you paint a pop-out (in the Pop-out tab).'}
@@ -76,7 +73,6 @@ function CastShadow({
   which,
   title,
   toggleLabel,
-  helpId,
   shadow,
   lightFrom,
   hint,
@@ -84,7 +80,6 @@ function CastShadow({
   which: 'outer' | 'popOut';
   title: string;
   toggleLabel: string;
-  helpId: HelpId;
   shadow: OuterShadow;
   lightFrom: number;
   hint?: string;
@@ -98,13 +93,13 @@ function CastShadow({
   return (
     <div className="control-group" data-shadow={which}>
       <h4 className="control-group__title">{title}</h4>
-      <Toggle label={toggleLabel} helpId={helpId} checked={shadow.enabled} onChange={(enabled) => set({ enabled })} />
+      <Toggle label={toggleLabel} checked={shadow.enabled} onChange={(enabled) => set({ enabled })} />
       {shadow.enabled && (
         <>
           {hint && <p className="control__hint">{hint}</p>}
           {which === 'outer' && (
-            <div className="control" data-control="shadow-styles" data-help-id="shadows.styles">
-              <ControlLabel label="Quick styles" helpId="shadows.styles" />
+            <div className="control" data-control="shadow-styles">
+              <ControlLabel label="Quick styles" />
               <div className="preset-grid" role="group" aria-label="Drop shadow styles">
                 {DROP_SHADOW_STYLES.map((st) => (
                   <button key={st.id} type="button" className="btn btn--small preset-btn" aria-pressed={matches(st.settings)} onClick={() => set({ ...st.settings })}>
@@ -116,11 +111,10 @@ function CastShadow({
             </div>
           )}
           {/* Following the light only sets the direction: everything else can always be changed. */}
-          <Toggle label={`${title}: follow the light`} helpId="shadows.follow" checked={shadow.followLight} onChange={unlink} />
+          <Toggle label={`${title}: follow the light`} checked={shadow.followLight} onChange={unlink} />
           {!shadow.followLight && (
             <DirectionDial
               label={`${title} direction`}
-              helpId="shadows.angle"
               value={shadow.angle}
               describe={falls}
               onChange={(angle) => set({ angle }, true)}
@@ -129,7 +123,6 @@ function CastShadow({
           )}
           <Slider
             label={`${title} distance`}
-            helpId="shadows.distance"
             unit="% of a square"
             min={0}
             max={50}
@@ -141,7 +134,6 @@ function CastShadow({
           />
           <Slider
             label={`${title} blur`}
-            helpId="shadows.blur"
             unit="% of a square"
             min={0}
             max={50}
@@ -154,7 +146,6 @@ function CastShadow({
           {which === 'outer' && (
             <Slider
               label={`${title} size`}
-              helpId="shadows.spread"
               unit="%"
               min={100}
               max={150}
@@ -166,7 +157,6 @@ function CastShadow({
           )}
           <ColorSwatches
             label={`${title} colour`}
-            helpId="shadows.color"
             value={shadow.color}
             swatches={SHADOW_SWATCHES}
             onChange={(color) => set({ color }, true)}
@@ -174,7 +164,6 @@ function CastShadow({
           />
           <Slider
             label={`${title} opacity`}
-            helpId="shadows.opacity"
             unit="%"
             min={0}
             max={100}
@@ -195,12 +184,11 @@ function InnerShadowControls({ shadow }: { shadow: InnerShadow }) {
   return (
     <div className="control-group" data-shadow="inner">
       <h4 className="control-group__title">Inner shadow</h4>
-      <Toggle label="Inner shadow" helpId="shadows.inner" checked={shadow.enabled} onChange={(enabled) => set({ enabled })} />
+      <Toggle label="Inner shadow" checked={shadow.enabled} onChange={(enabled) => set({ enabled })} />
       {shadow.enabled && (
         <>
           <Slider
             label="Inner shadow strength"
-            helpId="shadows.innerStrength"
             unit="%"
             min={0}
             max={100}
@@ -211,7 +199,6 @@ function InnerShadowControls({ shadow }: { shadow: InnerShadow }) {
           />
           <Slider
             label="Inner shadow softness"
-            helpId="shadows.innerSoftness"
             unit="% of a square"
             min={0}
             max={25}

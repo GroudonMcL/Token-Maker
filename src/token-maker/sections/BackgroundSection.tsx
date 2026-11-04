@@ -1,14 +1,13 @@
 import { Move, RotateCcw, Upload } from 'lucide-react';
-import { useState } from 'react';
-import { ColorSwatches, GradientEditor, SegmentedButtons, Slider, TileGrid } from '../components';
+import { useLayoutEffect, useState } from 'react';
+import { Advanced, ColorSwatches, GradientEditor, SegmentedButtons, Slider, TileGrid } from '../components';
 import { DEFAULT_BACKGROUND } from '../document/defaults';
 import type { BackgroundAdjustments, BackgroundKind, BackgroundLayer } from '../document/types';
-import type { HelpId } from '../help/helpContent';
-import { setTool, useTool } from '../editor/tools';
+import { setAutoTool, setTool, toolStore, useTool } from '../editor/tools';
 import { UploadButton } from '../editor/UploadButton';
 import { BACKGROUND_LIBRARY, libraryBackground, libraryThumbUrl } from '../render/backgroundLibrary';
 import { loadLibraryImage } from '../state/libraryAssets';
-import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
+import { commitDoc, getDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { toast } from '../ui/toast';
 import { WebAddress } from './ImportSection';
 
@@ -17,16 +16,22 @@ const COLOR_SWATCHES = ['#1d1f27', '#3a4a5c', '#2b3a22', '#4a2f22', '#5b2d7a', '
 type Source = 'library' | 'asset' | 'art';
 
 /** The picture's colour sliders (v11). */
-const COLOUR_SLIDERS: { key: keyof BackgroundAdjustments; label: string; helpId: HelpId; min: number; max: number; unit?: string }[] = [
-  { key: 'brightness', label: 'Brightness', helpId: 'background.brightness', min: -100, max: 100 },
-  { key: 'contrast', label: 'Contrast', helpId: 'background.contrast', min: -100, max: 100 },
-  { key: 'saturation', label: 'Saturation', helpId: 'background.saturation', min: -100, max: 100 },
-  { key: 'hue', label: 'Hue', helpId: 'background.hue', min: -180, max: 180, unit: '°' },
-  { key: 'temperature', label: 'Temperature', helpId: 'background.temperature', min: -100, max: 100 },
+const COLOUR_SLIDERS: { key: keyof BackgroundAdjustments; label: string; min: number; max: number; unit?: string }[] = [
+  { key: 'brightness', label: 'Brightness', min: -100, max: 100 },
+  { key: 'contrast', label: 'Contrast', min: -100, max: 100 },
+  { key: 'saturation', label: 'Saturation', min: -100, max: 100 },
+  { key: 'hue', label: 'Hue', min: -180, max: 180, unit: '°' },
+  { key: 'temperature', label: 'Temperature', min: -100, max: 100 },
 ];
 
 const setBackground = (patch: Partial<BackgroundLayer>, transient = false) =>
   updateDoc((d) => ({ ...d, background: { ...d.background, ...patch } }), { transient });
+
+/** Where the token's art is, so its copy in the background starts lined up with it. */
+const artPosition = (t = getDoc().art.transform) => ({ zoom: Math.min(8, Math.max(0.2, t.zoom)), offsetX: t.offsetX, offsetY: t.offsetY });
+
+/** The token's art as the background starts half blurred. */
+const ART_BLUR = 50;
 
 const setAdjust = (patch: Partial<BackgroundAdjustments>, transient = false) =>
   updateDoc((d) => ({ ...d, background: { ...d.background, adjust: { ...d.background.adjust, ...patch } } }), { transient });
@@ -40,6 +45,36 @@ export function BackgroundSection() {
   const [chosen, setChosen] = useState<Source | null>(null);
   const source: Source = bg.image?.type ?? chosen ?? 'library';
 
+  // While a background picture is in use here, dragging on the canvas moves it; leaving the section stops that.
+  const picture = bg.kind === 'image' && bg.image ? JSON.stringify(bg.image) : null;
+  useLayoutEffect(() => {
+    const tool = toolStore.getState().tool;
+    if (picture && hasArt && tool === 'move') setAutoTool('background');
+    else if (!picture && tool === 'background') setAutoTool('move');
+  }, [picture, hasArt]);
+  useLayoutEffect(
+    () => () => {
+      if (toolStore.getState().tool === 'background') setAutoTool('move');
+    },
+    [],
+  );
+
+  // Reset position puts the picture back where it started: the token's art lines up with the art.
+  const artAt = useDoc((d) => d.art.transform);
+  const home = source === 'art' ? artPosition(artAt) : { zoom: 1, offsetX: 0, offsetY: 0 };
+
+  const blurSlider = (
+    <Slider
+      label="Blur"
+      min={0}
+      max={100}
+      value={bg.blur}
+      defaultValue={source === 'art' ? ART_BLUR : DEFAULT_BACKGROUND.blur}
+      onChange={(blur) => setBackground({ blur }, true)}
+      onCommit={commitDoc}
+    />
+  );
+
   const pickLibrary = (id: string) => {
     setBackground({ kind: 'image', image: { type: 'library', id }, zoom: 1, offsetX: 0, offsetY: 0 });
     loadLibraryImage(id).catch(() => toast("That background couldn't be loaded. Check your connection and try again.", 'error'));
@@ -49,7 +84,6 @@ export function BackgroundSection() {
     <>
       <SegmentedButtons
         label="Background"
-        helpId="background.kind"
         value={bg.kind}
         onChange={(kind: BackgroundKind) => setBackground({ kind })}
         options={[
@@ -65,7 +99,6 @@ export function BackgroundSection() {
       {bg.kind === 'color' && (
         <ColorSwatches
           label="Colour"
-          helpId="background.color"
           value={bg.color}
           swatches={COLOR_SWATCHES}
           onChange={(color) => setBackground({ color }, true)}
@@ -78,7 +111,6 @@ export function BackgroundSection() {
           value={bg.gradient}
           onChange={(gradient, transient) => setBackground({ gradient }, transient)}
           onCommit={commitDoc}
-          helpIds={{ type: 'background.gradientType', angle: 'background.gradientAngle', colors: 'background.gradientColors', stops: 'background.gradientStops' }}
         />
       )}
 
@@ -86,12 +118,11 @@ export function BackgroundSection() {
         <>
           <SegmentedButtons
             label="Picture from"
-            helpId="background.source"
             value={source}
             onChange={(s: Source) => {
               setChosen(s);
               if (s === 'library') pickLibrary(bg.image?.type === 'library' ? bg.image.id : BACKGROUND_LIBRARY[0]!.id);
-              else if (s === 'art') setBackground({ image: { type: 'art' }, zoom: 1.3, offsetX: 0, offsetY: 0, blur: Math.max(bg.blur, 40) });
+              else if (s === 'art') setBackground({ image: { type: 'art' }, ...artPosition(), blur: ART_BLUR });
               else setBackground({ image: bg.image?.type === 'asset' ? bg.image : null });
             }}
             options={[
@@ -103,7 +134,6 @@ export function BackgroundSection() {
           {source === 'library' && (
             <TileGrid
               label="Built-in pictures"
-              helpId="background.library"
               value={bg.image?.type === 'library' ? bg.image.id : ''}
               onChange={pickLibrary}
               tiles={BACKGROUND_LIBRARY.map((b) => ({
@@ -117,7 +147,7 @@ export function BackgroundSection() {
           {source === 'library' && <LibraryCredit id={bg.image?.type === 'library' ? bg.image.id : null} />}
           {source === 'asset' && (
             <>
-              <div className="control" data-control="background-upload" data-help-id="background.upload">
+              <div className="control" data-control="background-upload">
                 <UploadButton className="btn btn--wide" target="background">
                   <Upload size={18} aria-hidden="true" />
                   Upload a background
@@ -127,51 +157,8 @@ export function BackgroundSection() {
             </>
           )}
           {source === 'art' && !hasArt && <p className="control__hint">Add an image first: its enlarged, blurred copy fills the background.</p>}
-          <Slider
-            label="Blur"
-            helpId="background.blur"
-            min={0}
-            max={100}
-            value={bg.blur}
-            defaultValue={DEFAULT_BACKGROUND.blur}
-            onChange={(blur) => setBackground({ blur }, true)}
-            onCommit={commitDoc}
-          />
-          <Slider
-            label="Zoom"
-            helpId="background.zoom"
-            unit="%"
-            min={50}
-            max={400}
-            step={5}
-            value={Math.round(bg.zoom * 100)}
-            defaultValue={100}
-            onChange={(v) => setBackground({ zoom: v / 100 }, true)}
-            onCommit={commitDoc}
-          />
-          <Slider
-            label="Move left or right"
-            helpId="background.offsetX"
-            unit="%"
-            min={-100}
-            max={100}
-            value={Math.round(bg.offsetX * 100)}
-            defaultValue={0}
-            onChange={(v) => setBackground({ offsetX: v / 100 }, true)}
-            onCommit={commitDoc}
-          />
-          <Slider
-            label="Move up or down"
-            helpId="background.offsetY"
-            unit="%"
-            min={-100}
-            max={100}
-            value={Math.round(bg.offsetY * 100)}
-            defaultValue={0}
-            onChange={(v) => setBackground({ offsetY: v / 100 }, true)}
-            onCommit={commitDoc}
-          />
-          <div className="control control--row" data-control="background-move" data-help-id="background.move">
+          {source === 'art' && blurSlider}
+          <div className="control control--row" data-control="background-move">
             <button
               type="button"
               className="btn btn--small"
@@ -185,46 +172,78 @@ export function BackgroundSection() {
             <button
               type="button"
               className="btn btn--ghost btn--small"
-              disabled={bg.offsetX === 0 && bg.offsetY === 0 && bg.zoom === 1}
-              onClick={() => setBackground({ zoom: 1, offsetX: 0, offsetY: 0 })}
+              disabled={bg.zoom === home.zoom && bg.offsetX === home.offsetX && bg.offsetY === home.offsetY}
+              onClick={() => setBackground(home)}
             >
               <RotateCcw size={14} aria-hidden="true" />
               Reset position
             </button>
           </div>
-          <div className="control-group">
-            <h4 className="control-group__title">Colour</h4>
-            {COLOUR_SLIDERS.map((def) => (
-              <Slider
-                key={def.key}
-                label={def.label}
-                helpId={def.helpId}
-                unit={def.unit}
-                min={def.min}
-                max={def.max}
-                value={bg.adjust[def.key]}
-                defaultValue={DEFAULT_BACKGROUND.adjust[def.key]}
-                onChange={(v) => setAdjust({ [def.key]: v }, true)}
-                onCommit={commitDoc}
-              />
-            ))}
-            <button
-              type="button"
-              className="btn btn--ghost btn--small"
-              disabled={COLOUR_SLIDERS.every((def) => bg.adjust[def.key] === 0)}
-              onClick={() => setAdjust({ ...DEFAULT_BACKGROUND.adjust })}
-            >
-              <RotateCcw size={14} aria-hidden="true" />
-              Reset colours
-            </button>
-          </div>
+          <Advanced>
+            {source !== 'art' && blurSlider}
+            <Slider
+              label="Zoom"
+              unit="%"
+              min={50}
+              max={400}
+              step={5}
+              value={Math.round(bg.zoom * 100)}
+              defaultValue={100}
+              onChange={(v) => setBackground({ zoom: v / 100 }, true)}
+              onCommit={commitDoc}
+            />
+            <Slider
+              label="Move left or right"
+              unit="%"
+              min={-100}
+              max={100}
+              value={Math.round(bg.offsetX * 100)}
+              defaultValue={0}
+              onChange={(v) => setBackground({ offsetX: v / 100 }, true)}
+              onCommit={commitDoc}
+            />
+            <Slider
+              label="Move up or down"
+              unit="%"
+              min={-100}
+              max={100}
+              value={Math.round(bg.offsetY * 100)}
+              defaultValue={0}
+              onChange={(v) => setBackground({ offsetY: v / 100 }, true)}
+              onCommit={commitDoc}
+            />
+            <div className="control-group">
+              <h4 className="control-group__title">Colour</h4>
+              {COLOUR_SLIDERS.map((def) => (
+                <Slider
+                  key={def.key}
+                  label={def.label}
+                  unit={def.unit}
+                  min={def.min}
+                  max={def.max}
+                  value={bg.adjust[def.key]}
+                  defaultValue={DEFAULT_BACKGROUND.adjust[def.key]}
+                  onChange={(v) => setAdjust({ [def.key]: v }, true)}
+                  onCommit={commitDoc}
+                />
+              ))}
+              <button
+                type="button"
+                className="btn btn--ghost btn--small"
+                disabled={COLOUR_SLIDERS.every((def) => bg.adjust[def.key] === 0)}
+                onClick={() => setAdjust({ ...DEFAULT_BACKGROUND.adjust })}
+              >
+                <RotateCcw size={14} aria-hidden="true" />
+                Reset colours
+              </button>
+            </div>
+          </Advanced>
         </>
       )}
 
       {bg.kind !== 'none' && (
         <Slider
           label="Opacity"
-          helpId="background.opacity"
           unit="%"
           min={0}
           max={100}

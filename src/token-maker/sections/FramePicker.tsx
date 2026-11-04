@@ -42,8 +42,8 @@ export function FramePicker({
     button.current?.focus();
   };
   return (
-    <div className="frame-pick" data-control="frame-picker" data-help-id="frame.style">
-      <ControlLabel label="Frame" helpId="frame.style" />
+    <div className="frame-pick" data-control="frame-picker">
+      <ControlLabel label="Frame" />
       <div className="frame-pick__current" data-testid="current-frame">
         <Thumb src={thumbs?.get(value)} size={56} />
         <div className="frame-pick__current-text">

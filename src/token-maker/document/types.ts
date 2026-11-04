@@ -77,6 +77,12 @@ export interface ImageAdjustments {
   grayscale: number;
   sepia: number;
   invert: boolean;
+  /** Recolour: the colour to change (#rrggbb), or null for none. */
+  recolorColor: string | null;
+  /** Degrees round the colour wheel to turn that colour (-180…180). */
+  recolorShift: number;
+  /** 0…100: how wide a range of colours around it changes too. */
+  recolorBreadth: number;
 }
 
 export interface BackgroundRemoval {

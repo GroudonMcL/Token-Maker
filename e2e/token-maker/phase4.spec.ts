@@ -70,6 +70,8 @@ test('a character on a blurred forest with a vignette and torchlight from below;
   panel = await openSection(page, 'Background');
   await panel.getByRole('radio', { name: 'Picture' }).click();
   await panel.getByRole('radio', { name: 'Forest' }).click();
+  // A picture's blur, zoom, position and colours are in Advanced.
+  await panel.getByRole('button', { name: 'Advanced' }).click();
   await setNumber(panel, 'Blur', '50');
   const [forest] = await previewPixels(page, [SKY]);
   // The forest is greenish, not the flat background or the dark backing.
@@ -139,6 +141,7 @@ test('the background picture moves with sliders and takes colour changes (v11)',
   const [before] = await previewPixels(page, [SKY]);
   // The sea is blue; turned half way round the colour wheel it goes orange.
   expect(before![2]!).toBeGreaterThan(before![0]!);
+  await panel.getByRole('button', { name: 'Advanced' }).click();
   await setNumber(panel, 'Hue', '180');
   await expect.poll(async () => (await previewPixels(page, [SKY]))[0]![0]!).toBeGreaterThan(before![0]! + 10);
   await setNumber(panel, 'Saturation', '-100');
@@ -166,7 +169,9 @@ test('your own picture as the background, moved on the canvas', async ({ page, i
   // The art is unchanged; the background now has a picture of its own.
   await expect(page.locator('.token-summary__name').first()).toHaveText('Flat Goblin');
   await expect(panel.getByRole('button', { name: 'Reset position' })).toBeDisabled();
-  await panel.getByRole('button', { name: 'Move on the canvas' }).click();
+  // Choosing a picture here turns on moving it on the canvas, with handles to resize it.
+  await expect(panel.getByRole('button', { name: 'Move on the canvas' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('background-scale-handle-2')).toBeVisible();
   const box = (await page.getByTestId('token-canvas').boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -176,4 +181,8 @@ test('your own picture as the background, moved on the canvas', async ({ page, i
   await expect(panel.getByRole('button', { name: 'Reset position' })).toBeEnabled();
   // The art itself didn't move.
   await expect(page.locator('.float-toolbar__readout')).toHaveText('100%');
+  // Leaving the section stops moving the background.
+  await panel.getByRole('button', { name: 'Move on the canvas' }).click();
+  await openSection(page, 'Frame');
+  await expect(page.getByRole('toolbar', { name: 'Move background' })).toHaveCount(0);
 });

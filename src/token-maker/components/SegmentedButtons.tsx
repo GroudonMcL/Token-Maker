@@ -1,5 +1,4 @@
 import { useId, type ReactNode } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 import { useRovingRadio } from './useRovingRadio';
 
@@ -14,13 +13,11 @@ export interface SegmentOption<V extends string> {
 /** A row of joined buttons where exactly one is chosen. */
 export function SegmentedButtons<V extends string>({
   label,
-  helpId,
   options,
   value,
   onChange,
 }: {
   label: string;
-  helpId: HelpId;
   options: readonly SegmentOption<V>[];
   value: V;
   onChange: (value: V) => void;
@@ -32,8 +29,8 @@ export function SegmentedButtons<V extends string>({
     onChange,
   );
   return (
-    <div className="segmented" data-control="segmented" data-help-id={helpId}>
-      <ControlLabel id={labelId} label={label} helpId={helpId} />
+    <div className="segmented" data-control="segmented">
+      <ControlLabel id={labelId} label={label} />
       <div className="segmented__row" role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown}>
         {options.map((o, i) => (
           <button

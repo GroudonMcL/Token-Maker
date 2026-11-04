@@ -31,8 +31,8 @@ export function LightingSection() {
   };
   return (
     <>
-      <div className="control" data-control="light-presets" data-help-id="lighting.presets">
-        <ControlLabel label="Presets" helpId="lighting.presets" />
+      <div className="control" data-control="light-presets">
+        <ControlLabel label="Presets" />
         <div className="preset-grid" role="group" aria-label="Lighting presets">
           {LIGHT_PRESETS.map((p) => (
             <button key={p.id} type="button" className="btn btn--small preset-btn" aria-pressed={l.enabled && l.preset === p.id} onClick={() => applyPreset(p.id)}>
@@ -44,22 +44,20 @@ export function LightingSection() {
         </div>
       </div>
       <div className="toggle-pair">
-        <Toggle label="Light the art" helpId="lighting.enabled" checked={l.enabled} onChange={(enabled) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, enabled } }))} />
-        <Toggle label="Light the frame" helpId="lighting.frame" checked={l.frame} onChange={(frame) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, frame } }))} />
+        <Toggle label="Light the art" checked={l.enabled} onChange={(enabled) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, enabled } }))} />
+        <Toggle label="Light the frame" checked={l.frame} onChange={(frame) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, frame } }))} />
       </div>
       <DirectionDial
         label="Light comes from"
-        helpId="lighting.direction"
         value={l.direction}
         onChange={(direction) => setLight({ direction }, true)}
         onCommit={commitDoc}
       />
       {(l.enabled || l.frame) && (
         <>
-          <ColorSwatches label="Light colour" helpId="lighting.color" value={l.color} swatches={SWATCHES} onChange={(color) => setLight({ color }, true)} onCommit={commitDoc} />
+          <ColorSwatches label="Light colour" value={l.color} swatches={SWATCHES} onChange={(color) => setLight({ color }, true)} onCommit={commitDoc} />
           <Slider
             label="Strength"
-            helpId="lighting.strength"
             unit="%"
             min={0}
             max={100}
@@ -70,7 +68,6 @@ export function LightingSection() {
           />
           <Slider
             label="Darkness away from the light"
-            helpId="lighting.falloff"
             unit="%"
             min={0}
             max={100}
@@ -83,12 +80,11 @@ export function LightingSection() {
       )}
       {l.enabled && (
         <>
-          <Toggle label="Rim light" helpId="lighting.rim" checked={l.rim.enabled} onChange={(enabled) => setLight({ rim: { ...l.rim, enabled } })} />
+          <Toggle label="Rim light" checked={l.rim.enabled} onChange={(enabled) => setLight({ rim: { ...l.rim, enabled } })} />
           {l.rim.enabled && (
             <>
               <Slider
                 label="Rim strength"
-                helpId="lighting.rimStrength"
                 unit="%"
                 min={0}
                 max={100}
@@ -99,7 +95,6 @@ export function LightingSection() {
               />
               <Slider
                 label="Rim width"
-                helpId="lighting.rimWidth"
                 unit="%"
                 min={0}
                 max={100}
@@ -110,7 +105,6 @@ export function LightingSection() {
               />
               <Slider
                 label="Rim softness"
-                helpId="lighting.rimSoftness"
                 unit="%"
                 min={0}
                 max={100}
@@ -123,7 +117,6 @@ export function LightingSection() {
           )}
           <Toggle
             label="Light the background too"
-            helpId="lighting.background"
             checked={l.background}
             onChange={(background) => updateDoc((d) => ({ ...d, lighting: { ...d.lighting, background } }))}
           />

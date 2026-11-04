@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { setBatchMode } from '../batch/batch';
 import { DEFAULT_EXPORT, exportSettings, getExportSettings } from '../export/exportSettings';
-import { helpContent } from '../help/helpContent';
 import { resetDoc, updateDoc } from '../state/tokenStore';
 import { ExportSection } from './ExportSection';
 
@@ -47,12 +46,11 @@ describe('Export section', () => {
     expect((screen.getByLabelText('File name') as HTMLInputElement).value).toBe('Orc');
   });
 
-  it('offers "Export all as ZIP" only in batch mode; every control has help', () => {
-    const { container, rerender } = render(<ExportSection />);
+  it('offers "Export all as ZIP" only in batch mode', () => {
+    const { rerender } = render(<ExportSection />);
     expect(screen.queryByRole('button', { name: /Export all as ZIP/ })).toBeNull();
     setBatchMode(true);
     rerender(<ExportSection />);
     expect(screen.getByRole('button', { name: /Export all as ZIP/ })).toBeInTheDocument();
-    for (const el of container.querySelectorAll('[data-control]')) expect(Object.keys(helpContent)).toContain(el.getAttribute('data-help-id'));
   });
 });

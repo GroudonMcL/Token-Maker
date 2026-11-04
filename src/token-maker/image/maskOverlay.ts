@@ -56,3 +56,35 @@ export function maskOverlay(mask: Uint8Array, width: number, height: number): An
   cache.set(mask, c);
   return c;
 }
+
+const ghostCache = new WeakMap<Uint8Array, AnyCanvas>();
+/** How strongly the ghost of the removed parts shows. */
+const GHOST_ALPHA = 0.4;
+
+/**
+ * The picture as it was, see-through and only where the brush (or the cut-out)
+ * has removed it: a guide to what Restore would bring back. Drawn under the
+ * red tint while the brush is on.
+ */
+export function ghostOverlay(image: CanvasImageSource, mask: Uint8Array, width: number, height: number): AnyCanvas {
+  const hit = ghostCache.get(mask);
+  if (hit) return hit;
+  const c = document.createElement('canvas');
+  c.width = width;
+  c.height = height;
+  const ctx = c.getContext('2d');
+  if (ctx) {
+    const alpha = ctx.createImageData(width, height);
+    const d = alpha.data;
+    for (let p = 0, i = 0; p < mask.length; p++, i += 4) d[i + 3] = (255 - mask[p]!) * GHOST_ALPHA;
+    const a = document.createElement('canvas');
+    a.width = width;
+    a.height = height;
+    a.getContext('2d')?.putImageData(alpha, 0, 0);
+    ctx.drawImage(image, 0, 0, width, height);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(a, 0, 0);
+  }
+  ghostCache.set(mask, c);
+  return c;
+}

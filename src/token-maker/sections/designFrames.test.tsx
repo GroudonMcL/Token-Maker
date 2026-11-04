@@ -4,7 +4,6 @@
 import 'fake-indexeddb/auto';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { helpContent } from '../help/helpContent';
 import { createPreset, migratePreset } from '../presets/preset';
 import { installSharedImages } from '../presets/presetStore';
 import { designLibrary, hasDesign, refreshDesigns, removeDesign, saveDesign } from '../state/designLibrary';
@@ -24,7 +23,7 @@ beforeEach(async () => {
 
 describe('Frame Maker designs', () => {
   it('opens a design file as the frame, keeps it in this browser, and undo brings the drawn frame back', async () => {
-    const { container } = render(<FrameSection />);
+    render(<FrameSection />);
     fireEvent.click(screen.getByRole('radio', { name: 'Frame Maker' }));
     expect(getDoc().frame.kind).toBe('design');
     expect(await screen.findByText(/No designs yet/)).toBeInTheDocument();
@@ -35,7 +34,6 @@ describe('Frame Maker designs', () => {
     expect(designLibrary.getState().designs.map((d) => d.name)).toEqual(['Jewelled']);
     // The band controls of a drawn frame work for designs too.
     expect(screen.getByRole('slider', { name: /Thickness/ })).toBeEnabled();
-    for (const el of container.querySelectorAll('[data-control]')) expect(Object.keys(helpContent)).toContain(el.getAttribute('data-help-id'));
     undo();
     expect(getDoc().frame.design).toBeNull();
   });

@@ -1,7 +1,7 @@
-import { Brush, Eraser, RotateCcw, Undo2 } from 'lucide-react';
+import { Brush, Eraser, PaintbrushVertical, RotateCcw, Undo2 } from 'lucide-react';
 import { Advanced, ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
 import { BRUSH_MAX, BRUSH_MIN, DEFAULTS as TOOL_DEFAULTS, setBrush, setTool, useTool } from '../editor/tools';
-import { updateDoc, useDoc } from '../state/tokenStore';
+import { undo, updateDoc, useCanUndo, useDoc } from '../state/tokenStore';
 
 /** The erase/restore brush, shown under background removal. */
 export function BrushControls() {
@@ -11,14 +11,16 @@ export function BrushControls() {
   const softness = useTool((s) => s.brushSoftness);
   const usePressure = useTool((s) => s.usePressure);
   const showRemoved = useTool((s) => s.showRemoved);
+  const showGhost = useTool((s) => s.showGhost);
+  const canUndo = useCanUndo();
   const strokeCount = useDoc((d) => d.art.strokes.length);
   const on = tool === 'brush';
 
   return (
     <div className="control-group">
       <h4 className="control-group__title">Erase / restore brush</h4>
-      <div className="control" data-control="brush" data-help-id="image.brush">
-        <ControlLabel label="Brush" helpId="image.brush" />
+      <div className="control" data-control="brush">
+        <ControlLabel label="Brush" />
         <button type="button" className={`btn btn--wide${on ? ' btn--primary' : ''}`} aria-pressed={on} onClick={() => setTool(on ? 'move' : 'brush')}>
           <Brush size={18} aria-hidden="true" />
           {on ? 'Brush on: paint on the picture' : 'Use the brush'}
@@ -26,17 +28,15 @@ export function BrushControls() {
       </div>
       <SegmentedButtons
         label="Brush does"
-        helpId="image.brushMode"
         value={mode}
         onChange={(m) => setBrush({ brushMode: m })}
         options={[
           { value: 'erase', label: 'Erase', icon: <Eraser size={16} /> },
-          { value: 'restore', label: 'Restore', icon: <Undo2 size={16} /> },
+          { value: 'restore', label: 'Restore', icon: <PaintbrushVertical size={16} /> },
         ]}
       />
       <Slider
         label="Brush size"
-        helpId="image.brushSize"
         unit="px"
         defaultValue={TOOL_DEFAULTS.brushSize}
         min={BRUSH_MIN}
@@ -44,10 +44,9 @@ export function BrushControls() {
         value={size}
         onChange={(v) => setBrush({ brushSize: v })}
       />
-      <Advanced helpId="image.brushAdvanced">
+      <Advanced>
         <Slider
           label="Softness"
-          helpId="image.brushSoftness"
           unit="%"
           defaultValue={TOOL_DEFAULTS.brushSoftness}
           min={0}
@@ -55,18 +54,25 @@ export function BrushControls() {
           value={softness}
           onChange={(v) => setBrush({ brushSoftness: v })}
         />
-        <Toggle label="Pen pressure" helpId="image.pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
-        <Toggle label="Show removed parts in red" helpId="image.showRemoved" checked={showRemoved} onChange={(v) => setBrush({ showRemoved: v })} />
+        <Toggle label="Pen pressure" checked={usePressure} onChange={(v) => setBrush({ usePressure: v })} />
+        <Toggle label="Show removed parts in red" checked={showRemoved} onChange={(v) => setBrush({ showRemoved: v })} />
+        <Toggle label="View ghost image" checked={showGhost} onChange={(v) => setBrush({ showGhost: v })} />
       </Advanced>
-      <button
-        type="button"
-        className="btn btn--ghost btn--small"
-        disabled={!strokeCount}
-        onClick={() => updateDoc((d) => ({ ...d, art: { ...d.art, strokes: [] } }))}
-      >
-        <RotateCcw size={16} aria-hidden="true" />
-        Clear brush strokes
-      </button>
+      <div className="button-row">
+        <button type="button" className="btn btn--ghost btn--small" disabled={!canUndo} onClick={undo}>
+          <Undo2 size={16} aria-hidden="true" />
+          Undo
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost btn--small"
+          disabled={!strokeCount}
+          onClick={() => updateDoc((d) => ({ ...d, art: { ...d.art, strokes: [] } }))}
+        >
+          <RotateCcw size={16} aria-hidden="true" />
+          Clear brush strokes
+        </button>
+      </div>
     </div>
   );
 }

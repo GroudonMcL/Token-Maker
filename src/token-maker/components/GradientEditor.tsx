@@ -1,18 +1,38 @@
-import { Plus, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import type { Gradient, GradientStop } from '../document/types';
-import type { HelpId } from '../help/helpContent';
-import { mix } from '../render/color';
-import { Advanced } from './Section';
+import { mix, rgba } from '../render/color';
 import { ColorSwatches } from './ColorSwatches';
 import { SegmentedButtons } from './SegmentedButtons';
 import { Slider } from './Slider';
 
-const SWATCHES = ['#000000', '#1b2233', '#3d5a80', '#7fb2d8', '#ffffff', '#ffd9a0', '#ff7a12', '#b8322a', '#5b2d7a', '#2f5a24'];
+const SWATCHES = ['#000000', '#ffffff', '#1b2233', '#3d5a80', '#7fb2d8', '#2f8f83', '#2f5a24', '#9bc53d', '#ffd9a0', '#f2c14e', '#ff7a12', '#b8322a', '#d4508a', '#5b2d7a'];
+const MAX_STOPS = 16;
+/** A press that moves less than this many pixels is a click, not a drag. */
+const DRAG_START = 3;
+
+const byOffset = (stops: GradientStop[]) => [...stops].sort((a, b) => a.offset - b.offset);
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const round = (v: number) => Math.round(v * 1000) / 1000;
+
+/** The gradient's colour and opacity at `offset` (stops in order). */
+function stopAt(stops: GradientStop[], offset: number): GradientStop {
+  const after = stops.findIndex((s) => s.offset >= offset);
+  if (after <= 0) {
+    const s = stops[after === 0 ? 0 : stops.length - 1]!;
+    return { offset, color: s.color, opacity: s.opacity };
+  }
+  const a = stops[after - 1]!;
+  const b = stops[after]!;
+  const t = b.offset > a.offset ? (offset - a.offset) / (b.offset - a.offset) : 0;
+  return { offset, color: mix(a.color, b.color, t), opacity: a.opacity + (b.opacity - a.opacity) * t };
+}
 
 /**
- * A gradient editor (DESIGN.md §6.3): simple shows the type, angle and two
- * colours; Advanced lists every stop with its position, colour and opacity,
- * and stops can be added and removed.
+ * A gradient editor (DESIGN.md §6.3): a bar showing the gradient with a
+ * marker under it for each colour. Drag a marker to move its colour along
+ * the bar, click it to choose its colour and opacity, click the bar to add
+ * a colour there. Linear gradients also have an angle.
  *
  * `onChange(g, true)` is a live change while dragging; `onCommit` ends it.
  */
@@ -20,33 +40,82 @@ export function GradientEditor({
   value: g,
   onChange,
   onCommit,
-  helpIds,
 }: {
   value: Gradient;
   onChange: (g: Gradient, transient?: boolean) => void;
   onCommit: () => void;
-  helpIds: { type: HelpId; angle: HelpId; colors: HelpId; stops: HelpId };
 }) {
-  const first = g.stops[0]!;
-  const last = g.stops[g.stops.length - 1]!;
-  const setStop = (i: number, patch: Partial<GradientStop>, transient = false) => {
-    const stops = g.stops.map((s, k) => (k === i ? { ...s, ...patch } : s));
-    onChange({ ...g, stops: transient ? stops : [...stops].sort((a, b) => a.offset - b.offset) }, transient);
+  const barRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const drag = useRef<{ index: number; x: number; moved: boolean } | null>(null);
+  const sorted = byOffset(g.stops);
+  const current = selected !== null ? g.stops[selected] : undefined;
+
+  const offsetAt = (clientX: number) => {
+    const r = barRef.current!.getBoundingClientRect();
+    return round(clamp01((clientX - r.left) / Math.max(1, r.width)));
   };
-  const addStop = () => {
-    // Between the two stops furthest apart, in their mixed colour.
-    let at = 0;
-    for (let i = 1; i < g.stops.length; i++) if (g.stops[i]!.offset - g.stops[i - 1]!.offset > g.stops[at + 1]!.offset - g.stops[at]!.offset) at = i - 1;
-    const a = g.stops[at]!;
-    const b = g.stops[at + 1]!;
-    const stop = { offset: (a.offset + b.offset) / 2, color: mix(a.color, b.color, 0.5), opacity: (a.opacity + b.opacity) / 2 };
-    onChange({ ...g, stops: [...g.stops, stop].sort((x, y) => x.offset - y.offset) });
+  const setStop = (i: number, patch: Partial<GradientStop>, transient = false) =>
+    onChange({ ...g, stops: g.stops.map((s, k) => (k === i ? { ...s, ...patch } : s)) }, transient);
+  /** Puts the stops back in order, keeping the same one selected. */
+  const settle = (stops: GradientStop[], keep: GradientStop | undefined) => {
+    const next = byOffset(stops);
+    onChange({ ...g, stops: next }, true);
+    onCommit();
+    if (keep) setSelected(next.indexOf(keep));
   };
+  const remove = (i: number) => {
+    if (g.stops.length <= 2) return;
+    onChange({ ...g, stops: g.stops.filter((_, k) => k !== i) });
+    setSelected(null);
+  };
+
+  const addAt = (clientX: number) => {
+    if (g.stops.length >= MAX_STOPS) return;
+    const stop = stopAt(sorted, offsetAt(clientX));
+    const stops = byOffset([...g.stops, stop]);
+    onChange({ ...g, stops });
+    setSelected(stops.indexOf(stop));
+  };
+
+  const onMarkerDown = (i: number, e: PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.focus();
+    drag.current = { index: i, x: e.clientX, moved: false };
+  };
+  const onMarkerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    if (!d.moved && Math.abs(e.clientX - d.x) < DRAG_START) return;
+    d.moved = true;
+    setStop(d.index, { offset: offsetAt(e.clientX) }, true);
+  };
+  const onMarkerUp = (i: number) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d) return;
+    if (d.moved) settle(g.stops, g.stops[i]);
+    else setSelected(selected === i ? null : i);
+  };
+  const onMarkerKey = (i: number, e: KeyboardEvent<HTMLButtonElement>) => {
+    const step = e.shiftKey ? 0.1 : 0.01;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const s = g.stops[i]!;
+      const moved = { ...s, offset: round(clamp01(s.offset + (e.key === 'ArrowLeft' ? -step : step))) };
+      settle(g.stops.map((x, k) => (k === i ? moved : x)), moved);
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      remove(i);
+    }
+  };
+
   return (
     <div className="gradient-editor">
       <SegmentedButtons
         label="Gradient type"
-        helpId={helpIds.type}
         value={g.type}
         onChange={(type) => onChange({ ...g, type })}
         options={[
@@ -57,7 +126,6 @@ export function GradientEditor({
       {g.type === 'linear' && (
         <Slider
           label="Angle"
-          helpId={helpIds.angle}
           unit="°"
           min={0}
           max={359}
@@ -67,79 +135,67 @@ export function GradientEditor({
           onCommit={onCommit}
         />
       )}
-      <ColorSwatches
-        label={g.type === 'radial' ? 'Middle colour' : 'Start colour'}
-        helpId={helpIds.colors}
-        value={first.color}
-        swatches={SWATCHES}
-        onChange={(color) => setStop(0, { color }, true)}
-        onCommit={onCommit}
-      />
-      <ColorSwatches
-        label={g.type === 'radial' ? 'Outer colour' : 'End colour'}
-        helpId={helpIds.colors}
-        value={last.color}
-        swatches={SWATCHES}
-        onChange={(color) => setStop(g.stops.length - 1, { color }, true)}
-        onCommit={onCommit}
-      />
-      <Advanced>
-        <div className="gradient-stops" data-control="gradient-stops" data-help-id={helpIds.stops}>
-          {g.stops.map((s, i) => (
-            <div key={i} className="gradient-stop">
-              <div className="gradient-stop__head">
-                <input
-                  type="color"
-                  className="gradient-stop__color"
-                  aria-label={`Stop ${i + 1} colour`}
-                  value={s.color}
-                  onChange={(e) => setStop(i, { color: e.target.value }, true)}
-                  onBlur={onCommit}
-                />
-                <span className="gradient-stop__name">Stop {i + 1}</span>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={`Remove stop ${i + 1}`}
-                  disabled={g.stops.length <= 2}
-                  onClick={() => onChange({ ...g, stops: g.stops.filter((_, k) => k !== i) })}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <Slider
-                label="Position"
-                helpId={helpIds.stops}
-                unit="%"
-                min={0}
-                max={100}
-                value={Math.round(s.offset * 100)}
-                onChange={(v) => setStop(i, { offset: v / 100 }, true)}
-                onCommit={() => {
-                  // Keep the stops in order once the drag ends.
-                  onChange({ ...g, stops: [...g.stops].sort((a, b) => a.offset - b.offset) }, true);
-                  onCommit();
-                }}
-              />
-              <Slider
-                label="Opacity"
-                helpId={helpIds.stops}
-                unit="%"
-                min={0}
-                max={100}
-                value={Math.round(s.opacity * 100)}
-                defaultValue={100}
-                onChange={(v) => setStop(i, { opacity: v / 100 }, true)}
-                onCommit={onCommit}
-              />
-            </div>
-          ))}
-          <button type="button" className="btn btn--ghost btn--small" onClick={addStop} disabled={g.stops.length >= 16}>
-            <Plus size={14} aria-hidden="true" />
-            Add a stop
-          </button>
+      <div className="gradient-bar" data-control="gradient-bar" role="group" aria-label="Gradient colours">
+        <div
+          ref={barRef}
+          className="gradient-bar__track"
+          data-testid="gradient-bar"
+          title={g.stops.length < MAX_STOPS ? 'Click to add a colour here' : undefined}
+          onClick={(e) => addAt(e.clientX)}
+        >
+          <span className="gradient-bar__fill" style={{ background: `linear-gradient(to right, ${sorted.map((s) => `${rgba(s.color, s.opacity)} ${s.offset * 100}%`).join(', ')})` }} />
         </div>
-      </Advanced>
+        <div className="gradient-bar__markers">
+          {g.stops.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              className="gradient-bar__marker"
+              data-testid={`gradient-marker-${i}`}
+              aria-label={`Colour ${sorted.indexOf(s) + 1} at ${Math.round(s.offset * 100)}%`}
+              aria-pressed={selected === i}
+              style={{ left: `${s.offset * 100}%`, '--stop': rgba(s.color, s.opacity) } as CSSProperties}
+              onPointerDown={(e) => onMarkerDown(i, e)}
+              onPointerMove={onMarkerMove}
+              onPointerUp={() => onMarkerUp(i)}
+              onPointerCancel={() => onMarkerUp(i)}
+              onClick={(e) => e.detail === 0 && setSelected(selected === i ? null : i)}
+              onKeyDown={(e) => onMarkerKey(i, e)}
+            />
+          ))}
+        </div>
+        <p className="control__hint">Click the bar to add a colour. Drag a marker to move it, or click it to change it.</p>
+      </div>
+      {current && selected !== null && (
+        <div className="gradient-stop" data-testid="gradient-stop-editor">
+          <ColorSwatches
+            label={`Colour ${sorted.indexOf(current) + 1}`}
+            value={current.color}
+            swatches={SWATCHES}
+            onChange={(color) => setStop(selected, { color }, true)}
+            onCommit={onCommit}
+          />
+          <Slider
+            label="Opacity"
+            unit="%"
+            min={0}
+            max={100}
+            value={Math.round(current.opacity * 100)}
+            defaultValue={100}
+            onChange={(v) => setStop(selected, { opacity: v / 100 }, true)}
+            onCommit={onCommit}
+          />
+          <div className="button-row">
+            <button type="button" className="btn btn--ghost btn--small" disabled={g.stops.length <= 2} onClick={() => remove(selected)}>
+              <X size={14} aria-hidden="true" />
+              Remove this colour
+            </button>
+            <button type="button" className="btn btn--ghost btn--small" onClick={() => setSelected(null)}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,7 +38,7 @@ Open the address it prints (usually <http://localhost:5173>).
 | `npm run lint` | ESLint. |
 | `npm run build` | Builds the site into `dist/`, with three pages: `index.html`, `token-maker/index.html` and `frame-maker/index.html`. |
 | `npm run preview` | Serves the built `dist/` folder. |
-| `npm run tm:…` / `npm run fm:…` | Each app's drawing and sheet scripts (`tm:help-images`, `tm:frame-sheet`, `fm:frame-sheet`, `fm:screenshots`…). They are described in each app's docs. |
+| `npm run tm:…` / `npm run fm:…` | Each app's drawing and sheet scripts (`tm:frame-sheet`, `fm:frame-sheet`, `fm:screenshots`…). They are described in each app's docs. |
 
 ## Deploying
 
@@ -69,7 +69,7 @@ index.html, src/shell/        The main page: each app in its own frame, the app 
 token-maker/index.html        Token Maker's page   → src/token-maker/
 frame-maker/index.html       Frame Maker's page  → src/frame-maker/
 server/, functions/, worker/  Token Maker's image proxy for web imports
-public/                       Fonts, backgrounds, pictures, help pictures and the favicon
+public/                       Fonts, backgrounds, pictures and the favicon
 scripts/token-maker/, scripts/frame-maker/   Each app's scripts
 e2e/shell, e2e/token-maker, e2e/frame-maker  End-to-end tests
 docs/token-maker/, docs/frame-maker/         Each app's design documents

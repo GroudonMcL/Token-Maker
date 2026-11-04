@@ -12,7 +12,7 @@ export function MenuStyleSwitch() {
   const style = useMenuStyle();
   return (
     <div className="menu-style">
-      <SegmentedButtons label="Menu style" helpId="panel.menuStyle" options={OPTIONS} value={style} onChange={setMenuStyle} />
+      <SegmentedButtons label="Menu style" options={OPTIONS} value={style} onChange={setMenuStyle} />
     </div>
   );
 }

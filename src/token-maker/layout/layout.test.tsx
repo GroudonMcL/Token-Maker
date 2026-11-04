@@ -42,6 +42,23 @@ describe('AppShell (desktop)', () => {
     expect(within(panel).queryByRole('button', { name: 'Import' })).toBeNull();
   });
 
+  it('groups the tabs as Picture, Style and Finish', () => {
+    render(<AppShell />);
+    const names = [...document.querySelectorAll('.tool-rail__group-name')].map((el) => el.textContent);
+    expect(names).toEqual(['Picture', 'Style', 'Finish']);
+  });
+
+  it('ends each tab with a button that opens the next one', () => {
+    render(<AppShell />);
+    const panel = screen.getByRole('complementary', { name: 'Token settings' });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Colour' }));
+    expect(screen.getByRole('tab', { name: 'Colour' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(within(panel).getByTestId('next-tab'));
+    expect(screen.getByRole('tab', { name: 'Cut-out' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Export' }));
+    expect(within(panel).queryByTestId('next-tab')).toBeNull();
+  });
+
   it('moves between tabs with the arrow keys', () => {
     render(<AppShell />);
     const first = screen.getByRole('tab', { name: 'Import' });

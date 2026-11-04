@@ -25,8 +25,14 @@ export interface ToolState {
   popOutMode: 'add' | 'erase';
   /** Show the pop-out mask as a coloured overlay while painting it. */
   showPopOut: boolean;
+  /** Show a see-through copy of the whole picture under the art while the brush is on, as a guide. */
+  showGhost: boolean;
   /** The decoration picked on the canvas or in the panel (Phase 7); it gets handles. Not remembered. */
   selectedDecoration: string | null;
+  /** The tool was turned on by opening a tab (Background, Pop-out), not by the user. Not remembered. */
+  autoTool: boolean;
+  /** What the eyedropper picks: the background colour to remove, or the colour to recolour. Not remembered. */
+  eyedropperFor: 'removal' | 'recolor';
 }
 
 export const BRUSH_MIN = 4;
@@ -42,7 +48,10 @@ export const DEFAULTS: ToolState = {
   showRemoved: true,
   popOutMode: 'add',
   showPopOut: true,
+  showGhost: true,
   selectedDecoration: null,
+  autoTool: false,
+  eyedropperFor: 'removal',
 };
 
 function loadPrefs(): Partial<ToolState> {
@@ -56,6 +65,7 @@ function loadPrefs(): Partial<ToolState> {
       showRemoved: typeof raw.showRemoved === 'boolean' ? raw.showRemoved : DEFAULTS.showRemoved,
       popOutMode: raw.popOutMode === 'erase' ? 'erase' : 'add',
       showPopOut: typeof raw.showPopOut === 'boolean' ? raw.showPopOut : DEFAULTS.showPopOut,
+      showGhost: typeof raw.showGhost === 'boolean' ? raw.showGhost : DEFAULTS.showGhost,
     };
   } catch {
     return {};
@@ -66,8 +76,8 @@ export const toolStore = createStore<ToolState>(() => ({ ...DEFAULTS, ...loadPre
 
 toolStore.subscribe((s) => {
   try {
-    const { brushMode, brushSize, brushSoftness, usePressure, showRemoved, popOutMode, showPopOut } = s;
-    localStorage.setItem(PREFS_KEY, JSON.stringify({ brushMode, brushSize, brushSoftness, usePressure, showRemoved, popOutMode, showPopOut }));
+    const { brushMode, brushSize, brushSoftness, usePressure, showRemoved, popOutMode, showPopOut, showGhost } = s;
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ brushMode, brushSize, brushSoftness, usePressure, showRemoved, popOutMode, showPopOut, showGhost }));
   } catch {
     /* private mode: just don't remember */
   }
@@ -77,6 +87,10 @@ export function useTool<T>(select: (s: ToolState) => T): T {
   return useStore(toolStore, select);
 }
 
-export const setTool = (tool: Tool) => toolStore.setState({ tool });
-export const setBrush = (patch: Partial<Omit<ToolState, 'tool'>>) => toolStore.setState(patch);
+export const setTool = (tool: Tool) => toolStore.setState({ tool, autoTool: false });
+/** Turns a tool on or off because a tab was opened or left (Background, Pop-out). */
+export const setAutoTool = (tool: Tool) => toolStore.setState({ tool, autoTool: tool !== 'move' });
+/** The eyedropper, picking a colour for `target`. */
+export const pickColourFor = (target: ToolState['eyedropperFor']) => toolStore.setState({ tool: 'eyedropper', autoTool: false, eyedropperFor: target });
+export const setBrush = (patch: Partial<Omit<ToolState, 'tool' | 'autoTool'>>) => toolStore.setState(patch);
 export const selectDecoration = (id: string | null) => toolStore.setState({ selectedDecoration: id });

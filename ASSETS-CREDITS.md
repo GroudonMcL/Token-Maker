@@ -147,6 +147,5 @@ Every font, icon, image and other asset bundled with Token Maker (Token Maker an
 | Overlay effects (foliage, smoke, mist, cobwebs, vignette, edge shadow) | Drawn by code at render time (`src/token-maker/render/overlays.ts`) | — |
 | Sample art in frame tiles, frame sheet and tests | Drawn by code for the project (`src/token-maker/render/sampleArt.ts`, `scripts/token-maker/make-fixture.ts`) | — |
 | "Try a sample" picture, True Goblin (`public/sample/true-goblin.png`) | Drawn by the owner, GroudonMcL | Owner's own |
-| Help-tip before/after pictures (`public/help/`) | Drawn by the site's own renderer (`scripts/token-maker/help-images.ts`, `scripts/token-maker/help-token-pictures.ts`) | — |
 | Frame Maker's ornaments, templates, themed and crafted borders, procedural textures, generators, shapes and styles | Drawn by code for the project (`src/frame-maker/render/`, `src/frame-maker/project/`) | — |
 | Test pictures (`e2e/token-maker/fixtures/`, `scripts/token-maker/fixtures/`) | Drawn by code for the project (`scripts/token-maker/make-fixture.ts`), or made from the owner's True Goblin | — (tests only, not shown on the site) |

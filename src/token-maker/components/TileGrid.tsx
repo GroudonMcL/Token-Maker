@@ -1,5 +1,4 @@
 import { useId, type ReactNode } from 'react';
-import type { HelpId } from '../help/helpContent';
 import { ControlLabel } from './ControlLabel';
 import { useRovingRadio } from './useRovingRadio';
 
@@ -14,13 +13,11 @@ export interface Tile {
 /** A grid of picture tiles with one chosen (like the frame picker). Tiles can be grouped. */
 export function TileGrid({
   label,
-  helpId,
   tiles,
   value,
   onChange,
 }: {
   label: string;
-  helpId: HelpId;
   tiles: readonly Tile[];
   value: string;
   onChange: (id: string) => void;
@@ -39,8 +36,8 @@ export function TileGrid({
   });
 
   return (
-    <div className="tile-grid" data-control="tiles" data-help-id={helpId}>
-      <ControlLabel id={labelId} label={label} helpId={helpId} />
+    <div className="tile-grid" data-control="tiles">
+      <ControlLabel id={labelId} label={label} />
       <div role="radiogroup" aria-labelledby={labelId} onKeyDown={onKeyDown} className="tile-grid__groups">
         {groups.map((g, gi) => (
           <div key={gi} className="tile-grid__group">
