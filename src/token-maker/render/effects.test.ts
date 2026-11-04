@@ -51,7 +51,7 @@ function token(effects: Partial<EffectLayer>[], patch: Partial<TokenDocument> = 
     ...d,
     art: { ...d.art, assetId: 'asset:art' },
     background: { ...d.background, kind: 'color', color: '#41566e' },
-    effects: effects.map((e, i) => ({ ...(e.kind === 'picture' ? newPictureEffect(SPRITE, `fx${i}`) : newEffect(e.kind ?? 'fire', `fx${i}`)), ...e })),
+    effects: effects.map((e, i) => ({ ...(e.kind === 'picture' ? newPictureEffect(SPRITE, `fx${i}`) : newEffect(e.kind ?? 'smoke', `fx${i}`)), ...e })),
     ...patch,
   };
 }
@@ -113,7 +113,7 @@ describe('every effect', () => {
       drawEffect(ctx, { ...newEffect(kind, 'fx'), placement: 'over' }, area, SIZE, null, time);
       return (ctx as unknown as CanvasRenderingContext2D).getImageData(0, 0, SIZE, SIZE).data;
     };
-    for (const kind of ['fire', 'embers', 'lightning'] as const) {
+    for (const kind of ['smoke', 'mist'] as const) {
       expect(same(frame(kind, 0), frame(kind, 0))).toBe(true);
       expect(changed(frame(kind, 0), frame(kind, 0.5)), kind).toBeGreaterThan(10);
     }
@@ -123,7 +123,7 @@ describe('every effect', () => {
     const canvas = createCanvas(SIZE + 40, SIZE + 40);
     const ctx = canvas.getContext('2d');
     ctx.translate(20, 20);
-    const doc = token([{ kind: 'fire', size: 0.5, spread: 100 }, { kind: 'outerGlow', size: 0.5 }, { kind: 'mist', placement: 'border', size: 0.5 }]);
+    const doc = token([{ kind: 'smoke', placement: 'border', size: 0.5, spread: 100 }, { kind: 'outerGlow', size: 0.5 }, { kind: 'mist', placement: 'border', size: 0.5 }]);
     renderToken(ctx as unknown as Ctx, doc, new Map([['asset:art', cutOutArt(make, 120)]]), SIZE);
     const data = ctx.getImageData(0, 0, SIZE + 40, SIZE + 40).data;
     for (let y = 0; y < SIZE + 40; y++) {
@@ -188,13 +188,6 @@ describe('placement', () => {
     expect(blueOnTop[2]).toBeGreaterThan(blueOnTop[0] + 60);
   });
 
-  it('the condition looks change what is under them', () => {
-    const red = flat('#cc2222');
-    const petrified = at(draw(token([{ kind: 'petrified', spread: 0 }]), red), 80, 90);
-    expect(Math.abs(petrified[0] - petrified[1])).toBeLessThan(40); // red turned stone grey
-    const ethereal = at(draw(token([{ kind: 'ethereal' }]), red), 80, 120);
-    expect(ethereal[3]).toBeLessThan(200); // see-through
-  });
 });
 
 describe('sizes are per grid square', () => {
@@ -214,25 +207,25 @@ describe('sizes are per grid square', () => {
 describe('performance', () => {
   it('dragging Intensity reuses the drawn layers instead of redrawing the effect', () => {
     clearEffectCache();
-    const original = PAINTERS.frost;
+    const original = PAINTERS.smoke;
     let paints = 0;
     let passes = 0;
-    PAINTERS.frost = (s) => {
+    PAINTERS.smoke = (s) => {
       const list = original(s);
       passes = list.length;
       return list.map((p) => ({ ...p, paint: (ctx: Ctx) => (paints++, p.paint(ctx)) }));
     };
     try {
-      for (const intensity of [100, 80, 60, 40, 20]) draw(token([{ kind: 'frost', intensity }]));
+      for (const intensity of [100, 80, 60, 40, 20]) draw(token([{ kind: 'smoke', intensity }]));
     } finally {
-      PAINTERS.frost = original;
+      PAINTERS.smoke = original;
     }
     expect(passes).toBeGreaterThan(0);
     expect(paints).toBe(passes); // each pass drawn once, then reused
   });
 
   it('three stacked effects add little to a phone-sized preview once drawn', () => {
-    const doc = token([{ kind: 'frost' }, { kind: 'mist' }, { kind: 'bloodied' }]);
+    const doc = token([{ kind: 'smoke' }, { kind: 'mist' }, { kind: 'outerGlow' }]);
     const size = 720; // a phone's preview: ~280 CSS px at 2.6× pixel ratio
     const art = cutOutArt(make, 400);
     const time = (d: TokenDocument) => {

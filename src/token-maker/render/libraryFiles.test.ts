@@ -1,7 +1,7 @@
 import { BACKGROUND_LIBRARY, libraryImageUrl, libraryThumbUrl } from './backgroundLibrary';
-import { DECORATION_PICTURES, EFFECT_PICTURES, pictureUrl } from './pictureLibrary';
+import { DECORATION_PICTURES, EFFECT_PICTURES, pictureThumbUrl, pictureUrl } from './pictureLibrary';
 
-const files = import.meta.glob(['../../../public/backgrounds/*', '../../../public/pictures/*'], { eager: true, query: '?url', import: 'default' });
+const files = import.meta.glob(['../../../public/backgrounds/*', '../../../public/pictures/*', '../../../public/pictures/thumbs/*'], { eager: true, query: '?url', import: 'default' });
 const have = new Set(Object.keys(files).map((f) => f.replace('../../../public', '')));
 
 describe('built-in pictures', () => {
@@ -24,7 +24,10 @@ describe('built-in pictures', () => {
   });
 
   it('every effect and decoration picture has its file', () => {
-    for (const p of [...DECORATION_PICTURES, ...EFFECT_PICTURES]) expect(have.has(pictureUrl(p.id)), p.id).toBe(true);
+    for (const p of [...DECORATION_PICTURES, ...EFFECT_PICTURES]) {
+      expect(have.has(pictureUrl(p.id)), p.id).toBe(true);
+      expect(have.has(pictureThumbUrl(p.id)), `${p.id} thumbnail (npm run tm:picture-thumbs)`).toBe(true);
+    }
   });
 
   it('ornaments keep their own colours only when they have some', () => {

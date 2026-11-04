@@ -106,18 +106,18 @@ test('a character on a blurred forest with a vignette and torchlight from below;
 
 test('overlays can be reordered, hidden and removed; presets stay editable', async ({ page }) => {
   let panel = await openSection(page, 'Effects');
-  await panel.getByRole('button', { name: /^Cobwebs$/ }).click();
+  await panel.getByRole('button', { name: /^Edge shadow$/ }).click();
   await panel.getByRole('button', { name: /^Vignette$/ }).click();
   const names = () => panel.locator('.overlay-card').evaluateAll((items) => items.map((i) => i.getAttribute('data-effect')));
-  expect(await names()).toEqual(['vignette', 'cobwebs']); // newest on top
+  expect(await names()).toEqual(['vignette', 'edgeShadow']); // newest on top
   await panel.getByRole('button', { name: 'Move Vignette down' }).click();
-  expect(await names()).toEqual(['cobwebs', 'vignette']);
-  await panel.getByRole('button', { name: 'Hide Cobwebs' }).click();
-  await expect(panel.getByRole('button', { name: 'Show Cobwebs' })).toBeVisible();
-  await panel.getByRole('button', { name: 'Remove Cobwebs' }).click();
+  expect(await names()).toEqual(['edgeShadow', 'vignette']);
+  await panel.getByRole('button', { name: 'Hide Edge shadow' }).click();
+  await expect(panel.getByRole('button', { name: 'Show Edge shadow' })).toBeVisible();
+  await panel.getByRole('button', { name: 'Remove Edge shadow' }).click();
   expect(await names()).toEqual(['vignette']);
   await page.getByRole('button', { name: 'Undo' }).first().click();
-  expect(await names()).toEqual(['cobwebs', 'vignette']);
+  expect(await names()).toEqual(['edgeShadow', 'vignette']);
 
   panel = await openSection(page, 'Lighting');
   await panel.getByRole('button', { name: /Moonlight/ }).click();

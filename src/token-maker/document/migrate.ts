@@ -20,6 +20,7 @@ import {
   MIN_SQUARES,
   newDecoration,
   newEffect,
+  newPictureEffect,
   newLabel,
   newPictureDecoration,
   OVERLAY_BASE_SIZE,
@@ -124,13 +125,58 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
       background,
       lighting: { ...lighting, background: lighting.enabled === true && lighting.background !== false },
       frame: { ...frame, backingOpacity: 0 },
-      effects: arr(doc.effects),
+      effects: arr(doc.effects).flatMap((e) => retiredEffect(obj(e))),
     };
   },
 };
 
-/** The effect kind each old foreground overlay became (v8). */
-const OVERLAY_EFFECT: Record<string, EffectKind> = {
+/**
+ * The pictures each code-drawn effect the owner didn't keep became (v12). A
+ * kind with no picture like it (Frightened, Unconscious) is dropped.
+ */
+const RETIRED_EFFECTS: Record<string, string[]> = {
+  fire: ['fx-fire'],
+  frost: ['fx-frost-edge'],
+  poison: ['fx-poison'],
+  lightning: ['fx-lightning'],
+  necrotic: ['fx-necrotic'],
+  radiant: ['fx-light-rays'],
+  bloodied: ['fx-blood-splatter'],
+  petrified: ['fx-stone', 'fx-cracks'],
+  ethereal: ['fx-ghost-wisps'],
+  poisoned: ['fx-poison'],
+  charmed: ['fx-hearts'],
+  embers: ['fx-embers'],
+  sparkles: ['fx-sparkle'],
+  foliage: ['fx-ivy-vine'],
+  cobwebs: ['fx-cobweb-corner'],
+  frightened: [],
+  unconscious: [],
+};
+
+/**
+ * An effect as v12 has it: a retired kind becomes its pictures, with their
+ * own starting settings, keeping whether it showed, how strong it was, its
+ * colour (for a picture coloured in), blur and shuffle. Anything else is kept.
+ */
+function retiredEffect(e: Json): Json[] {
+  const ids = RETIRED_EFFECTS[e.kind as string];
+  if (!ids) return [e];
+  return ids.map((id, i) => {
+    const p = newPictureEffect({ type: 'library', id }, `${str(e.id, 'effect')}${i ? `-${i}` : ''}`);
+    return {
+      ...p,
+      visible: e.visible ?? p.visible,
+      intensity: typeof e.intensity === 'number' ? e.intensity : p.intensity,
+      color: p.tint && typeof e.color === 'string' ? e.color : p.color,
+      blur: e.blur ?? p.blur,
+      seed: e.seed ?? p.seed,
+    };
+  });
+}
+
+/** The effect kind each old foreground overlay became (v8); foliage and cobwebs became pictures in v12. */
+const OVERLAY_EFFECT: Record<string, string> = {
   gradient: 'gradient',
   vignette: 'vignette',
   shadow: 'edgeShadow',

@@ -304,7 +304,8 @@ const picture: Painter = (s) => {
   const orient = (fx.image?.type === 'library' && effectPicture(fx.image.id)?.orient) || 'upright';
   return [
     {
-      clip: 'area',
+      // On the border, pictures (flames, frost, lightning) reach out past the band, like the old drawn fire did.
+      clip: s.border && fx.layout !== 'fill' ? undefined : 'area',
       paint: (ctx) => {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';

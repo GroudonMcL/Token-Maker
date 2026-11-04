@@ -32,7 +32,7 @@ function styled(): TokenDocument {
     image: { source: { type: 'upload', id: 'my-ring' }, name: 'My ring', hole: [0.7, 0, 0, 0.7, -0.7, 0, 0, -0.7], outer: 0.96, nudge: { x: 0.02, y: 0, scale: 1.1 } },
   };
   d.decorations = [{ ...newDecoration('horn', 'h1'), mirror: true }];
-  d.effects = [newEffect('frost', 'e1')];
+  d.effects = [newEffect('smoke', 'e1')];
   d.lighting = { ...d.lighting, enabled: true, rim: { enabled: true, strength: 80, width: 40, softness: 70 } };
   d.background = { ...d.background, kind: 'image', image: { type: 'asset', assetId: 'asset:my-forest' } };
   return d;
