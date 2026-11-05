@@ -12,6 +12,7 @@ import { findFrameHole, type FrameHole } from '../image/frameHole';
 import { newCanvas } from '../image/processedArt';
 import { decodeImage } from '../import/decode';
 import { frameAssetId } from '../render/imageFrames';
+import { libraryFrameUrl } from '../render/libraryFrames';
 import type { RenderSource } from '../render/render';
 import { addAsset, assetStore } from './assets';
 import { docHistory } from './tokenStore';
@@ -58,9 +59,16 @@ export function loadFrameImage(source: ImageFrameSource): Promise<RenderSource> 
   let p = loading.get(id);
   if (!p) {
     p = (async () => {
-      const db = store();
-      const blob = db ? (await get<UploadedFrame>(source.id, db))?.blob : undefined;
-      if (!blob) throw new Error('That frame is no longer saved in this browser.');
+      let blob: Blob | undefined;
+      if (source.type === 'library') {
+        const res = await fetch(libraryFrameUrl(source.id));
+        if (!res.ok) throw new Error("That frame couldn't be loaded. Check your connection and try again.");
+        blob = await res.blob();
+      } else {
+        const db = store();
+        blob = db ? (await get<UploadedFrame>(source.id, db))?.blob : undefined;
+        if (!blob) throw new Error('That frame is no longer saved in this browser.');
+      }
       const asset = { id, blob, ...(await decodeImage(blob)) };
       addAsset(asset);
       return asset;

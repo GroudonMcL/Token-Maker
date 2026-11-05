@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, RotateCcw } from 'lucide-react';
 import { useMenuStyle } from '../state/menuStyle';
 
 /**
@@ -17,6 +17,7 @@ export function Section({
   open: openProp,
   onOpenChange,
   fixed = false,
+  onReset,
 }: {
   title: string;
   icon?: ReactNode;
@@ -29,6 +30,8 @@ export function Section({
   onOpenChange?: (open: boolean) => void;
   /** Always open, with a plain heading instead of the drop-down button (the only section on its tab). */
   fixed?: boolean;
+  /** Given, a "Revert to default" button sits at the right of the heading. */
+  onReset?: () => void;
 }) {
   const [openState, setOpenState] = useState(defaultOpen);
   const open = fixed || (openProp ?? openState);
@@ -57,6 +60,12 @@ export function Section({
           <span className="section__title">{title}</span>
           <ChevronDown className="section__chevron" aria-hidden="true" size={18} />
         </button>
+        )}
+        {onReset && (
+          <button type="button" className="btn btn--ghost btn--small section__reset" data-testid="section-reset" title={`Put the ${title} settings back to how a new token has them`} onClick={onReset}>
+            <RotateCcw size={14} aria-hidden="true" />
+            Revert to default
+          </button>
         )}
       </div>
       <div className="section__body" id={bodyId} hidden={!open}>

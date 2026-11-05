@@ -41,7 +41,8 @@ function bare(patch: Partial<TokenDocument> = {}): TokenDocument {
   const d = createDocument();
   return {
     ...d,
-    frame: { ...d.frame, style: 'none', backingOpacity: 0, outerSpacing: 0 },
+    frame: { ...d.frame, style: 'none', outerSpacing: 0 },
+    background: { ...d.background, kind: 'none' },
     shadows: { ...d.shadows, outer: { ...d.shadows.outer, enabled: false }, inner: { ...d.shadows.inner, enabled: false } },
     ...patch,
   };
@@ -168,7 +169,7 @@ describe('overlay effects (the Foreground section until v8)', () => {
   const changed = (a: Px, b: Px) => a.some((v, i) => Math.abs(v - b[i]!) > 6);
   const plain = draw(grey);
 
-  it.each(['gradient', 'vignette', 'foliage', 'cobwebs', 'edgeShadow'] as const)('%s changes the picture somewhere, the same every time', (kind) => {
+  it.each(['gradient', 'vignette', 'edgeShadow'] as const)('%s changes the picture somewhere, the same every time', (kind) => {
     const a = withOverlay({ kind, intensity: 100, blend: 'normal' });
     const b = withOverlay({ kind, intensity: 100, blend: 'normal' });
     let differs = 0;

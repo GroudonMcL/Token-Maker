@@ -1,11 +1,11 @@
 // The overlay effects (once the Foreground section, merged into Effects in
-// v8): gradient, vignette, edge shadow, foliage and cobwebs, plus the old
+// v8): gradient, vignette and edge shadow, plus the old
 // overlay mist and smoke. Each is drawn by code with a seeded random layout,
 // so a token looks the same every time and at every size. effectPainters.ts
 // turns an effect's settings into these and draws them as one pass.
 
 import type { BlendMode, Gradient } from '../document/types';
-import { mix, rgba, shade } from './color';
+import { rgba } from './color';
 import { seededRandom, type Ctx } from './frameKit';
 import { makeGradient } from './background';
 
@@ -19,7 +19,7 @@ export const BLEND_OPS: Record<BlendMode, GlobalCompositeOperation> = {
 
 type Box = { minX: number; maxX: number; minY: number; maxY: number };
 
-export type OverlayKind = 'gradient' | 'vignette' | 'foliage' | 'smoke' | 'mist' | 'cobwebs' | 'shadow';
+export type OverlayKind = 'gradient' | 'vignette' | 'smoke' | 'mist' | 'shadow';
 
 /** What an overlay painter reads. */
 export interface OverlayParams {
@@ -117,13 +117,6 @@ export function paintOverlay(ctx: Ctx, o: OverlayParams, box: Box): void {
       }
       break;
     }
-    case 'foliage':
-      faceSide();
-      foliage(ctx, o, rr, random, scale);
-      break;
-    case 'cobwebs':
-      cobweb(ctx, o, rr, random, scale);
-      break;
   }
 }
 
@@ -143,105 +136,3 @@ function puff(ctx: Ctx, x: number, y: number, r: number, color: string, alpha: n
   ctx.restore();
 }
 
-/** Leafy stems growing in from the bottom edge (the canvas is already turned to the overlay's side). */
-function foliage(ctx: Ctx, o: OverlayParams, rr: number, random: () => number, scale: number): void {
-  const reach = 2 * rr * (o.size / 100);
-  const leaf = rr * 0.075 * scale;
-  const stems = Math.max(4, Math.round((2.6 * rr) / (leaf * 2.2)));
-  for (const layer of [0, 1]) {
-    for (let i = 0; i < stems; i++) {
-      const x0 = -rr * 1.3 + (2.6 * rr * (i + random() * 0.8)) / stems;
-      const y0 = rr * 1.1;
-      const len = reach * (0.45 + random() * 0.7) * (layer ? 0.8 : 1);
-      const lean = (random() - 0.5) * 0.9;
-      const steps = Math.max(3, Math.round(len / (leaf * 0.9)));
-      ctx.strokeStyle = shade(o.color, -0.55);
-      ctx.lineWidth = Math.max(0.6, leaf * 0.12);
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      const tip = { x: x0 + lean * len, y: y0 - len };
-      ctx.quadraticCurveTo(x0 + lean * len * 0.2, y0 - len * 0.6, tip.x, tip.y);
-      ctx.stroke();
-      for (let k = 1; k <= steps; k++) {
-        const t = k / steps;
-        // Along the curve (close enough for leaf placement).
-        const px = x0 + lean * len * (0.4 * t + 0.6 * t * t);
-        const py = y0 - len * t;
-        const side = k % 2 ? 1 : -1;
-        const tone = layer ? shade(o.color, (random() - 0.3) * 0.5) : shade(o.color, -0.35 + random() * 0.15);
-        drawLeaf(ctx, px, py, leaf * (1.1 - t * 0.5) * (0.8 + random() * 0.4), -Math.PI / 2 + side * (0.6 + random() * 0.5) + lean * 0.5, tone);
-      }
-    }
-  }
-}
-
-function drawLeaf(ctx: Ctx, x: number, y: number, len: number, angle: number, color: string): void {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  const g = ctx.createLinearGradient(0, -len * 0.35, 0, len * 0.35);
-  g.addColorStop(0, shade(color, 0.25));
-  g.addColorStop(1, shade(color, -0.25));
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.quadraticCurveTo(len * 0.5, -len * 0.38, len * 1.6, 0);
-  ctx.quadraticCurveTo(len * 0.5, len * 0.38, 0, 0);
-  ctx.fill();
-  ctx.strokeStyle = rgba(mix(color, '#000000', 0.5), 0.5);
-  ctx.lineWidth = Math.max(0.4, len * 0.05);
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(len * 1.4, 0);
-  ctx.stroke();
-  ctx.restore();
-}
-
-/** A web spun in the corner (or edge) the overlay's angle points to. */
-function cobweb(ctx: Ctx, o: OverlayParams, rr: number, random: () => number, scale: number): void {
-  const a = (o.angle * Math.PI) / 180;
-  const ca = Math.cos(a);
-  const sa = Math.sin(a);
-  const k = rr / Math.max(Math.abs(ca), Math.abs(sa), 1e-6);
-  const ox = ca * k;
-  const oy = sa * k;
-  const inward = a + Math.PI;
-  const length = 2 * rr * (o.size / 100);
-  const threads = 7;
-  const spread = (110 * Math.PI) / 180;
-  const ends: { x: number; y: number; dx: number; dy: number; len: number }[] = [];
-  for (let i = 0; i < threads; i++) {
-    const t = inward - spread / 2 + (spread * i) / (threads - 1) + (random() - 0.5) * 0.1;
-    ends.push({ x: ox, y: oy, dx: Math.cos(t), dy: Math.sin(t), len: length * (0.8 + random() * 0.3) });
-  }
-  ctx.strokeStyle = rgba(o.color, 0.85);
-  ctx.lineWidth = Math.max(0.6, rr * 0.0045);
-  ctx.lineCap = 'round';
-  for (const e of ends) {
-    ctx.beginPath();
-    ctx.moveTo(e.x, e.y);
-    ctx.lineTo(e.x + e.dx * e.len, e.y + e.dy * e.len);
-    ctx.stroke();
-  }
-  // Rings that sag back towards the corner between threads.
-  const rings = Math.max(3, Math.round(8 / scale));
-  for (let j = 1; j <= rings; j++) {
-    const f = j / (rings + 0.5);
-    ctx.lineWidth = Math.max(0.5, rr * 0.0035);
-    ctx.beginPath();
-    for (let i = 0; i < threads - 1; i++) {
-      const p = ends[i]!;
-      const q = ends[i + 1]!;
-      const ax = p.x + p.dx * p.len * f;
-      const ay = p.y + p.dy * p.len * f;
-      const bx = q.x + q.dx * q.len * f;
-      const by = q.y + q.dy * q.len * f;
-      const mx = (ax + bx) / 2;
-      const my = (ay + by) / 2;
-      const sag = 0.82 + random() * 0.08;
-      if (i === 0) ctx.moveTo(ax, ay);
-      ctx.quadraticCurveTo(ox + (mx - ox) * sag, oy + (my - oy) * sag, bx, by);
-    }
-    ctx.stroke();
-  }
-}

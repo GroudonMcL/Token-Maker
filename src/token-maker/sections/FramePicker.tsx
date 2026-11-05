@@ -12,13 +12,11 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ControlLabel } from '../components';
 import { FRAME_TAG_GROUPS, tagLabel } from '../config/frameTags';
-import { FRAME_TAGS, rankOf } from './frameTiles';
+import type { ShapeId } from '../render/catalog';
+import { FRAME_TAGS, rankOf, type FrameTile } from './frameTiles';
+import { sheetStyle } from './frameThumbSheet';
 
-export interface FrameTile {
-  id: string;
-  label: string;
-  group: string;
-}
+export type { FrameTile } from './frameTiles';
 
 export function FramePicker({
   tiles,
@@ -26,8 +24,11 @@ export function FramePicker({
   value,
   onChange,
   onOpen,
+  shape,
 }: {
   tiles: readonly FrameTile[];
+  /** The token's shape: the ready-made thumbnails are drawn on it. */
+  shape: ShapeId;
   thumbs: Map<string, string> | null;
   value: string;
   onChange: (id: string) => void;
@@ -45,7 +46,7 @@ export function FramePicker({
     <div className="frame-pick" data-control="frame-picker">
       <ControlLabel label="Frame" />
       <div className="frame-pick__current" data-testid="current-frame">
-        <Thumb src={thumbs?.get(value)} size={56} />
+        <Thumb id={value} shape={shape} src={thumbs?.get(value)} size={56} />
         <div className="frame-pick__current-text">
           <strong>{current?.label ?? 'Frame'}</strong>
           <small>{current?.group}</small>
@@ -62,6 +63,7 @@ export function FramePicker({
           <Gallery
             tiles={tiles}
             thumbs={thumbs}
+            shape={shape}
             value={value}
             onPick={(id) => {
               onChange(id);
@@ -75,22 +77,57 @@ export function FramePicker({
   );
 }
 
-function Thumb({ src, size }: { src: string | undefined; size: number }) {
-  return src ? <img src={src} alt="" width={size} height={size} /> : <span className="tile__blank" style={{ width: size, height: size }} />;
+/** A frame's thumbnail: drawn in the browser, or else from the ready-made sheet. */
+function Thumb({ id, shape, src, size }: { id: string; shape: ShapeId; src: string | undefined; size: number }) {
+  if (src) return <img src={src} alt="" width={size} height={size} />;
+  const sheet = sheetStyle(id, shape, size);
+  return sheet ? (
+    <span className="frame-pick__sheet-thumb" style={{ width: size, height: size, ...sheet }} />
+  ) : (
+    <span className="tile__blank" style={{ width: size, height: size }} />
+  );
 }
+
+/** The gallery's group and tags, kept while the page is open (owner request: closing the gallery used to forget them). */
+const remembered = new Map<'tab' | 'filter', string | string[]>();
+const rememberedTab = () => (remembered.get('tab') as string | undefined) ?? 'All frames';
+const rememberedFilter = () => (remembered.get('filter') as string[] | undefined) ?? [];
 
 /** The gallery tab listing every frame, in the owner's ranking. */
 const ALL = 'All frames';
 
-function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: readonly FrameTile[]; thumbs: Map<string, string> | null; value: string; onPick: (id: string) => void; onClose: () => void }) {
+function Gallery({
+  tiles: allTiles,
+  thumbs,
+  shape,
+  value,
+  onPick,
+  onClose,
+}: {
+  tiles: readonly FrameTile[];
+  thumbs: Map<string, string> | null;
+  shape: ShapeId;
+  value: string;
+  onPick: (id: string) => void;
+  onClose: () => void;
+}) {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   // Every frame best first; the groups keep their own order, with their frames in the same ranking.
   const ranked = useMemo(() => allTiles.map((t, i) => ({ t, i })).sort((a, b) => rankOf(a.t.id) - rankOf(b.t.id) || a.i - b.i).map(({ t }) => t), [allTiles]);
   const groups = useMemo(() => [ALL, ...new Set(allTiles.map((t) => t.group))], [allTiles]);
-  const [tab, setTab] = useState(ALL);
+  const [tab, setTabState] = useState(() => (groups.includes(rememberedTab()) ? rememberedTab() : ALL));
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<string[]>([]);
+  const [filter, setFilterState] = useState<string[]>(rememberedFilter);
+  const setTab = (t: string) => {
+    remembered.set('tab', t);
+    setTabState(t);
+  };
+  const setFilter = (next: (f: string[]) => string[]) => {
+    const out = next(filter);
+    remembered.set('filter', out);
+    setFilterState(out);
+  };
   // The tags in use, in the order they are listed in.
   const usedTags = useMemo(() => {
     const used = new Set(allTiles.flatMap((t) => FRAME_TAGS[t.id] ?? []));
@@ -114,7 +151,7 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
       className="frame-pick__tile"
       onClick={() => onPick(t.id)}
     >
-      <Thumb src={thumbs?.get(t.id)} size={72} />
+      <Thumb id={t.id} shape={shape} src={thumbs?.get(t.id)} size={72} />
       <span>{t.label}</span>
     </button>
   );
@@ -160,7 +197,7 @@ function Gallery({ tiles: allTiles, thumbs, value, onPick, onClose }: { tiles: r
               </button>
             ))}
             {filter.length > 0 && (
-              <button type="button" className="btn btn--ghost btn--small frame-pick__clear" onClick={() => setFilter([])}>
+              <button type="button" className="btn btn--ghost btn--small frame-pick__clear" onClick={() => setFilter(() => [])}>
                 Clear
               </button>
             )}

@@ -31,7 +31,7 @@ test.describe('app shell', () => {
     const sheet = page.locator('.bottom-sheet');
     await expect(sheet).toHaveAttribute('data-snap', 'peek');
     // The same tabs as the tool rail, in a row that scrolls sideways.
-    await expect(page.getByRole('tab')).toHaveCount(14);
+    await expect(page.getByRole('tab')).toHaveCount(13);
     await page.getByRole('tab', { name: 'Label' }).click();
     await expect(sheet).toHaveAttribute('data-snap', 'half');
     await expect(page.getByRole('tabpanel').getByRole('button', { name: 'Add a label' })).toBeVisible();

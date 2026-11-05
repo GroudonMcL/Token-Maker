@@ -25,7 +25,7 @@ export const FORMATS: Record<ExportFormat, FormatInfo> = {
 export const FORMAT_IDS = Object.keys(FORMATS) as ExportFormat[];
 
 /** The ready-made "pixels per square" choices; anything else is "custom". */
-export const PX_PRESETS = [128, 256, 400, 512] as const;
+export const PX_PRESETS = [400, 512, 768, 1024] as const;
 export const MIN_CUSTOM_PX = 32;
 export const MAX_CUSTOM_PX = MAX_OUTPUT_SIDE;
 

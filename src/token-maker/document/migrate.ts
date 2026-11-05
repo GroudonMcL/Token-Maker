@@ -2,6 +2,7 @@
 // upgraded step by step, then everything is checked and filled in from the
 // defaults, so a damaged or partial file can never crash the editor.
 
+import { libraryFrameById } from '../render/libraryFrames';
 import { readFrameDesign } from '../frameMaker/share/frameDesign';
 import { builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
 import { cleanChoices } from '../frameMaker/project/colourSlots';
@@ -19,6 +20,7 @@ import {
   MIN_SQUARES,
   newDecoration,
   newEffect,
+  newPictureEffect,
   newLabel,
   newPictureDecoration,
   OVERLAY_BASE_SIZE,
@@ -106,10 +108,75 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
     const design = inUse ? builtInDesignFrame(source.id) : null;
     return { ...doc, frame: { ...frame, kind: inUse ? (design ? 'design' : 'code') : frame.kind, image: null, design: design ?? frame.design } };
   },
+  // v11 → v12 (owner feedback): the frame's backing colour joined the Background tab. A token
+  // with no background gets its backing as a background colour, so it looks the same; the
+  // code-drawn effects the owner didn't keep become picture effects (or go, see retiredEffect).
+  11: (doc) => {
+    const frame = obj(doc.frame);
+    const bg = obj(doc.background);
+    const opacity = typeof frame.backingOpacity === 'number' ? frame.backingOpacity : 1;
+    const color = typeof frame.backingColor === 'string' ? frame.backingColor : '#1d1f27';
+    const none = (bg.kind ?? 'none') === 'none';
+    const background = none ? (opacity > 0 ? { ...bg, kind: 'color', color, opacity } : { ...bg, kind: 'none' }) : bg;
+    // "Light the background" only counted with the art lit; now it is a switch of its own.
+    const lighting = obj(doc.lighting);
+    return {
+      ...doc,
+      background,
+      lighting: { ...lighting, background: lighting.enabled === true && lighting.background !== false },
+      frame: { ...frame, backingOpacity: 0 },
+      effects: arr(doc.effects).flatMap((e) => retiredEffect(obj(e))),
+    };
+  },
 };
 
-/** The effect kind each old foreground overlay became (v8). */
-const OVERLAY_EFFECT: Record<string, EffectKind> = {
+/**
+ * The pictures each code-drawn effect the owner didn't keep became (v12). A
+ * kind with no picture like it (Frightened, Unconscious) is dropped.
+ */
+const RETIRED_EFFECTS: Record<string, string[]> = {
+  fire: ['fx-fire'],
+  frost: ['fx-frost-edge'],
+  poison: ['fx-poison'],
+  lightning: ['fx-lightning'],
+  necrotic: ['fx-necrotic'],
+  radiant: ['fx-light-rays'],
+  bloodied: ['fx-blood-splatter'],
+  petrified: ['fx-stone', 'fx-cracks'],
+  ethereal: ['fx-ghost-wisps'],
+  poisoned: ['fx-poison'],
+  charmed: ['fx-hearts'],
+  embers: ['fx-embers'],
+  sparkles: ['fx-sparkle'],
+  foliage: ['fx-ivy-vine'],
+  cobwebs: ['fx-cobweb-corner'],
+  frightened: [],
+  unconscious: [],
+};
+
+/**
+ * An effect as v12 has it: a retired kind becomes its pictures, with their
+ * own starting settings, keeping whether it showed, how strong it was, its
+ * colour (for a picture coloured in), blur and shuffle. Anything else is kept.
+ */
+function retiredEffect(e: Json): Json[] {
+  const ids = RETIRED_EFFECTS[e.kind as string];
+  if (!ids) return [e];
+  return ids.map((id, i) => {
+    const p = newPictureEffect({ type: 'library', id }, `${str(e.id, 'effect')}${i ? `-${i}` : ''}`);
+    return {
+      ...p,
+      visible: e.visible ?? p.visible,
+      intensity: typeof e.intensity === 'number' ? e.intensity : p.intensity,
+      color: p.tint && typeof e.color === 'string' ? e.color : p.color,
+      blur: e.blur ?? p.blur,
+      seed: e.seed ?? p.seed,
+    };
+  });
+}
+
+/** The effect kind each old foreground overlay became (v8); foliage and cobwebs became pictures in v12. */
+const OVERLAY_EFFECT: Record<string, string> = {
   gradient: 'gradient',
   vignette: 'vignette',
   shadow: 'edgeShadow',
@@ -356,12 +423,12 @@ export function imageFrame(raw: unknown): ImageFrame | null {
   if (!isObject(raw)) return null;
   const src = obj(raw.source);
   const id = typeof src.id === 'string' ? src.id.slice(0, 80) : '';
-  if (!id || src.type !== 'upload') return null;
+  if (!id || (src.type !== 'upload' && !(src.type === 'library' && libraryFrameById(id)))) return null;
   const hole = Array.isArray(raw.hole) ? raw.hole.filter((n): n is number => typeof n === 'number' && Number.isFinite(n)) : [];
   if (hole.length < 6 || hole.length > MAX_HOLE_POINTS * 2 || hole.length % 2) return null;
   const nudge = obj(raw.nudge);
   return {
-    source: { type: src.type, id },
+    source: { type: src.type === 'library' ? 'library' : 'upload', id },
     name: str(raw.name, 'Picture frame').slice(0, 80),
     hole: hole.map((n) => Math.max(-1.5, Math.min(1.5, n))),
     outer: num(raw.outer, 1, 0, 1.5),
@@ -506,7 +573,7 @@ export function sanitize(raw: Json): TokenDocument {
       outerSpacing: num(frame.outerSpacing, d.frame.outerSpacing, 0, 1),
       innerSpacing: num(frame.innerSpacing, d.frame.innerSpacing, 0, 1),
       backingColor: hex(frame.backingColor, d.frame.backingColor),
-      backingOpacity: num(frame.backingOpacity, 1, 0, 1),
+      backingOpacity: num(frame.backingOpacity, 0, 0, 1),
       image: frameImage,
       design: frameDesign,
     },

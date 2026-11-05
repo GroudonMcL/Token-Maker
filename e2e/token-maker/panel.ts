@@ -13,7 +13,7 @@ export const TAB_OF: Record<string, string> = {
   Effects: 'Effects',
   Decorations: 'Decor',
   Label: 'Label',
-  Size: 'Size',
+  Size: 'Export',
   Presets: 'Presets',
   Export: 'Export',
 };

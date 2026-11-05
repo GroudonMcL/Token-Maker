@@ -105,12 +105,13 @@ export function adjustedSource(src: RenderSource, a: BackgroundAdjustments): Ren
 }
 
 /** Paints the background into the clip polygon (`clip` in pixels from the token centre; `R` the token's half-size). */
-export function drawBackground(ctx: Ctx, doc: TokenDocument, assets: AssetMap, clip: Point[], R: number): void {
+export function drawBackground(ctx: Ctx, doc: TokenDocument, assets: AssetMap, clip: Point[], R: number, area: Point[] = clip): void {
   const bg = doc.background;
-  if (bg.kind === 'none' || bg.opacity <= 0 || !clip.length) return;
-  const box = boundingBox(clip);
+  if (bg.kind === 'none' || bg.opacity <= 0 || !clip.length || !area.length) return;
+  // It fills `area` (the art's opening and any inner spacing round it); a picture is sized to the art's opening.
+  const box = boundingBox(area);
   ctx.save();
-  tracePolygon(ctx, clip);
+  tracePolygon(ctx, area);
   ctx.clip();
   ctx.globalAlpha = Math.min(1, bg.opacity);
   let drew = true;
@@ -150,7 +151,8 @@ function drawPicture(ctx: Ctx, bg: BackgroundLayer, doc: TokenDocument, assets: 
  * tinted and brightened towards it, like the art (src/image/lighting.ts).
  */
 function lightBackground(ctx: Ctx, l: LightingSettings, box: { minX: number; maxX: number; minY: number; maxY: number }): void {
-  if (!l.enabled || !l.background) return;
+  // Lit on its own switch (v12; it used to need the art lit too).
+  if (!l.background) return;
   paintLight(ctx, l, box);
 }
 

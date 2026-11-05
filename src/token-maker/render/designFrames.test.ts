@@ -45,7 +45,8 @@ function themed(id: string): FrameProject {
 /** A token that is only its frame: no art, no backing, no shadows. */
 function frameOnly(project: FrameProject, patch: (d: TokenDocument) => void = () => {}): TokenDocument {
   const doc = createDocument('Design');
-  doc.frame = { ...doc.frame, kind: 'design', design: { id: 'd1', name: project.name, project }, backingOpacity: 0 };
+  doc.frame = { ...doc.frame, kind: 'design', design: { id: 'd1', name: project.name, project } };
+  doc.background = { ...doc.background, kind: 'none' };
   doc.shadows = { ...doc.shadows, outer: { ...doc.shadows.outer, enabled: false }, inner: { ...doc.shadows.inner, enabled: false } };
   patch(doc);
   return doc;

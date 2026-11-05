@@ -10,10 +10,15 @@ import { FORMAT_IDS, FORMATS, MAX_CUSTOM_PX, MIN_CUSTOM_PX, PX_PRESETS, finalSiz
 import { useOverflow } from '../editor/overflowCheck';
 import { OVERFLOW_ADVICE } from '../render/overflow';
 import { useDoc } from '../state/tokenStore';
+import { SizeSection } from './SizeSection';
 
 type PxChoice = `${(typeof PX_PRESETS)[number]}` | 'custom';
 
-/** Export section (DESIGN.md §6.11): format, resolution, file name, download, copy and the batch ZIP. */
+/**
+ * Export section (DESIGN.md §6.11): the token's size on the map and the room
+ * round it (the Size tab until the owner joined the two), then format,
+ * resolution, file name, download, copy and the batch ZIP.
+ */
 export function ExportSection() {
   const squares = useDoc((d) => d.size.squares);
   const name = useDoc((d) => d.name);
@@ -33,6 +38,9 @@ export function ExportSection() {
 
   return (
     <>
+      <SizeSection />
+      <div className="control-group" data-control="export-file">
+      <h3 className="control-group__title">Picture file</h3>
       <SegmentedButtons
         label="Format"
         value={s.format}
@@ -127,6 +135,7 @@ export function ExportSection() {
           />
         </Advanced>
       )}
+      </div>
     </>
   );
 }

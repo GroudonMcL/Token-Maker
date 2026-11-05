@@ -6,15 +6,30 @@
 
 import type { BlendMode, EffectPlacement, PictureSource, SnapPoint } from '../document/types';
 
+/** The effect picker's groups (document/defaults.ts lists them in order). */
+export type EffectPictureGroup = 'Elemental' | 'Conditions' | 'Atmosphere' | 'Overlays' | 'Pictures';
+
 /** How scattered copies of a picture effect turn. */
 export type PictureOrient = 'random' | 'outward' | 'upright';
 
 export interface LibraryEffectPicture {
   id: string;
   name: string;
+  /** Where the effect picker lists it. */
+  group: EffectPictureGroup;
   orient: PictureOrient;
-  /** Starting settings. */
-  defaults: { placement: EffectPlacement; color: string; blend: BlendMode; size: number; spread: number; intensity: number };
+  /** Starting settings. A picture with its own colours starts with `tint: false`; one stretched over the area with `layout: 'fill'`. */
+  defaults: {
+    placement: EffectPlacement;
+    color: string;
+    blend: BlendMode;
+    size: number;
+    spread: number;
+    intensity: number;
+    layout?: 'scatter' | 'fill';
+    tint?: boolean;
+    blur?: number;
+  };
   swatches: string[];
 }
 
@@ -36,22 +51,59 @@ const fx = (
   orient: PictureOrient,
   defaults: LibraryEffectPicture['defaults'],
   swatches: string[] = [],
-): LibraryEffectPicture => ({ id: `fx-${id}`, name, orient, defaults, swatches: [defaults.color, ...swatches.filter((c) => c !== defaults.color)] });
+  group: EffectPictureGroup = 'Pictures',
+): LibraryEffectPicture => ({ id: `fx-${id}`, name, group, orient, defaults, swatches: [defaults.color, ...swatches.filter((c) => c !== defaults.color)] });
 
-/** Picture effects: white sprites, coloured by the effect's colour and scattered round the token. */
+/**
+ * Picture effects: mostly white pictures, coloured by the effect's colour and
+ * scattered round the token or stretched over it. Since v12 they include the
+ * elemental effects, conditions, embers, sparkles, vines and cobwebs, once
+ * drawn by code (owner request: real pictures look better). Sources and
+ * licences are in ASSETS-CREDITS.md.
+ */
 export const EFFECT_PICTURES: readonly LibraryEffectPicture[] = [
-  fx('smoke-puffs', 'Smoke puffs', 'random', { placement: 'over', color: '#c9ccd6', blend: 'screen', size: 0.3, spread: 40, intensity: 70 }, ['#5b5f6b', '#76ff4a', '#8b5cd6']),
-  fx('flame-licks', 'Flame licks', 'outward', { placement: 'border', color: '#ff8a2a', blend: 'screen', size: 0.22, spread: 60, intensity: 95 }, ['#ff3b1a', '#4aa8ff', '#76ff4a', '#c05aff']),
-  fx('wisps', 'Wisps', 'random', { placement: 'over', color: '#9fd8ff', blend: 'screen', size: 0.3, spread: 35, intensity: 80 }, ['#76ff4a', '#b06aff', '#ffffff']),
-  fx('crackles', 'Crackles', 'random', { placement: 'border', color: '#8fd0ff', blend: 'screen', size: 0.3, spread: 40, intensity: 95 }, ['#ffffff', '#ffe36a', '#c08aff']),
-  fx('twinkles', 'Twinkles', 'random', { placement: 'over', color: '#fff4c4', blend: 'screen', size: 0.18, spread: 40, intensity: 95 }, ['#ffffff', '#9fd8ff', '#ff9ad2']),
-  fx('orbs', 'Orbs', 'random', { placement: 'over', color: '#ffd76a', blend: 'screen', size: 0.12, spread: 50, intensity: 85 }, ['#9fd8ff', '#76ff4a', '#ff6fb5']),
+  // Elemental (v12: real pictures instead of the code-drawn fire, frost, lightning…).
+  fx('fire', 'Fire', 'outward', { placement: 'border', color: '#ff7a1f', blend: 'screen', size: 0.32, spread: 70, intensity: 95 }, ['#ff3b1a', '#ffb347', '#4aa8ff', '#76ff4a', '#c05aff'], 'Elemental'),
+  fx('flame-licks', 'Flame licks', 'outward', { placement: 'border', color: '#ff8a2a', blend: 'screen', size: 0.22, spread: 60, intensity: 95 }, ['#ff3b1a', '#4aa8ff', '#76ff4a', '#c05aff'], 'Elemental'),
+  fx('frost-edge', 'Frost', 'outward', { placement: 'border', color: '#bfe6ff', blend: 'screen', size: 0.22, spread: 60, intensity: 90 }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental'),
+  fx('frost', 'Frost ring', 'upright', { placement: 'over', color: '#bfe6ff', blend: 'screen', size: 0.3, spread: 50, intensity: 85, layout: 'fill' }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental'),
+  fx('frost-fern', 'Ice ferns', 'random', { placement: 'over', color: '#d6f0ff', blend: 'screen', size: 0.32, spread: 20, intensity: 85 }, ['#ffffff', '#7fd0ff'], 'Elemental'),
+  fx('snowflakes', 'Snowflakes', 'random', { placement: 'over', color: '#e8f6ff', blend: 'screen', size: 0.14, spread: 40, intensity: 90 }, ['#ffffff', '#9fd8ff'], 'Elemental'),
+  fx('lightning', 'Lightning', 'random', { placement: 'border', color: '#b8ccff', blend: 'screen', size: 0.5, spread: 20, intensity: 95 }, ['#ffffff', '#ffe36a', '#c08aff', '#76ff4a'], 'Elemental'),
+  fx('crackles', 'Crackles', 'random', { placement: 'border', color: '#8fd0ff', blend: 'screen', size: 0.3, spread: 40, intensity: 95 }, ['#ffffff', '#ffe36a', '#c08aff'], 'Elemental'),
+  fx('poison', 'Poison gas', 'random', { placement: 'over', color: '#7dff4a', blend: 'screen', size: 0.45, spread: 30, intensity: 80 }, ['#a8e23a', '#3ad27b', '#b05ad2'], 'Elemental'),
+  fx('necrotic', 'Necrotic', 'random', { placement: 'over', color: '#3a1d4a', blend: 'multiply', size: 0.5, spread: 25, intensity: 85 }, ['#2a1a3a', '#1a3a22', '#1a1a1a'], 'Elemental'),
+  fx('light-rays', 'Radiant', 'upright', { placement: 'over', color: '#ffe08a', blend: 'screen', size: 0.3, spread: 50, intensity: 60, layout: 'fill' }, ['#fff4c4', '#ffffff', '#ffb347', '#9fd8ff'], 'Elemental'),
+  fx('scorch', 'Scorch marks', 'random', { placement: 'over', color: '#1c1410', blend: 'multiply', size: 0.35, spread: 25, intensity: 80 }, ['#000000', '#3a1a0a'], 'Elemental'),
+
+  // Conditions.
+  fx('blood-splatter', 'Blood spatter', 'random', { placement: 'over', color: '#7a0a0a', blend: 'normal', size: 0.42, spread: 15, intensity: 85 }, ['#5a0606', '#3a6a1a', '#2a2a6a'], 'Conditions'),
+  fx('blood-drips', 'Blood drips', 'upright', { placement: 'over', color: '#7a0a0a', blend: 'normal', size: 0.5, spread: 8, intensity: 85 }, ['#5a0606', '#3a6a1a', '#2a2a6a'], 'Conditions'),
+  fx('claw-marks', 'Claw marks', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.5, spread: 10, intensity: 85 }, ['#5a0606', '#1c1c1c', '#ffffff'], 'Conditions'),
+  fx('splatter', 'Splatter', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.35, spread: 25, intensity: 85 }, ['#3a6a1a', '#1c1c1c', '#5b2a86'], 'Conditions'),
+  fx('stone', 'Petrified', 'upright', { placement: 'over', color: '#c8c4bc', blend: 'overlay', size: 0.3, spread: 50, intensity: 100, layout: 'fill' }, ['#ffffff', '#a59a86', '#8d8a84'], 'Conditions'),
+  fx('cracks', 'Cracks', 'upright', { placement: 'over', color: '#ffffff', blend: 'multiply', size: 0.3, spread: 50, intensity: 85, layout: 'fill', tint: false }, ['#ffffff'], 'Conditions'),
+  fx('ghost-wisps', 'Ghostly wisps', 'outward', { placement: 'over', color: '#cfe8ff', blend: 'screen', size: 0.45, spread: 20, intensity: 80 }, ['#ffffff', '#b8f0e0', '#e0c8ff'], 'Conditions'),
+  fx('wisps', 'Wisps', 'random', { placement: 'over', color: '#9fd8ff', blend: 'screen', size: 0.3, spread: 35, intensity: 80 }, ['#76ff4a', '#b06aff', '#ffffff'], 'Conditions'),
+  fx('hearts', 'Hearts', 'random', { placement: 'over', color: '#ff6fb5', blend: 'normal', size: 0.14, spread: 30, intensity: 90 }, ['#ff3b6a', '#ff9ad2', '#c08aff'], 'Conditions'),
+
+  // Atmosphere (beside the drawn mist and smoke).
+  fx('embers', 'Embers', 'upright', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.3, spread: 50, intensity: 90, layout: 'fill', tint: false }, ['#ffffff'], 'Atmosphere'),
+  fx('sparkle', 'Sparkles', 'random', { placement: 'over', color: '#fff6d0', blend: 'screen', size: 0.16, spread: 35, intensity: 95 }, ['#ffffff', '#ffd76a', '#9fd8ff', '#ff9ad2'], 'Atmosphere'),
+  fx('twinkles', 'Twinkles', 'random', { placement: 'over', color: '#fff4c4', blend: 'screen', size: 0.18, spread: 40, intensity: 95 }, ['#ffffff', '#9fd8ff', '#ff9ad2'], 'Atmosphere'),
+  fx('lens-flare', 'Lens flare', 'upright', { placement: 'over', color: '#ffffff', blend: 'screen', size: 1, spread: 0, intensity: 90, tint: false }, ['#ffffff'], 'Atmosphere'),
+  fx('smoke-puffs', 'Smoke puffs', 'random', { placement: 'over', color: '#c9ccd6', blend: 'screen', size: 0.3, spread: 40, intensity: 70 }, ['#5b5f6b', '#76ff4a', '#8b5cd6'], 'Atmosphere'),
+  fx('orbs', 'Orbs', 'random', { placement: 'over', color: '#ffd76a', blend: 'screen', size: 0.12, spread: 50, intensity: 85 }, ['#9fd8ff', '#76ff4a', '#ff6fb5'], 'Atmosphere'),
+
+  // Overlays (beside the vignette, gradient and edge shadow).
+  fx('ivy-vine', 'Ivy', 'upright', { placement: 'over', color: '#ffffff', blend: 'normal', size: 0.3, spread: 50, intensity: 100, layout: 'fill', tint: false }, ['#ffffff'], 'Overlays'),
+  fx('ivy', 'Creeping vine', 'outward', { placement: 'over', color: '#ffffff', blend: 'normal', size: 0.5, spread: 16, intensity: 100, tint: false }, ['#ffffff'], 'Overlays'),
+  fx('cobweb-corner', 'Cobwebs', 'upright', { placement: 'over', color: '#e8e8e8', blend: 'screen', size: 0.3, spread: 50, intensity: 85, layout: 'fill' }, ['#ffffff', '#c9ccd6', '#9a9aa6'], 'Overlays'),
+  fx('cobweb', 'Spider web', 'random', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.7, spread: 4, intensity: 85 }, ['#c9ccd6', '#9a9aa6'], 'Overlays'),
+
+  // Pictures.
   fx('swirls', 'Swirls', 'random', { placement: 'over', color: '#b06aff', blend: 'screen', size: 0.4, spread: 30, intensity: 80 }, ['#6fc3ff', '#76ff4a', '#ffffff']),
   fx('arcane-circle', 'Arcane circle', 'upright', { placement: 'over', color: '#b06aff', blend: 'screen', size: 0.9, spread: 0, intensity: 85 }, ['#6fc3ff', '#ffd76a', '#ff3b3b']),
-  fx('hearts', 'Hearts', 'random', { placement: 'over', color: '#ff6fb5', blend: 'normal', size: 0.14, spread: 30, intensity: 90 }, ['#ff3b6a', '#ff9ad2', '#c08aff']),
-  fx('claw-marks', 'Claw marks', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.5, spread: 10, intensity: 85 }, ['#5a0606', '#1c1c1c', '#ffffff']),
-  fx('splatter', 'Splatter', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.35, spread: 25, intensity: 85 }, ['#3a6a1a', '#1c1c1c', '#5b2a86']),
-  fx('scorch', 'Scorch marks', 'random', { placement: 'over', color: '#1c1410', blend: 'multiply', size: 0.35, spread: 25, intensity: 80 }, ['#000000', '#3a1a0a']),
 ];
 
 const METAL = ['#e0b23a', '#c9d2de', '#b5813a', '#1c1c1c', '#ffffff'];
@@ -147,6 +199,8 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
 ];
 
 export const pictureUrl = (id: string) => `/pictures/${id}.webp`;
+/** A small copy for the pickers' tiles (scripts/token-maker/picture-thumbs.ts), so the panels don't load every full-size picture. */
+export const pictureThumbUrl = (id: string) => `/pictures/thumbs/${id}.webp`;
 
 /** The asset-store key of a picture. */
 export const pictureAssetId = (source: PictureSource) => `picture:${source.type}:${source.id}`;

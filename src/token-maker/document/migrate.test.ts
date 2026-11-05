@@ -164,17 +164,41 @@ describe('migrateDocument', () => {
     const doc = migrateDocument({
       schemaVersion: SCHEMA_VERSION,
       effects: [
-        { id: 'a', kind: 'frost', placement: 'border', intensity: 140, color: 'blue', size: 9, spread: -5, seed: 7.4, visible: false },
+        { id: 'a', kind: 'smoke', placement: 'border', intensity: 140, color: 'blue', size: 9, spread: -5, seed: 7.4, visible: false },
         { id: 'b', kind: 'dragonfire' },
         { kind: 'mist', placement: 'sideways' },
         'nope',
-        ...Array.from({ length: 30 }, (_, i) => ({ id: `n${i}`, kind: 'embers' })),
+        ...Array.from({ length: 30 }, (_, i) => ({ id: `n${i}`, kind: 'mist' })),
       ],
     });
     expect(doc.effects).toHaveLength(MAX_EFFECTS);
-    expect(doc.effects[0]).toEqual({ ...newEffect('frost', 'a'), placement: 'border', intensity: 100, color: '#bfe8ff', size: 1, spread: 0, seed: 7, visible: false });
+    expect(doc.effects[0]).toEqual({ ...newEffect('smoke', 'a'), placement: 'border', intensity: 100, color: '#9a9ca6', size: 1, spread: 0, seed: 7, visible: false });
     expect(doc.effects[1]).toMatchObject({ kind: 'mist', placement: newEffect('mist').placement, visible: true });
     expect(doc.effects[1]!.id).toMatch(/^effect-/);
+  });
+
+  it('turns the code-drawn effects the owner didn’t keep into pictures, and drops those with none like them (v12)', () => {
+    const v11 = {
+      ...JSON.parse(JSON.stringify(createDocument())),
+      schemaVersion: 11,
+      effects: [
+        { id: 'p', kind: 'petrified', intensity: 70, color: '#999999', visible: false },
+        { id: 'b', kind: 'bloodied', color: '#550000', seed: 4 },
+        { id: 'u', kind: 'unconscious' },
+        { id: 'm', kind: 'mist', color: '#ffffff' },
+      ],
+    };
+    const doc = migrateDocument(v11);
+    expect(doc.effects.map((e) => [e.id, e.kind, e.image?.id ?? null])).toEqual([
+      ['p', 'picture', 'fx-stone'],
+      ['p-1', 'picture', 'fx-cracks'],
+      ['b', 'picture', 'fx-blood-splatter'],
+      ['m', 'mist', null],
+    ]);
+    expect(doc.effects[0]).toMatchObject({ intensity: 70, visible: false, layout: 'fill', color: '#999999' });
+    // The cracks keep their own colours, so the old colour isn't used.
+    expect(doc.effects[1]).toMatchObject({ tint: false, color: '#ffffff' });
+    expect(doc.effects[2]).toMatchObject({ color: '#550000', seed: 4, blend: 'normal' });
   });
 
   it('refuses documents from a newer version', () => {
@@ -283,11 +307,13 @@ describe('migrateDocument', () => {
       ['v', 'vignette', 'over'],
       ['s', 'edgeShadow', 'over'],
       ['m', 'mist', 'over'],
-      ['f', 'fire', 'border'],
+      // The code-drawn fire became the Fire picture in v12.
+      ['f', 'picture', 'border'],
     ]);
+    expect(doc.effects[3]!.image).toEqual({ type: 'library', id: 'fx-fire' });
     expect(doc.effects[0]).toMatchObject({ intensity: 50, blend: 'multiply', color: '#112233', spread: 60, softness: 20, seed: 3, size: 0.3 });
     expect(doc.effects[1]).toMatchObject({ visible: false, angle: 270, size: 0.6 });
-    expect(doc.effects[3]).toMatchObject({ blur: 0, blend: 'normal' });
+    expect(doc.effects[3]).toMatchObject({ blur: 0, blend: 'screen', intensity: 90 });
     // Old removal only took the background joined to the edge.
     expect(doc.art.removal).toMatchObject({ enabled: true, enclosed: false, method: 'colour' });
   });

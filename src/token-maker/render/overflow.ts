@@ -89,18 +89,18 @@ export function findOverflow(doc: TokenDocument, assets: AssetMap, processedArt?
 export const OVERFLOW_ADVICE: Record<OverflowSource, { what: string; fix: string }> = {
   shadow: {
     what: 'The drop shadow',
-    fix: 'Raise Frame → Outer spacing, or make the shadow shorter or less blurred (Shadow → Drop shadow).',
+    fix: 'Give it more room in the Export tab (Outer spacing, or drag the red square’s corners), or make the shadow shorter or less blurred (Shadow → Drop shadow).',
   },
   decorations: {
     what: 'A decoration',
-    fix: 'Raise Frame → Outer spacing, or make the decoration smaller or move it in (Decor).',
+    fix: 'Give it more room in the Export tab (Outer spacing, or drag the red square’s corners), or make the decoration smaller or move it in (Decor).',
   },
   popout: {
     what: 'The pop-out art',
-    fix: 'Raise Frame → Outer spacing, or zoom the art out a little so the pop-out parts stay inside.',
+    fix: 'Give it more room in the Export tab (Outer spacing, or drag the red square’s corners), or zoom the art out a little so the pop-out parts stay inside.',
   },
   label: {
     what: 'The label',
-    fix: 'Raise Frame → Outer spacing, or make the label narrower or the text smaller (Label).',
+    fix: 'Give it more room in the Export tab (Outer spacing, or drag the red square’s corners), or make the label narrower or the text smaller (Label).',
   },
 };

@@ -220,7 +220,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     outerShadow(ctx, paintSilhouette, doc.shadows.outer, doc.lighting.direction, px, size);
   }
 
-  // 2. Backing: shows through inner spacing, transparent art and letterboxed fits.
+  // 2. Backing: no longer offered (v12 moved it into the background), kept for files that still have one.
   const backing = imageFrame ? clip : shapePolygon(doc.shape, R, insets.backing * R);
   if (doc.frame.backingOpacity > 0 && backing.length) {
     const { r, g, b } = parseHex(doc.frame.backingColor);
@@ -230,7 +230,8 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   }
 
   // 3. Background (src/render/background.ts), lit like the art when lighting asks for it.
-  drawBackground(ctx, doc, assets, clip, R);
+  // It fills the inner spacing too, where the backing used to show.
+  drawBackground(ctx, doc, assets, clip, R, backing);
   // 4. Effects behind the art (src/render/effects.ts).
   if (doc.effects.length) drawEffects(ctx, doc.effects, 'behind', area, size, subject, 0, assets);
 

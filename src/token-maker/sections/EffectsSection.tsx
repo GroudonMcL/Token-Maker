@@ -4,7 +4,7 @@ import { Advanced, ColorSwatches, ControlLabel, DirectionDial, GradientEditor, S
 import { EFFECT_GROUPS, EFFECTS, effectInfo, MAX_EFFECTS, newEffect, newPictureEffect, type EffectControl } from '../document/defaults';
 import type { BlendMode, EffectKind, EffectLayer, EffectPlacement } from '../document/types';
 import { addPictureEffect, uploadPictureEffect } from '../editor/pictureActions';
-import { EFFECT_PICTURES, effectPicture, pictureUrl } from '../render/pictureLibrary';
+import { EFFECT_PICTURES, effectPicture, pictureThumbUrl } from '../render/pictureLibrary';
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { effectThumbnails } from './effectThumbs';
@@ -47,7 +47,9 @@ const startingSettings = (e: EffectLayer): EffectLayer => (e.kind === 'picture' 
 /**
  * Effects section (DESIGN.md §6.8): a stack of glows, elemental effects,
  * condition looks, atmosphere, overlays (the Foreground section until v8)
- * and pictures. Each one sits behind the art, over it or on the border.
+ * and pictures. Since v12 the elemental effects and conditions are built-in
+ * pictures (render/pictureLibrary.ts), not drawn by code. Each one sits
+ * behind the art, over it or on the border.
  */
 export function EffectsSection() {
   const effects = useDoc((d) => d.effects);
@@ -68,15 +70,25 @@ export function EffectsSection() {
     return () => cancelAnimationFrame(id);
   }, [shape, frame]);
 
+  // A new effect opens and is scrolled into view, ready to edit (owner request).
+  const [fresh, setFresh] = useState<string | null>(null);
   const add = (kind: EffectKind) => {
     const e = newEffect(kind);
     // Newest on top, which is the end of the list (drawn last).
     updateDoc((d) => ({ ...d, effects: [...d.effects, e] }));
     setOpen(e.id);
+    setFresh(e.id);
   };
   const opened = (id: string | null) => {
-    if (id) setOpen(id);
+    if (!id) return;
+    setOpen(id);
+    setFresh(id);
   };
+  useEffect(() => {
+    if (!fresh) return;
+    const id = requestAnimationFrame(() => document.querySelector(`[data-effect-id="${fresh}"]`)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
+    return () => cancelAnimationFrame(id);
+  }, [fresh]);
   const move = (index: number, by: -1 | 1) =>
     updateDoc((d) => {
       const list = [...d.effects];
@@ -97,42 +109,38 @@ export function EffectsSection() {
             <div key={group} className="tile-grid__group" role="group" aria-label={group}>
               <div className="tile-grid__group-name">{group}</div>
               <div className="tile-grid__tiles">
-                {group === 'Pictures' ? (
-                  <>
-                    {EFFECT_PICTURES.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="tile"
-                        data-effect-picture={p.id}
-                        disabled={full}
-                        onClick={() => void addPictureEffect({ type: 'library', id: p.id }).then(opened)}
-                      >
-                        <span className="tile__preview tile__preview--dark" aria-hidden="true">
-                          <img src={pictureUrl(p.id)} alt="" width={44} height={44} loading="lazy" />
-                        </span>
-                        <span className="tile__label">{p.name}</span>
-                      </button>
-                    ))}
-                    {uploads.map((p) => (
-                      <button key={p.id} type="button" className="tile" disabled={full} onClick={() => void addPictureEffect({ type: 'upload', id: p.id }).then(opened)}>
-                        <span className="tile__preview tile__preview--dark" aria-hidden="true">
-                          <img src={p.url} alt="" width={44} height={44} />
-                        </span>
-                        <span className="tile__label">{p.name}</span>
-                      </button>
-                    ))}
-                  </>
-                ) : (
-                  EFFECTS.filter((x) => x.group === group).map((x) => (
-                    <button key={x.kind} type="button" className="tile" data-effect={x.kind} disabled={full} onClick={() => add(x.kind)}>
-                      <span className="tile__preview" aria-hidden="true">
-                        {thumbs?.get(x.kind) ? <img src={thumbs.get(x.kind)} alt="" width={44} height={44} /> : <span className="tile__blank" />}
+                {EFFECTS.filter((x) => x.group === group && x.kind !== 'picture').map((x) => (
+                  <button key={x.kind} type="button" className="tile" data-effect={x.kind} disabled={full} onClick={() => add(x.kind)}>
+                    <span className="tile__preview" aria-hidden="true">
+                      {thumbs?.get(x.kind) ? <img src={thumbs.get(x.kind)} alt="" width={44} height={44} /> : <span className="tile__blank" />}
+                    </span>
+                    <span className="tile__label">{x.name}</span>
+                  </button>
+                ))}
+                {EFFECT_PICTURES.filter((p) => p.group === group).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="tile"
+                    data-effect-picture={p.id}
+                    disabled={full}
+                    onClick={() => void addPictureEffect({ type: 'library', id: p.id }).then(opened)}
+                  >
+                    <span className="tile__preview tile__preview--dark" aria-hidden="true">
+                      <img src={pictureThumbUrl(p.id)} alt="" width={44} height={44} loading="lazy" />
+                    </span>
+                    <span className="tile__label">{p.name}</span>
+                  </button>
+                ))}
+                {group === 'Pictures' &&
+                  uploads.map((p) => (
+                    <button key={p.id} type="button" className="tile" disabled={full} onClick={() => void addPictureEffect({ type: 'upload', id: p.id }).then(opened)}>
+                      <span className="tile__preview tile__preview--dark" aria-hidden="true">
+                        <img src={p.url} alt="" width={44} height={44} />
                       </span>
-                      <span className="tile__label">{x.name}</span>
+                      <span className="tile__label">{p.name}</span>
                     </button>
-                  ))
-                )}
+                  ))}
               </div>
               {group === 'Pictures' && (
                 <div className="control control--row" data-control="effect-upload">
@@ -212,7 +220,7 @@ function EffectCard({
   // Colour only matters for a picture when it's coloured in.
   const showColor = uses('color') && (e.kind !== 'picture' || e.tint);
   return (
-    <li className="overlay-card" data-open={open} data-hidden={!e.visible || undefined} data-effect={e.kind}>
+    <li className="overlay-card" data-open={open} data-hidden={!e.visible || undefined} data-effect={e.kind} data-effect-id={e.id}>
       <div className="overlay-card__head">
         <button type="button" className="overlay-card__toggle" aria-expanded={open} aria-controls={bodyId} onClick={onToggle}>
           <ChevronDown size={16} aria-hidden="true" className="overlay-card__chevron" />

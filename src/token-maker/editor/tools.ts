@@ -33,6 +33,8 @@ export interface ToolState {
   autoTool: boolean;
   /** What the eyedropper picks: the background colour to remove, or the colour to recolour. Not remembered. */
   eyedropperFor: 'removal' | 'recolor';
+  /** The Export tab is open: the red export square gets handles to give the token more or less room. Not remembered. */
+  editBounds: boolean;
 }
 
 export const BRUSH_MIN = 4;
@@ -52,6 +54,7 @@ export const DEFAULTS: ToolState = {
   selectedDecoration: null,
   autoTool: false,
   eyedropperFor: 'removal',
+  editBounds: false,
 };
 
 function loadPrefs(): Partial<ToolState> {
@@ -94,3 +97,5 @@ export const setAutoTool = (tool: Tool) => toolStore.setState({ tool, autoTool: 
 export const pickColourFor = (target: ToolState['eyedropperFor']) => toolStore.setState({ tool: 'eyedropper', autoTool: false, eyedropperFor: target });
 export const setBrush = (patch: Partial<Omit<ToolState, 'tool' | 'autoTool'>>) => toolStore.setState(patch);
 export const selectDecoration = (id: string | null) => toolStore.setState({ selectedDecoration: id });
+/** Shows or hides the red export square's handles (the Export tab's size settings). */
+export const setEditBounds = (editBounds: boolean) => toolStore.setState({ editBounds });

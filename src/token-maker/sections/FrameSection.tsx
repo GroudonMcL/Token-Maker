@@ -1,5 +1,5 @@
 import { Circle, FolderOpen, Hexagon, RotateCcw, Square, SquareRoundCorner, Trash2, Upload } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ColorSwatches, SegmentedButtons, Slider, TileGrid } from '../components';
 import { updateFrameAndArt } from '../editor/artActions';
 import { nudgeHole, pickImageFrame, uploadFrame } from '../editor/frameActions';
@@ -9,6 +9,8 @@ import { refreshDesigns, removeDesign, useDesignLibrary } from '../state/designL
 import { builtInDesignById, builtInDesignFrame, isBuiltInDesign } from '../render/builtInDesigns';
 import { refreshUploadedFrames, removeUploadedFrame, useUploadedFrames } from '../state/frameLibrary';
 import { framePresetById, SHAPES, type ShapeId } from '../render/catalog';
+import { LIBRARY_FRAMES, libraryFrameThumbUrl } from '../render/libraryFrames';
+import { onSheet, preloadSheet } from './frameThumbSheet';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { designThumbnail } from './frameThumbs';
 import { loadFramePictures, thumbOf, TILES } from './frameTiles';
@@ -20,7 +22,6 @@ const DEFAULTS = createDocument().frame;
 
 const FRAME_SWATCHES = ['#d7671f', '#d4a64a', '#c9d2de', '#7a7f8a', '#8a5a32', '#6aa83a', '#3f6fd8', '#5b2d7a', '#b8322a', '#1c1c1c'];
 const HIGHLIGHT_SWATCHES = ['#3d8c6a', '#c7e04a', '#f3d27a', '#d9ad4a', '#ffffff', '#3b6fd8', '#b8322a', '#9b59d0', '#1c1c1c'];
-const BACKING_SWATCHES = ['#1d1f27', '#000000', '#ffffff', '#2b2118', '#1e2b22', '#2a1f33'];
 
 const FlatHexIcon = () => <Hexagon size={16} style={{ transform: 'rotate(90deg)' }} />;
 const SHAPE_ICONS: Record<ShapeId, ReactNode> = {
@@ -39,30 +40,38 @@ const fromPct = (p: number) => p / 50;
  * Frame & shape section (DESIGN.md §6.9, §6.12): shape, the frames drawn by
  * code (colour, thickness, spacing) and the built-in Frame Maker designs
  * listed with them, a picture frame of your own (with its hole) or a Frame
- * Maker design you opened (on the same band as a drawn frame), and the
- * backing.
+ * Maker design you opened (on the same band as a drawn frame). The room
+ * round the frame (outer spacing) is in the Export tab.
  */
 export function FrameSection() {
   const frame = useDoc((d) => d.frame);
+  const shape = useDoc((d) => d.shape);
   const uploads = useUploadedFrames();
-  // "Picture" can be chosen before any frame is uploaded, so remember the choice here too.
-  const [pictureChosen, setPictureChosen] = useState(false);
+  // The button chosen, shown at once while a picture frame loads; anything else changing the frame (undo, a preset…) shows the frame as it is.
+  const [picked, setPicked] = useState<{ kind: FrameKind; frame: FrameSettings } | null>(null);
+  const chosen = picked && picked.frame === frame ? picked.kind : null;
+  const setChosen = (kind: FrameKind | null) => setPicked(kind ? { kind, frame } : null);
   const builtIn = frame.kind === 'design' && isBuiltInDesign(frame.design?.id);
-  const kind = frame.kind === 'image' && frame.image ? 'image' : frame.kind === 'design' && !builtIn ? 'design' : pictureChosen ? 'image' : 'code';
+  const actual: FrameKind = frame.kind === 'image' && frame.image ? 'image' : frame.kind === 'design' && !builtIn ? 'design' : 'code';
+  const kind = chosen ?? actual;
+  useEffect(() => preloadSheet(shape), [shape]);
   return (
     <>
       <SegmentedButtons
         label="Frame type"
         value={kind}
+        equal
         onChange={(k) => {
-          setPictureChosen(k === 'image');
           if (k === 'code') updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'code' } }));
           // A built-in design belongs with the drawn frames: Frame Maker starts with no design picked.
           else if (k === 'design') updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'design', design: isBuiltInDesign(d.frame.design?.id) ? null : d.frame.design } }));
           else if (frame.image) updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, kind: 'image' } }));
           else {
+            // No picture frame yet: start with the newest upload, else the built-in Simple one.
+            setChosen('image');
             const first = uploads.frames[0];
-            if (first) void pickImageFrame({ type: 'upload', id: first.id }, first.name);
+            const lib = LIBRARY_FRAMES[0]!;
+            void (first ? pickImageFrame({ type: 'upload', id: first.id }, first.name) : pickImageFrame({ type: 'library', id: lib.id }, lib.name)).finally(() => setChosen(null));
           }
         }}
         options={[
@@ -72,26 +81,11 @@ export function FrameSection() {
         ]}
       />
       {kind === 'image' ? <PictureFrame image={frame.kind === 'image' ? frame.image : null} /> : kind === 'design' ? <DesignFramePanel design={frame.design} /> : <DrawnFrame />}
-      <ColorSwatches
-        label="Backing colour"
-        value={frame.backingColor}
-        swatches={BACKING_SWATCHES}
-        onChange={(c) => updateDoc((d) => ({ ...d, frame: { ...d.frame, backingColor: c } }), { transient: true })}
-        onCommit={commitDoc}
-      />
-      <Slider
-        label="Backing opacity"
-        unit="%"
-        defaultValue={100}
-        min={0}
-        max={100}
-        value={Math.round(frame.backingOpacity * 100)}
-        onChange={(v) => updateDoc((d) => ({ ...d, frame: { ...d.frame, backingOpacity: v / 100 } }), { transient: true })}
-        onCommit={commitDoc}
-      />
     </>
   );
 }
+
+type FrameKind = 'code' | 'image' | 'design';
 
 /** A picture frame of your own: the uploaded pictures, and the hole's nudge. */
 function PictureFrame({ image }: { image: ImageFrame | null }) {
@@ -104,22 +98,28 @@ function PictureFrame({ image }: { image: ImageFrame | null }) {
   const nudged = n.x !== 0 || n.y !== 0 || n.scale !== 1;
   return (
     <>
-      {uploads.length > 0 ? (
-        <TileGrid
-          label="Picture frame"
-          value={image?.source.id ?? ''}
-          onChange={(id) => void pickImageFrame({ type: 'upload', id }, uploads.find((f) => f.id === id)?.name ?? 'My frame')}
-          tiles={uploads.map((f) => ({ id: f.id, label: f.name, preview: <img src={f.url} alt="" width={44} height={44} /> }))}
-        />
-      ) : (
-        <p className="control__hint">No picture frames yet. Upload a PNG ring with a see-through middle.</p>
-      )}
+      <TileGrid
+        label="Picture frame"
+        value={image ? `${image.source.type}:${image.source.id}` : ''}
+        onChange={(key) => {
+          const lib = LIBRARY_FRAMES.find((f) => `library:${f.id}` === key);
+          if (lib) void pickImageFrame({ type: 'library', id: lib.id }, lib.name);
+          else {
+            const id = key.slice('upload:'.length);
+            void pickImageFrame({ type: 'upload', id }, uploads.find((f) => f.id === id)?.name ?? 'My frame');
+          }
+        }}
+        tiles={[
+          ...uploads.map((f) => ({ id: `upload:${f.id}`, label: f.name, group: 'Your frames', preview: <img src={f.url} alt="" width={44} height={44} /> })),
+          ...LIBRARY_FRAMES.map((f) => ({ id: `library:${f.id}`, label: f.name, group: 'Essentials', preview: <img src={libraryFrameThumbUrl(f.id)} alt="" width={44} height={44} loading="lazy" /> })),
+        ]}
+      />
       <div className="control control--row" data-control="frame-upload">
         <button type="button" className="btn btn--small" onClick={() => input.current?.click()}>
           <Upload size={14} aria-hidden="true" />
           Upload a frame
         </button>
-        {image && (
+        {image?.source.type === 'upload' && (
           <button
             type="button"
             className="btn btn--ghost btn--small"
@@ -287,7 +287,7 @@ function ShapeControl() {
   );
 }
 
-/** Thickness and spacing of the frame band (drawn frames and Frame Maker designs). */
+/** Thickness and inner spacing of the frame band (drawn frames and Frame Maker designs). The outer spacing is in the Export tab. */
 function BandSliders() {
   const frame = useDoc((d) => d.frame);
   const setFrame = (patch: Partial<FrameSettings>, transient = false) =>
@@ -304,17 +304,6 @@ function BandSliders() {
         value={toPct(frame.thickness)}
         disabled={frame.kind !== 'design' && frame.style === 'none'}
         onChange={(v) => setFrame({ thickness: fromPct(v) }, true)}
-        onCommit={commitDoc}
-      />
-      <Slider
-        label="Outer spacing"
-        unit="% of a square"
-        defaultValue={toPct(DEFAULTS.outerSpacing)}
-        min={0}
-        max={15}
-        step={0.5}
-        value={toPct(frame.outerSpacing)}
-        onChange={(v) => setFrame({ outerSpacing: fromPct(v) }, true)}
         onCommit={commitDoc}
       />
       <Slider
@@ -362,11 +351,10 @@ function BuiltInColours({ id }: { id: string }) {
 const SLICE_MS = 12;
 
 /**
- * Thumbnails for the frame picker. Opening the tab used to draw every frame
- * and built-in design at once (well over a hundred renders, then all again
- * once the photo textures arrived), which froze the page for a moment.
- * Now the panel draws only the frame it shows; the rest are drawn a slice at
- * a time once the gallery is first opened, the open group first.
+ * Thumbnails for the frame picker. Almost every frame's comes ready-made
+ * from the thumbnail sheet (frameThumbSheet.ts), so the gallery opens with
+ * them all at once. Only frames missing from the sheet are drawn here, a
+ * slice at a time once the gallery is first opened.
  */
 function useFrameThumbs(shape: ShapeId, value: string) {
   const [state, setState] = useState<{ key: string; map: Map<string, string> }>({ key: '', map: new Map() });
@@ -381,20 +369,23 @@ function useFrameThumbs(shape: ShapeId, value: string) {
       for (const [id, url] of entries) next.set(id, url);
       return { key, map: next };
     });
+  const missing = useMemo(() => TILES.filter((t) => !onSheet(t.id)).map((t) => t.id), []);
 
   // Photo textures for the designs that are about to be drawn.
   useEffect(() => {
     let live = true;
-    void loadFramePictures(gallery ? TILES.map((t) => t.id) : [value]).then((redraw) => {
+    const ids = (gallery ? missing : [value]).filter((id) => !onSheet(id));
+    void loadFramePictures(ids).then((redraw) => {
       if (live && redraw) setEpoch((e) => e + 1);
     });
     return () => {
       live = false;
     };
-  }, [gallery, value]);
+  }, [gallery, value, missing]);
 
-  // The frame the panel shows, on the next frame so the tab opens at once.
+  // The frame the panel shows, if it isn't on the sheet, on the next frame so the tab opens at once.
   useEffect(() => {
+    if (onSheet(value)) return;
     const id = requestAnimationFrame(() => {
       const url = thumbOf(value, shape);
       if (url) add([[value, url]]);
@@ -403,23 +394,21 @@ function useFrameThumbs(shape: ShapeId, value: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, key]);
 
-  // Every tile, a slice at a time, once the gallery has been opened.
+  // Every tile missing from the sheet, a slice at a time, once the gallery has been opened.
   useEffect(() => {
-    if (!gallery) return;
-    const group = TILES.find((t) => t.id === value)?.group;
-    const ids = [...TILES.filter((t) => t.group === group), ...TILES.filter((t) => t.group !== group)].map((t) => t.id);
+    if (!gallery || !missing.length) return;
     let i = 0;
     let timer = 0;
     const step = () => {
       const start = performance.now();
       const done: [string, string][] = [];
-      while (i < ids.length && performance.now() - start < SLICE_MS) {
-        const id = ids[i++]!;
+      while (i < missing.length && performance.now() - start < SLICE_MS) {
+        const id = missing[i++]!;
         const url = thumbOf(id, shape);
         if (url) done.push([id, url]);
       }
       if (done.length) add(done);
-      if (i < ids.length) timer = window.setTimeout(step, 0);
+      if (i < missing.length) timer = window.setTimeout(step, 0);
     };
     timer = window.setTimeout(step, 0);
     return () => clearTimeout(timer);
@@ -449,6 +438,7 @@ function DrawnFrame() {
       <ShapeControl />
       <FramePicker
         tiles={TILES}
+        shape={shape}
         thumbs={thumbs.map}
         value={value}
         onOpen={thumbs.fillGallery}

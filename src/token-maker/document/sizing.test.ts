@@ -3,9 +3,9 @@ import { computeInsets, outputSize, perSquareToPx, squaresLabel } from './sizing
 
 describe('per-square sizing (DESIGN.md §4.2)', () => {
   it('output size is squares × pixels per square, capped at 4096', () => {
-    expect(outputSize(1)).toBe(256);
-    expect(outputSize(0.5)).toBe(128);
-    expect(outputSize(2)).toBe(512);
+    expect(outputSize(1)).toBe(512);
+    expect(outputSize(0.5)).toBe(256);
+    expect(outputSize(2)).toBe(1024);
     expect(outputSize(4, 512)).toBe(2048);
     expect(outputSize(10, 512)).toBe(4096);
   });
@@ -13,7 +13,7 @@ describe('per-square sizing (DESIGN.md §4.2)', () => {
   it('a border is the same number of pixels per square at every size', () => {
     for (const squares of [0.5, 1, 2, 3, 4]) {
       const size = outputSize(squares);
-      expect(perSquareToPx(0.14, squares, size)).toBeCloseTo(0.14 * 128, 6);
+      expect(perSquareToPx(0.14, squares, size)).toBeCloseTo(0.14 * 256, 6);
     }
   });
 

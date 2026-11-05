@@ -8,7 +8,6 @@ import {
   ImagePlus,
   Maximize2,
   Mountain,
-  Ruler,
   Scissors,
   SlidersHorizontal,
   Sparkles,
@@ -29,7 +28,6 @@ export type SectionId =
   | 'effects'
   | 'frame'
   | 'decorations'
-  | 'size'
   | 'label'
   | 'presets'
   | 'export';
@@ -57,9 +55,8 @@ export const SECTIONS: readonly SectionDef[] = [
   { id: 'effects', title: 'Effects', icon: icon(Sparkles), placeholder: 'Glows, elements, conditions, atmosphere and overlays.' },
   { id: 'decorations', title: 'Decorations', icon: icon(Gem), placeholder: 'Gems, skulls, horns, wings and more.' },
   { id: 'label', title: 'Label', icon: icon(Tag), placeholder: 'Name banners, plaques, plain text and ring text.' },
-  { id: 'size', title: 'Size', icon: icon(Ruler), placeholder: 'Tiny to Gargantuan, or a custom number of squares.' },
   { id: 'presets', title: 'Presets', icon: icon(Bookmark), placeholder: 'Built-in styles, your saved styles and sharing.' },
-  { id: 'export', title: 'Export', icon: icon(Download), placeholder: 'Format, resolution, download and copy.' },
+  { id: 'export', title: 'Export', icon: icon(Download), placeholder: 'Size on the map, format, resolution, download and copy.' },
 ];
 
 export type TabGroup = 'Picture' | 'Style' | 'Finish';
@@ -91,7 +88,6 @@ export const PANEL_TABS: readonly PanelTab[] = [
   { id: 'effects', label: 'Effects', group: 'Style', icon: icon(WandSparkles), sections: ['effects'] },
   { id: 'decor', label: 'Decor', group: 'Style', icon: icon(Gem), sections: ['decorations'] },
   { id: 'label', label: 'Label', group: 'Style', icon: icon(Tag), sections: ['label'] },
-  { id: 'size', label: 'Size', group: 'Finish', icon: icon(Ruler), sections: ['size'] },
   { id: 'presets', label: 'Presets', group: 'Finish', icon: icon(Bookmark), sections: ['presets'] },
   { id: 'export', label: 'Export', group: 'Finish', icon: icon(Download), sections: ['export'] },
 ];

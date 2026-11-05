@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { setBatchMode } from '../batch/batch';
 import { DEFAULT_EXPORT, exportSettings, getExportSettings } from '../export/exportSettings';
 import { resetDoc, updateDoc } from '../state/tokenStore';
@@ -25,10 +25,10 @@ describe('Export section', () => {
   it('shows the final size for the creature and the cap', () => {
     updateDoc((d) => ({ ...d, size: { preset: 'large', squares: 2 } }));
     render(<ExportSection />);
-    expect(screen.getByTestId('export-size')).toHaveTextContent('512 × 512 px');
+    expect(screen.getByTestId('export-size')).toHaveTextContent('1024 × 1024 px');
     fireEvent.click(screen.getByRole('radio', { name: '400' }));
     expect(screen.getByTestId('export-size')).toHaveTextContent('800 × 800 px');
-    fireEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Pixels per square' })).getByRole('radio', { name: 'Custom' }));
     const box = screen.getByLabelText('Custom pixels per square value');
     fireEvent.change(box, { target: { value: '3000' } });
     fireEvent.blur(box);

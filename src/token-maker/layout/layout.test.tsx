@@ -20,7 +20,6 @@ describe('AppShell (desktop)', () => {
       'Effects',
       'Decor',
       'Label',
-      'Size',
       'Presets',
       'Export',
     ]);

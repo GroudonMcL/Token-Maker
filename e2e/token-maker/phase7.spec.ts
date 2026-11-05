@@ -102,7 +102,7 @@ test('upload a ring PNG, add mirrored horns, save a preset, export it and load i
   // 1. My own ring PNG as a picture frame: the hole is found automatically.
   let panel = await openSection(page, 'Frame & shape');
   await panel.getByRole('radio', { name: 'Picture' }).click();
-  await expect(panel.getByText(/No picture frames yet/)).toBeVisible();
+  await expect(panel.getByRole('radio', { name: 'Glowing lava' })).toBeVisible();
   await panel.getByTestId('frame-file-input').setInputFiles(RING);
   await expect(panel.getByRole('radio', { name: 'Purple Ring' })).toHaveAttribute('aria-checked', 'true');
 

@@ -67,33 +67,33 @@ const LOW: [number, number] = [0.5, 0.8]; // the goblin's red body
 const MIDDLE: [number, number] = [0.5, 0.45];
 const POINTS = [OUTSIDE, FRAME, LOW, MIDDLE];
 
-test('stack a frost border, mist over the art and a bloodied look, reorder them and export', async ({ page, isMobile }) => {
+test('stack an outer glow, mist over the art and a vignette, reorder them and export', async ({ page, isMobile }) => {
   const m = !!isMobile;
   const before = await exportPixels(page, m, POINTS);
   const panel = await effectsPanel(page);
 
   // The picker shows a live thumbnail for every drawn effect (and picture effects show their pictures).
-  await expect(panel.locator('.tile[data-effect] img')).toHaveCount(24);
-  await expect(panel.locator('.tile[data-effect-picture] img')).toHaveCount(12);
+  // Since v12 the elemental effects, conditions and more are pictures too.
+  await expect(panel.locator('.tile[data-effect] img')).toHaveCount(7);
+  await expect(panel.locator('.tile[data-effect-picture] img')).toHaveCount(33);
 
-  await panel.getByRole('button', { name: /^Frost$/ }).click();
+  await panel.getByRole('button', { name: /^Outer glow$/ }).click();
   await panel.getByRole('button', { name: /^Mist$/ }).click();
-  await panel.getByRole('button', { name: /^Bloodied$/ }).click();
+  await panel.getByRole('button', { name: /^Vignette$/ }).click();
   const list = panel.getByRole('list', { name: 'Effects, top first' });
   const order = () => list.getByRole('listitem').evaluateAll((items) => items.map((i) => i.getAttribute('data-effect')));
-  expect(await order()).toEqual(['bloodied', 'mist', 'frost']);
+  expect(await order()).toEqual(['vignette', 'mist', 'outerGlow']);
   await expect(list.getByRole('listitem').first()).toContainText('over art');
   await expect(list.getByRole('listitem').last()).toContainText('on border');
 
-  // Reorder: mist goes to the top, frost one up.
+  // Reorder: mist goes to the top, the glow one up.
   await list.getByRole('button', { name: 'Move Mist up' }).click();
-  await list.getByRole('button', { name: 'Move Frost up' }).click();
-  expect(await order()).toEqual(['mist', 'frost', 'bloodied']);
+  await list.getByRole('button', { name: 'Move Outer glow up' }).click();
+  expect(await order()).toEqual(['mist', 'outerGlow', 'vignette']);
 
   const after = await exportPixels(page, m, POINTS);
-  // Frost glows round the border, where there was only the drop shadow before.
+  // The glow shines round the border, where there was only the drop shadow before.
   expect(differs(after[0]!, before[0]!, 40), `outside: ${before[0]} → ${after[0]}`).toBe(true);
-  expect(differs(after[1]!, before[1]!, 40), `frame: ${before[1]} → ${after[1]}`).toBe(true);
   // Mist lightens the bottom of the art.
   const lum = (p: Rgba) => p[0]! * 0.3 + p[1]! * 0.59 + p[2]! * 0.11;
   expect(lum(after[2]!)).toBeGreaterThan(lum(before[2]!) + 15);
@@ -129,7 +129,7 @@ test('changing placement, colour and intensity', async ({ page, isMobile }) => {
 
 test('three stacked effects stay smooth while a slider moves', async ({ page }) => {
   const panel = await effectsPanel(page);
-  for (const name of ['Frost', 'Mist', 'Bloodied']) await panel.getByRole('button', { name: new RegExp(`^${name}$`) }).click();
+  for (const name of ['Outer glow', 'Mist', 'Vignette']) await panel.getByRole('button', { name: new RegExp(`^${name}$`) }).click();
   const slider = panel.getByRole('slider', { name: 'Intensity' });
   await slider.scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
@@ -158,5 +158,5 @@ test('three stacked effects stay smooth while a slider moves', async ({ page }) 
   const median = gaps[Math.floor(gaps.length / 2)]!;
   expect(gaps.length).toBeGreaterThan(5);
   expect(median, `frame times: ${gaps.map((g) => g.toFixed(0)).join(' ')}`).toBeLessThan(40);
-  expect(Number(await slider.inputValue())).toBe(55); // Bloodied starts at 85
+  expect(Number(await slider.inputValue())).toBe(55); // Vignette starts at 85
 });

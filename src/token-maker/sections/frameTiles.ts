@@ -6,8 +6,14 @@ import { categoryOf, categoryRank } from '../frameMaker/project/frameCategories'
 import { loadFrameDesignPictures } from '../frameMaker/share/frameDesign';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
 import { FRAME_PRESETS, type ShapeId } from '../render/catalog';
-import type { FrameTile } from './FramePicker';
 import { clearDesignThumbnails, designThumbnail, frameThumbnail } from './frameThumbs';
+
+/** One frame in the frame picker. */
+export interface FrameTile {
+  id: string;
+  label: string;
+  group: string;
+}
 
 /** Each frame's place in the owner's ranking (0 = best). */
 const RANK = new Map(frameOrder.order.map((id, i) => [id, i]));

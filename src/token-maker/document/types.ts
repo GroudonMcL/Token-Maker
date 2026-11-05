@@ -4,7 +4,7 @@
 import type { FrameProject } from '../frameMaker/share/frameDesign';
 import type { FrameStyle, ShapeId } from '../render/catalog';
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export type SizePreset = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'custom';
 
@@ -155,8 +155,13 @@ export interface FrameSettings {
   thickness: number;
   /** Gap between the image edge and the frame, per square. */
   outerSpacing: number;
-  /** Gap between the frame and the art, filled with the backing, per square. */
+  /** Gap between the frame and the art, filled with the background, per square. */
   innerSpacing: number;
+  /**
+   * A colour behind the art. No longer offered (owner request: the Background
+   * tab does the same): v12 moved it into the background, and it stays at
+   * opacity 0, kept only so older files and presets still read.
+   */
   backingColor: string;
   backingOpacity: number;
   /** The picture frame, used when `kind` is 'image' (Phase 7). */
@@ -183,7 +188,8 @@ export interface DesignFrame {
 }
 
 /** Where a picture frame comes from: one the user uploaded (kept in IndexedDB). The built-in ones became Frame Maker designs in v11. */
-export type ImageFrameSource = { type: 'upload'; id: string };
+/** An uploaded picture frame, or a built-in one (render/libraryFrames.ts: the Essentials frames as pictures). */
+export type ImageFrameSource = { type: 'upload' | 'library'; id: string };
 
 /**
  * A picture (PNG) frame (DESIGN.md §6.9). The picture fills the token's
@@ -318,33 +324,15 @@ export type EffectKind =
   // Glows
   | 'innerGlow'
   | 'outerGlow'
-  // Elemental
-  | 'fire'
-  | 'frost'
-  | 'poison'
-  | 'lightning'
-  | 'necrotic'
-  | 'radiant'
-  // Condition looks
-  | 'bloodied'
-  | 'petrified'
-  | 'ethereal'
-  | 'frightened'
-  | 'poisoned'
-  | 'charmed'
-  | 'unconscious'
   // Atmosphere
   | 'mist'
-  | 'embers'
-  | 'sparkles'
   | 'smoke'
   // Overlays (the old Foreground section, v8)
   | 'vignette'
   | 'gradient'
   | 'edgeShadow'
-  | 'foliage'
-  | 'cobwebs'
-  // A picture: a built-in sprite or the user's own (v8)
+  // A picture: a built-in one or the user's own (v8). Since v12 the built-in pictures
+  // are also the elemental effects, conditions and more (render/pictureLibrary.ts).
   | 'picture';
 
 /** Where a picture (a picture effect or decoration) comes from: built in, or the user's own upload kept in IndexedDB. */

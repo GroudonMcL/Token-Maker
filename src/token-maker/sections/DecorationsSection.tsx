@@ -5,7 +5,7 @@ import { DECORATION_GROUPS, DECORATIONS, decorationInfo, MAX_DECORATIONS, newDec
 import type { Decoration, DecorationKind, SnapPoint } from '../document/types';
 import { addPictureDecoration, uploadPictureDecoration } from '../editor/pictureActions';
 import { selectDecoration, useTool } from '../editor/tools';
-import { DECORATION_PICTURES, decorationLook, EFFECT_PICTURES, pictureUrl } from '../render/pictureLibrary';
+import { DECORATION_PICTURES, decorationLook, EFFECT_PICTURES, pictureThumbUrl } from '../render/pictureLibrary';
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { decorationGeometry, placements } from '../render/decorations';
 import { commitDoc, getDoc, updateDoc, useDoc } from '../state/tokenStore';
@@ -81,7 +81,7 @@ export function DecorationsSection() {
             <div className="tile-grid__group-name">Ornaments</div>
             <div className="tile-grid__tiles">
               {DECORATION_PICTURES.filter((p) => p.group === 'Ornaments').map((p) => (
-                <PictureTile key={p.id} id={p.id} name={p.name} url={pictureUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
+                <PictureTile key={p.id} id={p.id} name={p.name} url={pictureThumbUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
               ))}
             </div>
           </div>
@@ -93,7 +93,7 @@ export function DecorationsSection() {
                   <div className="tile-grid__group-name">Effect pictures</div>
                   <div className="tile-grid__tiles">
                     {EFFECT_PICTURES.map((p) => (
-                      <PictureTile key={p.id} id={p.id} name={p.name} url={pictureUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
+                      <PictureTile key={p.id} id={p.id} name={p.name} url={pictureThumbUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
                     ))}
                   </div>
                 </div>
@@ -104,7 +104,7 @@ export function DecorationsSection() {
                   {group === 'Pictures' ? (
                     <>
                       {DECORATION_PICTURES.filter((p) => p.group === 'Pictures').map((p) => (
-                        <PictureTile key={p.id} id={p.id} name={p.name} url={pictureUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
+                        <PictureTile key={p.id} id={p.id} name={p.name} url={pictureThumbUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
                       ))}
                       {uploads.map((p) => (
                         <PictureTile key={p.id} name={p.name} url={p.url} disabled={full} onAdd={() => void addPictureDecoration({ type: 'upload', id: p.id })} />
@@ -113,7 +113,7 @@ export function DecorationsSection() {
                   ) : PICTURE_GROUPS.has(group) ? (
                     // Owner request: shaded clipart instead of the code-drawn treasure, creatures and trims.
                     DECORATION_PICTURES.filter((p) => p.group === group).map((p) => (
-                      <PictureTile key={p.id} id={p.id} name={p.name} url={pictureUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
+                      <PictureTile key={p.id} id={p.id} name={p.name} url={pictureThumbUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
                     ))
                   ) : (
                     DECORATIONS.filter((x) => x.group === group).map((x) => (

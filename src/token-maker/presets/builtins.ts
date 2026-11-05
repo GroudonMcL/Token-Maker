@@ -3,7 +3,7 @@
 // them for looks made in the editor, copy each one's preset code from the
 // Presets section and turn the codes into changes here.
 
-import { createDocument, LIGHT_PRESETS, newDecoration, newEffect } from '../document/defaults';
+import { createDocument, LIGHT_PRESETS, newDecoration, newEffect, newPictureEffect } from '../document/defaults';
 import type { Decoration, DecorationKind, EffectKind, EffectLayer, LightPresetId, TokenDocument } from '../document/types';
 import { framePresetById } from '../render/catalog';
 import { createPreset, type TokenPreset } from './preset';
@@ -14,9 +14,11 @@ const frame = (doc: TokenDocument, presetId: string, patch: Partial<TokenDocumen
 };
 const light = (doc: TokenDocument, id: LightPresetId) => {
   const p = LIGHT_PRESETS.find((x) => x.id === id)!;
-  doc.lighting = { ...doc.lighting, ...p.settings, rim: { ...p.settings.rim }, enabled: true, preset: id };
+  doc.lighting = { ...doc.lighting, ...p.settings, rim: { ...p.settings.rim }, enabled: true, background: true, preset: id };
 };
 const effect = (kind: EffectKind, patch: Partial<EffectLayer> = {}): EffectLayer => ({ ...newEffect(kind, kind), ...patch });
+/** A built-in picture effect (render/pictureLibrary.ts), by its id without the `fx-`. */
+const pictureEffect = (id: string, patch: Partial<EffectLayer> = {}): EffectLayer => ({ ...newPictureEffect({ type: 'library', id: `fx-${id}` }, id), ...patch });
 const deco = (kind: DecorationKind, patch: Partial<Decoration> = {}): Decoration => ({ ...newDecoration(kind, kind), ...patch });
 
 function preset(id: string, name: string, change: (doc: TokenDocument) => void): TokenPreset {
@@ -29,14 +31,14 @@ export const BUILT_IN_PRESETS: readonly TokenPreset[] = [
   preset('boss', 'Boss', (d) => {
     frame(d, 'gilded', { thickness: 0.18 });
     light(d, 'firelight');
-    d.effects = [effect('vignette'), effect('outerGlow', { color: '#ff3b1a', intensity: 85, size: 0.2 }), effect('embers', { intensity: 70 })];
+    d.effects = [effect('vignette'), effect('outerGlow', { color: '#ff3b1a', intensity: 85, size: 0.2 }), pictureEffect('embers', { intensity: 70 })];
     d.decorations = [deco('crown')];
     d.shadows.outer = { ...d.shadows.outer, distance: 0.05, blur: 0.14, opacity: 0.9 };
   }),
   preset('undead', 'Undead', (d) => {
     frame(d, 'engraved', { color: '#6c7078' });
     light(d, 'moonlight');
-    d.effects = [effect('necrotic', { intensity: 80 }), effect('mist', { color: '#b7c4b0', intensity: 60 })];
+    d.effects = [pictureEffect('necrotic', { intensity: 80 }), effect('mist', { color: '#b7c4b0', intensity: 60 })];
     d.decorations = [deco('skull')];
   }),
   preset('party', 'Party member', (d) => {
@@ -51,24 +53,24 @@ export const BUILT_IN_PRESETS: readonly TokenPreset[] = [
     frame(d, 'druid');
     light(d, 'holy');
     d.lighting = { ...d.lighting, color: '#d8ffd0', preset: null };
-    d.effects = [effect('innerGlow', { color: '#76ff4a', intensity: 55 }), effect('sparkles', { color: '#ff9ad2' })];
+    d.effects = [effect('innerGlow', { color: '#76ff4a', intensity: 55 }), pictureEffect('sparkle', { color: '#ff9ad2' })];
     d.decorations = [deco('leaf', { place: 'topLeft', mirror: true })];
   }),
   preset('fiend', 'Fiend', (d) => {
     frame(d, 'infernal');
     light(d, 'firelight');
-    d.effects = [effect('fire', { intensity: 90 })];
+    d.effects = [pictureEffect('fire', { intensity: 90 })];
     d.decorations = [deco('horn', { color: '#3a2a22' })];
   }),
   preset('celestial', 'Celestial', (d) => {
     frame(d, 'paladin');
     light(d, 'holy');
-    d.effects = [effect('radiant', { intensity: 80 })];
+    d.effects = [pictureEffect('light-rays', { intensity: 60 })];
     d.decorations = [deco('wing'), deco('holySymbol')];
   }),
   preset('construct', 'Construct', (d) => {
     frame(d, 'fighter');
-    d.effects = [effect('lightning', { intensity: 70, size: 0.14 })];
+    d.effects = [pictureEffect('lightning', { intensity: 80 })];
     d.decorations = [deco('chain'), deco('gem', { color: '#2f7fd8' })];
   }),
 ];
