@@ -1,14 +1,11 @@
-import { Pipette, RotateCcw, X } from 'lucide-react';
-import { useId } from 'react';
-import { Advanced, ControlLabel, Slider, Toggle } from '../components';
-import { DEFAULT_ADJUST } from '../document/defaults';
-import type { ImageAdjustments } from '../document/types';
+import { Pipette, Plus, RotateCcw, X } from 'lucide-react';
+import { Advanced, ColorSwatches, Slider, Toggle } from '../components';
+import { DEFAULT_ADJUST, MAX_RECOLORS, newRecolor } from '../document/defaults';
+import type { ImageAdjustments, Recolor } from '../document/types';
 import { pickColourFor, setTool, useTool } from '../editor/tools';
-import { hasRecolor } from '../image/adjust';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
-import { parseHex, toHex } from '../render/color';
 
-type NumberKey = Exclude<keyof ImageAdjustments, 'invert' | 'recolorColor' | 'recolorShift' | 'recolorBreadth'>;
+type NumberKey = Exclude<keyof ImageAdjustments, 'invert' | 'recolors'>;
 
 interface AdjustDef {
   key: NumberKey;
@@ -85,13 +82,12 @@ export function ImageSection() {
 
 function Adjustments() {
   const adjust = useDoc((d) => d.art.adjust);
-  const changed = JSON.stringify({ ...adjust, recolorBreadth: 0 }) !== JSON.stringify({ ...DEFAULT_ADJUST, recolorBreadth: 0 });
+  const changed = JSON.stringify(adjust) !== JSON.stringify(DEFAULT_ADJUST);
   return (
     <>
       {MAIN.map((def) => (
         <AdjustSlider key={def.key} def={def} value={adjust[def.key]} />
       ))}
-      <Recolour adjust={adjust} />
       <Advanced>
         {GROUPS.map((g) => (
           <div key={g.title} className="control-group">
@@ -103,7 +99,8 @@ function Adjustments() {
           </div>
         ))}
       </Advanced>
-      <button type="button" className="btn btn--ghost btn--small" disabled={!changed} onClick={() => setAdjust({ ...DEFAULT_ADJUST })}>
+      <Recolours recolors={adjust.recolors} />
+      <button type="button" className="btn btn--ghost btn--small" disabled={!changed} onClick={() => setAdjust({ ...DEFAULT_ADJUST, recolors: [] })}>
         <RotateCcw size={16} aria-hidden="true" />
         Reset adjustments
       </button>
@@ -111,88 +108,79 @@ function Adjustments() {
   );
 }
 
-/** A colour turned `degrees` round the colour wheel (for the preview swatch). */
-function turned(hex: string, degrees: number): string {
-  const { r, g, b } = parseHex(hex);
-  const max = Math.max(r, g, b);
-  const c = max - Math.min(r, g, b);
-  if (!c) return hex;
-  let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
-  h = (((h * 60 + degrees) % 360) + 360) % 360;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = max - c;
-  const k = Math.floor(h / 60);
-  const [rr, gg, bb] = k === 0 ? [c, x, 0] : k === 1 ? [x, c, 0] : k === 2 ? [0, c, x] : k === 3 ? [0, x, c] : k === 4 ? [x, 0, c] : [c, 0, x];
-  return toHex({ r: rr + m, g: gg + m, b: bb + m });
-}
+const FROM_SWATCHES = ['#ffffff', '#000000', '#b8322a', '#2f6fd8', '#2f8f4e', '#f2c14e'];
+const TO_SWATCHES = ['#b8322a', '#2f6fd8', '#2f8f4e', '#f2c14e', '#7a3fb0', '#ffffff', '#000000'];
+
+const setRecolors = (change: (list: Recolor[]) => Recolor[], transient = false) =>
+  updateDoc((d) => ({ ...d, art: { ...d.art, adjust: { ...d.art.adjust, recolors: change(d.art.adjust.recolors) } } }), { transient });
 
 /**
- * Recolour (owner request): choose a colour (with the picker, or from the
- * picture with the eyedropper), then turn it to another colour; Breadth
- * says how many colours around it change too.
+ * Recolour (owner request): any number of colour changes, each turning one
+ * colour of the picture (chosen with the picker or the eyedropper) into
+ * another, light and dark colours included. Breadth says how many colours
+ * around it change too.
  */
-function Recolour({ adjust }: { adjust: ImageAdjustments }) {
-  const pickerId = useId();
-  const picking = useTool((s) => s.tool === 'eyedropper' && s.eyedropperFor === 'recolor');
-  const from = adjust.recolorColor;
-  const to = from ? turned(from, adjust.recolorShift) : null;
+function Recolours({ recolors }: { recolors: Recolor[] }) {
   return (
     <div className="control-group" data-control="recolour">
       <h4 className="control-group__title">Recolour</h4>
-      <div className="control">
-        <ControlLabel htmlFor={pickerId} label="Colour to change" />
-        <div className="recolour__row">
-          <label className="swatch swatch--input" style={{ background: from ?? undefined }} title="Choose the colour to change">
-            <span className="visually-hidden">Colour to change</span>
-            <input
-              id={pickerId}
-              type="color"
-              value={from ?? '#b8322a'}
-              onChange={(e) => setAdjust({ recolorColor: e.target.value }, true)}
-              onBlur={commitDoc}
-            />
-            {!from && <span className="swatch__none" aria-hidden="true" />}
-          </label>
-          <button type="button" className="btn btn--small" aria-pressed={picking} onClick={() => (picking ? setTool('move') : pickColourFor('recolor'))}>
-            <Pipette size={14} aria-hidden="true" />
-            {picking ? 'Tap the picture…' : 'Pick from picture'}
-          </button>
-          {from && (
-            <>
-              <span className="recolour__arrow" aria-hidden="true">→</span>
-              <span className="swatch swatch--static" style={{ background: to! }} title={`Becomes ${to}`} aria-label={`Becomes ${to}`} role="img" />
-              <button type="button" className="icon-btn" aria-label="Stop recolouring" onClick={() => setAdjust({ recolorColor: null, recolorShift: 0 })}>
-                <X size={16} aria-hidden="true" />
-              </button>
-            </>
-          )}
-        </div>
+      {recolors.length === 0 && <p className="control__hint">Change one colour of the picture into another: white to red, say.</p>}
+      {recolors.map((r, i) => (
+        <RecolourCard key={i} r={r} index={i} count={recolors.length} />
+      ))}
+      <button
+        type="button"
+        className="btn btn--small"
+        disabled={recolors.length >= MAX_RECOLORS}
+        onClick={() => setRecolors((list) => [...list, newRecolor()])}
+      >
+        <Plus size={14} aria-hidden="true" />
+        {recolors.length ? 'Add another recolour' : 'Add a recolour'}
+      </button>
+    </div>
+  );
+}
+
+function RecolourCard({ r, index, count }: { r: Recolor; index: number; count: number }) {
+  const picking = useTool((s) => (s.tool === 'eyedropper' && s.eyedropperFor === 'recolor' ? s.recolorTarget : null));
+  const set = (patch: Partial<Recolor>, transient = false) => setRecolors((list) => list.map((x, i) => (i === index ? { ...x, ...patch } : x)), transient);
+  const name = count > 1 ? `Recolour ${index + 1}` : 'Recolour';
+  const pickButton = (end: 'from' | 'to') => {
+    const on = picking?.index === index && picking.end === end;
+    return (
+      <button type="button" className="btn btn--small" aria-pressed={on} onClick={() => (on ? setTool('move') : pickColourFor('recolor', { index, end }))}>
+        <Pipette size={14} aria-hidden="true" />
+        {on ? 'Tap the picture…' : 'Pick from picture'}
+      </button>
+    );
+  };
+  return (
+    <div className="recolour" data-recolour={index}>
+      <div className="recolour__head">
+        <span className="recolour__swatches" aria-hidden="true">
+          <span className="swatch swatch--static" style={{ background: r.from }} />
+          <span className="recolour__arrow">→</span>
+          <span className="swatch swatch--static" style={{ background: r.to }} />
+        </span>
+        <span className="recolour__name">{name}</span>
+        <button type="button" className="icon-btn" aria-label={`Remove ${name.toLowerCase()}`} onClick={() => setRecolors((list) => list.filter((_, i) => i !== index))}>
+          <X size={16} aria-hidden="true" />
+        </button>
       </div>
-      {from && (
-        <>
-          <Slider
-            label="New colour"
-            unit="°"
-            min={-180}
-            max={180}
-            value={adjust.recolorShift}
-            defaultValue={0}
-            onChange={(v) => setAdjust({ recolorShift: v }, true)}
-            onCommit={commitDoc}
-          />
-          <Slider
-            label="Breadth"
-            unit="%"
-            min={0}
-            max={100}
-            value={adjust.recolorBreadth}
-            defaultValue={DEFAULT_ADJUST.recolorBreadth}
-            onChange={(v) => setAdjust({ recolorBreadth: v }, true)}
-            onCommit={commitDoc}
-          />
-          {!hasRecolor(adjust) && <p className="control__hint">Drag New colour to change it.</p>}
-        </>
-      )}
+      <ColorSwatches label="Colour to change" value={r.from} swatches={FROM_SWATCHES} onChange={(from) => set({ from }, true)} onCommit={commitDoc} />
+      <div className="control control--row">{pickButton('from')}</div>
+      <ColorSwatches label="Change it to" value={r.to} swatches={TO_SWATCHES} onChange={(to) => set({ to }, true)} onCommit={commitDoc} />
+      <div className="control control--row">{pickButton('to')}</div>
+      <Slider
+        label="Breadth"
+        unit="%"
+        min={0}
+        max={100}
+        value={r.breadth}
+        defaultValue={newRecolor().breadth}
+        onChange={(breadth) => set({ breadth }, true)}
+        onCommit={commitDoc}
+      />
     </div>
   );
 }

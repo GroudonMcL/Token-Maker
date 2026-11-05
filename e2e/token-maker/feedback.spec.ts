@@ -81,7 +81,7 @@ test('picture effects and decorations, and a plain label turned round its anchor
   const card = panel.getByRole('list', { name: 'Effects, top first' }).getByRole('listitem');
   await expect(card).toHaveCount(1);
   await expect(card).toContainText('Twinkles');
-  await expect(card.getByRole('textbox', { name: 'Blur value' })).toBeVisible();
+  await expect(card.getByRole('textbox', { name: 'Rotation value' })).toBeVisible();
 
   panel = await openSection(page, 'Decorations');
   await panel.locator('[data-decoration-picture="deco-heart"]').click();

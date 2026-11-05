@@ -52,26 +52,41 @@ describe('Background', () => {
 });
 
 describe('Recolour', () => {
-  it('chooses a colour, then turns it and sets its breadth', () => {
+  it('adds recolours, sets their colours and breadth, and removes them', () => {
     withArt();
     render(<ImageSection />);
-    expect(screen.queryByRole('slider', { name: /New colour/ })).toBeNull();
-    fireEvent.change(screen.getByLabelText('Colour to change'), { target: { value: '#c82828' } });
-    expect(getDoc().art.adjust.recolorColor).toBe('#c82828');
-    fireEvent.change(screen.getByRole('slider', { name: /New colour/ }), { target: { value: '90' } });
+    expect(screen.queryByRole('slider', { name: /Breadth/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Add a recolour' }));
+    expect(getDoc().art.adjust.recolors).toEqual([{ from: '#ffffff', to: '#b8322a', breadth: 30 }]);
     fireEvent.change(screen.getByRole('slider', { name: /Breadth/ }), { target: { value: '60' } });
-    expect(getDoc().art.adjust).toMatchObject({ recolorShift: 90, recolorBreadth: 60 });
-    fireEvent.click(screen.getByRole('button', { name: 'Stop recolouring' }));
-    expect(getDoc().art.adjust).toMatchObject({ recolorColor: null, recolorShift: 0 });
+    expect(getDoc().art.adjust.recolors[0]!.breadth).toBe(60);
+    fireEvent.click(screen.getByRole('button', { name: 'Add another recolour' }));
+    expect(getDoc().art.adjust.recolors).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove recolour 1' }));
+    expect(getDoc().art.adjust.recolors).toEqual([{ from: '#ffffff', to: '#b8322a', breadth: 30 }]);
   });
 
-  it('is kept by saved documents and checked when loaded', () => {
+  it('sits below Advanced, which sits below the three main sliders', () => {
+    withArt();
+    const { container } = render(<ImageSection />);
+    const after = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const saturation = screen.getByRole('slider', { name: /Saturation/ });
+    const advanced = container.querySelector('[data-control="advanced"]')!;
+    const recolour = container.querySelector('[data-control="recolour"]')!;
+    expect(after(saturation, advanced)).toBe(true);
+    expect(after(advanced, recolour)).toBe(true);
+  });
+
+  it('is kept by saved documents and checked when loaded; the old hue turn becomes a colour', () => {
     const doc = createDocument();
-    doc.art.adjust = { ...doc.art.adjust, recolorColor: '#C82828', recolorShift: 500, recolorBreadth: 40 };
+    doc.art.adjust = { ...doc.art.adjust, recolors: [{ from: '#C82828', to: '#zzzzzz', breadth: 400 }] };
     const back = migrateDocument(JSON.parse(JSON.stringify(doc)));
-    expect(back.art.adjust).toMatchObject({ recolorColor: '#c82828', recolorShift: 180, recolorBreadth: 40 });
-    const old = JSON.parse(JSON.stringify(createDocument()));
-    delete old.art.adjust.recolorColor;
-    expect(migrateDocument(old).art.adjust).toMatchObject({ recolorColor: null, recolorShift: 0, recolorBreadth: 30 });
+    expect(back.art.adjust.recolors).toEqual([{ from: '#c82828', to: '#ffffff', breadth: 100 }]);
+    const v12 = { ...JSON.parse(JSON.stringify(createDocument())), schemaVersion: 12 };
+    v12.art.adjust = { ...v12.art.adjust, recolorColor: '#c82828', recolorShift: 120, recolorBreadth: 40 };
+    delete v12.art.adjust.recolors;
+    expect(migrateDocument(v12).art.adjust.recolors).toEqual([{ from: '#c82828', to: '#28c828', breadth: 40 }]);
+    const unused = { ...v12, art: { ...v12.art, adjust: { ...v12.art.adjust, recolorShift: 0 } } };
+    expect(migrateDocument(unused).art.adjust.recolors).toEqual([]);
   });
 });

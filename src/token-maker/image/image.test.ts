@@ -50,25 +50,50 @@ describe('adjustments (one pixel each)', () => {
     expect(chroma(grey)).toBeLessThanOrEqual(1);
   });
 
-  it('recolour turns only colours near the chosen one, as far as the breadth reaches', () => {
+  it('recolour turns colours near the chosen one into the new colour, as far as the breadth reaches', () => {
     const red = [200, 40, 40];
     const blue = [40, 60, 200];
-    const recolour = { recolorColor: '#c82828', recolorShift: 120, recolorBreadth: 20 };
-    const [r, g, b] = one(red, recolour);
+    const recolour = (r: Partial<{ from: string; to: string; breadth: number }> = {}) => ({ recolors: [{ from: '#c82828', to: '#28c828', breadth: 20, ...r }] });
+    const [r, g, b] = one(red, recolour());
     expect(g!).toBeGreaterThan(r!); // red became green
     expect(b!).toBeLessThan(g!);
-    expect(Math.max(r!, g!, b!)).toBe(200); // same lightness
-    expect(one(blue, recolour)).toEqual(blue); // far from red: unchanged
-    expect(one([120, 120, 120], recolour)).toEqual([120, 120, 120]); // grey: unchanged
+    expect(one(blue, recolour())).toEqual(blue); // far from red: unchanged
+    expect(one([120, 120, 120], recolour())).toEqual([120, 120, 120]); // grey: unchanged
     // An orange is outside a narrow breadth but inside a wide one.
     const orange = [220, 140, 30];
-    expect(one(orange, { ...recolour, recolorBreadth: 0 })).toEqual(orange);
-    expect(one(orange, { ...recolour, recolorBreadth: 100 })).not.toEqual(orange);
-    // No turn, or no colour chosen: nothing happens.
-    expect(one(red, { ...recolour, recolorShift: 0 })).toEqual(red);
-    expect(one(red, { ...recolour, recolorColor: null })).toEqual(red);
-    expect(isUnedited(edits({ adjust: { ...DEFAULT_ADJUST, recolorColor: '#ff0000' } }))).toBe(true);
-    expect(isUnedited(edits({ adjust: { ...DEFAULT_ADJUST, ...recolour } }))).toBe(false);
+    expect(one(orange, recolour({ breadth: 0 }))).toEqual(orange);
+    expect(one(orange, recolour({ breadth: 100 }))).not.toEqual(orange);
+    // The same colour both sides, or none at all: nothing happens.
+    expect(one(red, recolour({ to: '#c82828' }))).toEqual(red);
+    expect(one(red, { recolors: [] })).toEqual(red);
+    expect(isUnedited(edits({ adjust: { ...DEFAULT_ADJUST, recolors: [{ from: '#ff0000', to: '#ff0000', breadth: 30 }] } }))).toBe(true);
+    expect(isUnedited(edits({ adjust: { ...DEFAULT_ADJUST, ...recolour() } }))).toBe(false);
+  });
+
+  it('recolour turns white into red and keeps its shading', () => {
+    const toRed = { recolors: [{ from: '#ffffff', to: '#c81e1e', breadth: 40 }] };
+    const [r, g, b] = one([255, 255, 255], toRed);
+    expect(r!).toBeGreaterThan(170);
+    expect(g!).toBeLessThan(80);
+    expect(b!).toBeLessThan(80);
+    // A shaded white becomes a darker red, not the same red.
+    const [r2, g2] = one([215, 215, 215], toRed);
+    expect(r2!).toBeLessThan(r!);
+    expect(r2!).toBeGreaterThan(g2! + 60);
+    // Black is far from white: unchanged.
+    expect(one([10, 10, 10], toRed)).toEqual([10, 10, 10]);
+    // Black can be changed too.
+    const [r3, g3, b3] = one([0, 0, 0], { recolors: [{ from: '#000000', to: '#d4a020', breadth: 30 }] });
+    expect(r3!).toBeGreaterThan(150);
+    expect(b3!).toBeLessThan(g3!);
+  });
+
+  it('applies several recolours in order', () => {
+    const both = { recolors: [{ from: '#ffffff', to: '#c81e1e', breadth: 30 }, { from: '#000000', to: '#1e3cc8', breadth: 30 }] };
+    const [wr, , wb] = one([255, 255, 255], both);
+    const [kr, , kb] = one([0, 0, 0], both);
+    expect(wr!).toBeGreaterThan(wb!);
+    expect(kb!).toBeGreaterThan(kr!);
   });
 
   it('hue turns red towards cyan at 180°', () => {

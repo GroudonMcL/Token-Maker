@@ -7,8 +7,9 @@
 
 import { decorationInfo } from '../document/defaults';
 import { computeInsets } from '../document/sizing';
-import type { Decoration, SnapPoint, TokenDocument } from '../document/types';
+import type { ClipTarget, Decoration, SnapPoint, TokenDocument } from '../document/types';
 import { nudgedHole } from '../image/frameHole';
+import { imageFrameScale } from './imageFrames';
 import { newCanvas } from '../image/processedArt';
 import { DECORATION_PAINTERS } from './decorationPainters';
 import type { Ctx } from './frameKit';
@@ -74,8 +75,9 @@ export function decorationGeometry(doc: Pick<TokenDocument, 'shape' | 'frame' | 
   const squares = doc.size.squares;
   const img = doc.frame.kind === 'image' ? doc.frame.image : null;
   if (img) {
-    const hole = nudgedHole(img.hole, img.nudge);
-    return { squares, ringAt: (deg) => (rayToPolygon(hole, deg) + Math.min(1, img.outer)) / 2 };
+    const k = imageFrameScale(doc);
+    const hole = nudgedHole(img.hole, img.nudge).map((p) => ({ x: p.x * k, y: p.y * k }));
+    return { squares, ringAt: (deg) => (rayToPolygon(hole, deg) + Math.min(1, img.outer) * k) / 2 };
   }
   const insets = computeInsets(doc);
   const hasFrame = doc.frame.style !== 'none' && insets.frameInner > insets.frameOuter;
@@ -225,6 +227,11 @@ export function drawDecorations(
   assets: AssetMap = new Map(),
   /** Only the decorations under the frame (true), only those over it (false), or all of them. */
   underFrame?: boolean,
+  /**
+   * The mask a decoration's Clip setting keeps it inside (v13): a 2R × 2R
+   * picture, centred, opaque where it may show. Without it, Clip is ignored.
+   */
+  clipMask?: (target: ClipTarget) => CanvasImageSource | null,
 ): void {
   const geo = decorationGeometry(doc);
   for (const d of doc.decorations) {
@@ -238,7 +245,14 @@ export function drawDecorations(
     if (d.kind === 'picture' && !pic) continue;
     const bmp = pic ? pictureBitmap(pic, d.color, d.tint) : bitmap(d, hPx);
     const scale = hPx / bmp.h;
+    const mask = d.clip !== 'none' && clipMask ? clipMask(d.clip) : null;
+    if (d.clip !== 'none' && clipMask && !mask) continue; // nothing to show inside (no frame, no art)
+    // A clipped decoration is drawn on a layer of its own, then cut to its mask.
+    const layer = mask ? newCanvas(Math.ceil(R * 2), Math.ceil(R * 2)) : null;
+    const target = layer ? (layer.getContext('2d') as Ctx) : ctx;
+    if (layer) target.translate(R, R);
     for (const p of placements(d, geo)) {
+      const ctx = target;
       ctx.save();
       ctx.globalAlpha *= Math.min(1, d.opacity);
       ctx.translate(p.x * R, p.y * R);
@@ -249,6 +263,11 @@ export function drawDecorations(
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(bmp.image, -info.anchor.x * bmp.w - bmp.pad, -info.anchor.y * bmp.h - bmp.pad, bmp.w + bmp.pad * 2, bmp.h + bmp.pad * 2);
       ctx.restore();
+    }
+    if (layer && mask) {
+      target.globalCompositeOperation = 'destination-in';
+      target.drawImage(mask, -R, -R, R * 2, R * 2);
+      ctx.drawImage(layer as CanvasImageSource, -R, -R, R * 2, R * 2);
     }
   }
 }

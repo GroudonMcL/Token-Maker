@@ -30,6 +30,8 @@ const font = (id: string, name: string, fallback: FontInfo['fallback'], bold: bo
 });
 
 export const FONTS: readonly FontInfo[] = [
+  // The default (owner's choice), so first.
+  font('spectral', 'Spectral', 'serif', true, true, 'Production Type'),
   font('cinzel', 'Cinzel', 'serif', true, false, 'Natanael Gama'),
   font('cinzel-decorative', 'Cinzel Decorative', 'serif', true, false, 'Natanael Gama'),
   font('im-fell-english', 'IM Fell English', 'serif', false, true, 'Igino Marini'),
@@ -42,7 +44,6 @@ export const FONTS: readonly FontInfo[] = [
   font('grenze-gotisch', 'Grenze Gotisch', 'cursive', true, false, 'Omnibus-Type'),
   font('macondo', 'Macondo', 'cursive', false, false, 'John Vargas Beltrán'),
   font('alegreya-sc', 'Alegreya SC', 'serif', true, true, 'Juan Pablo del Peral, Huerta Tipográfica'),
-  font('spectral', 'Spectral', 'serif', true, true, 'Production Type'),
   font('germania-one', 'Germania One', 'cursive', false, false, 'John Vargas Beltrán'),
   font('eagle-lake', 'Eagle Lake', 'cursive', false, false, 'Astigmatic'),
   // Fictional alphabets (public/fonts/, see LICENSES.md there): CC0, CC BY and public domain.
@@ -51,7 +52,7 @@ export const FONTS: readonly FontInfo[] = [
   font('yugurian', 'Yugurian (fantasy script)', 'sans-serif', false, false, 'Dreaming Fantasies (public domain)'),
 ];
 
-export const DEFAULT_FONT = 'cinzel';
+export const DEFAULT_FONT = 'spectral';
 
 export const fontInfo = (id: string): FontInfo | undefined => FONTS.find((f) => f.id === id);
 

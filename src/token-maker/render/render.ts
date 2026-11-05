@@ -6,7 +6,7 @@ import { computeInsets, perSquareToPx } from '../document/sizing';
 import { artEdits } from '../image/process';
 import { hasPopOut, popOutArt } from '../image/popOut';
 import { newCanvas, processedArt } from '../image/processedArt';
-import type { OuterShadow, TokenDocument } from '../document/types';
+import type { ClipTarget, OuterShadow, TokenDocument } from '../document/types';
 import { parseHex, rgba } from './color';
 import { tracePolygon, type Ctx, type FrameGeometry } from './frameKit';
 import type { FrameStyle } from './catalog';
@@ -16,7 +16,7 @@ import { drawEffects, needsSubject, type EffectArea, type Subject } from './effe
 import { baseScale, imageClipPolygon } from './geometry';
 import { drawDecorations } from './decorations';
 import { drawLabel } from './label';
-import { activeImageFrame, drawImageFrame, frameAssetId } from './imageFrames';
+import { activeImageFrame, drawImageFrame, frameAssetId, imageFrameScale } from './imageFrames';
 import { shapePolygon } from './shapes';
 import { pictureEpoch } from '../frameMaker/render/pictures';
 import { drawFrameDesign } from '../frameMaker/share/frameDesign';
@@ -104,6 +104,8 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   // A picture frame (Phase 7) fills the square; its hole is the art's clipping shape.
   const imageFrame = activeImageFrame(doc.frame);
   const frameImage = imageFrame ? assets.get(frameAssetId(imageFrame.source)) : undefined;
+  // A picture frame is drawn smaller by the outer spacing (v13), like every other frame.
+  const frameR = imageFrame ? R * imageFrameScale(doc) : R;
   // A Frame Maker design (v9) sits on the same band as a drawn frame.
   const design = doc.frame.kind === 'design' ? doc.frame.design : null;
   // Frame Maker chosen but no design opened yet: no frame.
@@ -162,8 +164,8 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
         R,
         unit: px(1),
         opening: Math.max(0, R - holeRadius),
-        bandOuter: Math.max(0, 1 - imageFrame.outer) * R,
-        bandInner: Math.max(Math.max(0, 1 - imageFrame.outer) * R + 1, R - holeRadius),
+        bandOuter: Math.max(0, R - imageFrame.outer * frameR),
+        bandInner: Math.max(Math.max(0, R - imageFrame.outer * frameR) + 1, R - holeRadius),
       }
     : {
         shape: doc.shape,
@@ -186,6 +188,53 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     subject = { image: c as CanvasImageSource, key: `${objectId(shown.image)}|${doc.art.assetId}|${JSON.stringify(doc.art.transform)}` };
   }
 
+  // The frame as drawn (before lighting), shared by step 9 and the Frame clip.
+  const frameGeometry: FrameGeometry = {
+    shape: doc.shape,
+    R,
+    outer: insets.frameOuter * R,
+    inner: insets.frameInner * R,
+    color: doc.frame.color,
+    accent: doc.frame.highlightColor ?? undefined,
+  };
+  const drawnFrame = () => frameLayer(design ?? doc.frame.style, frameGeometry, size);
+
+  // What an effect or decoration's Clip keeps it inside (v13), each drawn once when first asked for.
+  const masks = new Map<ClipTarget, CanvasImageSource | null>();
+  const clipMask = (target: ClipTarget): CanvasImageSource | null => {
+    if (target === 'none') return null;
+    if (masks.has(target)) return masks.get(target)!;
+    const c = newCanvas(size, size);
+    const mctx = c.getContext('2d') as Ctx;
+    mctx.translate(R, R);
+    mctx.fillStyle = '#000';
+    let ok = true;
+    if (target === 'token' || target === 'background') {
+      // The token's outline (the frame's outer edge, or a picture frame and its hole), or the opening.
+      tracePolygon(mctx, target === 'token' ? silhouette : clip);
+      mctx.fill();
+      if (target === 'token' && frameImage) drawImageFrame(mctx, frameImage, frameR);
+    } else if (target === 'frame') {
+      if (frameImage) drawImageFrame(mctx, frameImage, frameR);
+      else if (hasFrame) mctx.drawImage(drawnFrame(), -R, -R);
+      else ok = false;
+    } else if (target === 'art') {
+      // The art where it shows, with its see-through parts left out, and the parts popping out over the frame.
+      if (art && shown && clip.length) {
+        mctx.save();
+        tracePolygon(mctx, clip);
+        mctx.clip();
+        placeArt(mctx);
+        mctx.drawImage(shown.image, -art.width / 2, -art.height / 2, art.width, art.height);
+        mctx.restore();
+        if (pop) putLayer(mctx, pop);
+      } else ok = false;
+    }
+    const mask = ok ? (c as CanvasImageSource) : null;
+    masks.set(target, mask);
+    return mask;
+  };
+
   // The decorations (layer 11) on layers of their own: they are part of the outer shadow's silhouette too.
   // Those set to go under the frame (layer 7½) get a layer of their own.
   const decorLayer = (under: boolean) => {
@@ -193,7 +242,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     const c = newCanvas(L, L);
     const dctx = c.getContext('2d') as Ctx;
     dctx.translate(R + B, R + B);
-    drawDecorations(dctx, doc, R, assets, under);
+    drawDecorations(dctx, doc, R, assets, under, clipMask);
     return c;
   };
   const decor = decorLayer(false);
@@ -207,7 +256,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     if (frameImage) {
       c.save();
       c.translate(dx, 0);
-      drawImageFrame(c, frameImage, R);
+      drawImageFrame(c, frameImage, frameR);
       c.restore();
     }
     if (pop) putLayer(c, pop, dx);
@@ -233,7 +282,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   // It fills the inner spacing too, where the backing used to show.
   drawBackground(ctx, doc, assets, clip, R, backing);
   // 4. Effects behind the art (src/render/effects.ts).
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'behind', area, size, subject, 0, assets);
+  if (doc.effects.length) drawEffects(ctx, doc.effects, 'behind', area, size, subject, 0, assets, clipMask);
 
   // 5. Processed art, clipped to the inner shape: the picture after
   // adjustments, background removal and brush strokes (src/image/), drawn
@@ -248,7 +297,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   }
 
   // 6–7. Effects over the art, including the overlays that were once the Foreground section (v8).
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'over', area, size, subject, 0, assets);
+  if (doc.effects.length) drawEffects(ctx, doc.effects, 'over', area, size, subject, 0, assets, clipMask);
 
   // 7½. Decorations set to go under the frame: over the art, covered by the frame.
   if (decorUnder) putLayer(ctx, decorUnder);
@@ -311,19 +360,11 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   if (frameImage) {
     drawFrameLayer((c) => {
       c.save();
-      drawImageFrame(c, frameImage, R);
+      drawImageFrame(c, frameImage, frameR);
       c.restore();
     });
   } else if (hasFrame && !imageFrame) {
-    const geometry: FrameGeometry = {
-      shape: doc.shape,
-      R,
-      outer: insets.frameOuter * R,
-      inner: insets.frameInner * R,
-      color: doc.frame.color,
-      accent: doc.frame.highlightColor ?? undefined,
-    };
-    const drawn = frameLayer(design ?? doc.frame.style, geometry, size);
+    const drawn = drawnFrame();
     drawFrameLayer((c) => c.drawImage(drawn, -R, -R));
   }
 
@@ -335,7 +376,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   }
 
   // 10. Effects on the border.
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'border', area, size, null, 0, assets);
+  if (doc.effects.length) drawEffects(ctx, doc.effects, 'border', area, size, null, 0, assets, clipMask);
   // 11. Decorations (src/render/decorations.ts).
   if (decor) putLayer(ctx, decor);
 
@@ -349,7 +390,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
       sctx.translate(R, R);
       castShadow(sctx, (c, dx) => putLayer(c, pop!, dx), doc.shadows.popOut, doc.lighting.direction, px, size);
       sctx.globalCompositeOperation = 'destination-in';
-      drawImageFrame(sctx, frameImage, R);
+      drawImageFrame(sctx, frameImage, frameR);
       ctx.drawImage(shadow as CanvasImageSource, -R, -R);
     } else if (hasFrame && !imageFrame && doc.shadows.popOut.enabled) {
       ctx.save();

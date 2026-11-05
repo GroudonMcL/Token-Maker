@@ -7,7 +7,9 @@
 // settings or the token's size change, then composited (with its blend mode
 // and the effect's Intensity), so dragging Intensity never redraws anything.
 
-import type { EffectLayer, EffectPlacement } from '../document/types';
+import type { ClipTarget, EffectLayer, EffectPlacement } from '../document/types';
+import { rgba } from './color';
+import { makeGradient } from './background';
 import { blurImage } from '../image/filters';
 import { newCanvas } from '../image/processedArt';
 import { BLEND_OPS } from './overlays';
@@ -121,11 +123,73 @@ export function drawEffects(
   subject: Subject | null = null,
   time = 0,
   assets: AssetMap = NO_ASSETS,
+  /**
+   * The mask an effect's Clip setting keeps it inside (v13): a size × size
+   * picture, opaque where it may show. Without it, Clip is ignored.
+   */
+  clipMask?: (target: ClipTarget) => CanvasImageSource | null,
 ): void {
   for (const fx of effects) {
     if (!fx.visible || fx.placement !== placement || fx.intensity <= 0) continue;
-    drawEffect(ctx, fx, area, size, fx.kind === 'outerGlow' && placement !== 'border' ? subject : null, time, assets);
+    const subj = fx.kind === 'outerGlow' && placement !== 'border' ? subject : null;
+    if (fx.clip === 'none' || !clipMask) {
+      drawEffect(ctx, fx, area, size, subj, time, assets);
+      continue;
+    }
+    const mask = clipMask(fx.clip);
+    if (!mask) continue; // nothing to show it inside (no frame, no art)
+    // Drawn on a layer of its own, cut to the mask, then mixed in with its blend mode.
+    const layer = newCanvas(size, size);
+    const lctx = layer.getContext('2d') as Ctx;
+    lctx.translate(size / 2, size / 2);
+    drawEffect(lctx, { ...fx, blend: 'normal' }, area, size, subj, time, assets);
+    lctx.setTransform(1, 0, 0, 1, 0, 0);
+    lctx.globalCompositeOperation = 'destination-in';
+    lctx.drawImage(mask, 0, 0, size, size);
+    ctx.save();
+    ctx.globalCompositeOperation = BLEND_OPS[fx.blend];
+    ctx.drawImage(layer as CanvasImageSource, -size / 2, -size / 2, size, size);
+    ctx.restore();
   }
+}
+
+/** The effect has been turned, scaled or flipped (v13). */
+const isTransformed = (fx: EffectLayer) => fx.rotation !== 0 || fx.scale !== 1 || fx.flip;
+
+/** Turns, scales and flips the whole effect round the token's centre (the origin). */
+function applyTransform(ctx: Ctx, fx: EffectLayer): void {
+  if (!isTransformed(fx)) return;
+  ctx.rotate((fx.rotation * Math.PI) / 180);
+  const k = Math.max(0.05, fx.scale);
+  ctx.scale(fx.flip ? -k : k, k);
+}
+
+/** Glows can be coloured with a gradient (v13). */
+const glowGradient = (fx: EffectLayer) => fx.useGradient && (fx.kind === 'outerGlow' || fx.kind === 'innerGlow');
+
+/**
+ * A glow's gradient: a linear one runs across the token, like a background
+ * gradient; a radial one runs out from the glow's edge (its first colour at
+ * the edge, its last where the glow fades out).
+ */
+function glowFill(ctx: Ctx, s: EffectScene): CanvasGradient {
+  const { fx, area, reach } = s;
+  const g = fx.gradient;
+  const radialFromEdge = g.type === 'radial' && (fx.kind === 'innerGlow' || s.border);
+  if (!radialFromEdge) return makeGradient(ctx, g, s.box);
+  const stops = [...g.stops].sort((a, b) => a.offset - b.offset);
+  const span = Math.max(1, reach);
+  let grad: CanvasGradient;
+  if (fx.kind === 'outerGlow') {
+    const r0 = Math.max(0, area.R - area.bandOuter);
+    grad = ctx.createRadialGradient(0, 0, r0, 0, 0, r0 + span);
+    for (const st of stops) grad.addColorStop(st.offset, rgba(st.color, st.opacity));
+  } else {
+    const edge = Math.max(1, area.R - (s.border ? area.bandOuter : area.opening));
+    grad = ctx.createRadialGradient(0, 0, Math.max(0, edge - span), 0, 0, edge);
+    for (const st of [...stops].reverse()) grad.addColorStop(1 - st.offset, rgba(st.color, st.opacity));
+  }
+  return grad;
 }
 
 const NO_ASSETS: AssetMap = new Map();
@@ -151,8 +215,9 @@ export function drawEffect(ctx: Ctx, fx: EffectLayer, area: EffectArea, size: nu
     ctx.globalAlpha = alpha;
     // A chosen blend mode (v8) replaces the effect's own; 'normal' keeps it.
     ctx.globalCompositeOperation = fx.blend !== 'normal' ? BLEND_OPS[fx.blend] : (pass.op ?? 'source-over');
-    if (pass.direct && blurPx < 0.5) {
+    if (pass.direct && blurPx < 0.5 && !glowGradient(fx)) {
       // Cheap passes (a flat fill) are drawn straight on.
+      applyTransform(ctx, fx);
       pass.paint(ctx);
     } else {
       ctx.drawImage(passLayer(scene, pass, i, size, subject?.key ?? '', blurPx), -size / 2, -size / 2, size, size);
@@ -164,8 +229,8 @@ export function drawEffect(ctx: Ctx, fx: EffectLayer, area: EffectArea, size: nu
 function passLayer(scene: EffectScene, pass: Pass, index: number, size: number, subjectKey: string, blurPx: number): CanvasImageSource {
   const { fx, area } = scene;
   // Everything that changes the picture; not Intensity, blend mode or visibility, which apply when compositing.
-  const extra = fx.kind === 'gradient' ? fx.gradient : fx.kind === 'picture' ? [fx.image, fx.layout, fx.tint] : 0;
-  const key = JSON.stringify([fx.kind, fx.placement, fx.color, fx.size, fx.spread, fx.seed, fx.angle, fx.softness, extra, index, area, size, scene.time, subjectKey, Math.round(blurPx * 10)]);
+  const extra = fx.kind === 'gradient' || glowGradient(fx) ? fx.gradient : fx.kind === 'picture' ? [fx.image, fx.layout, fx.tint] : 0;
+  const key = JSON.stringify([fx.kind, fx.placement, fx.color, fx.size, fx.spread, fx.seed, fx.angle, fx.softness, extra, index, area, size, scene.time, subjectKey, Math.round(blurPx * 10), fx.rotation, fx.scale, fx.flip, glowGradient(fx)]);
   const hit = cache.get(key);
   if (hit) {
     cache.delete(key);
@@ -176,8 +241,17 @@ function passLayer(scene: EffectScene, pass: Pass, index: number, size: number, 
   const lctx = c.getContext('2d') as Ctx;
   lctx.translate(size / 2, size / 2);
   lctx.save();
+  applyTransform(lctx, fx);
   pass.paint(lctx);
   lctx.restore();
+  if (glowGradient(fx)) {
+    // The glow's own colour is swapped for the gradient, keeping its shape and softness.
+    lctx.save();
+    lctx.globalCompositeOperation = 'source-in';
+    lctx.fillStyle = glowFill(lctx, scene);
+    lctx.fillRect(-size / 2, -size / 2, size, size);
+    lctx.restore();
+  }
   if (blurPx >= 0.5) blurLayer(c, size, blurPx);
   // On the border nothing may stop dead at the image's edge: fade out just before it.
   if (scene.border && pass.clip !== 'area') fadeAtSquareEdge(lctx, size, Math.max(2, area.unit * 0.12));

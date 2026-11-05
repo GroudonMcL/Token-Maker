@@ -12,6 +12,7 @@ import type {
   Gradient,
   ImageAdjustments,
   LightingSettings,
+  Recolor,
   LightPresetId,
   OuterShadow,
   PictureSource,
@@ -64,10 +65,14 @@ export const DEFAULT_ADJUST: ImageAdjustments = {
   grayscale: 0,
   sepia: 0,
   invert: false,
-  recolorColor: null,
-  recolorShift: 0,
-  recolorBreadth: 30,
+  recolors: [],
 };
+
+/** Most recolours one picture can have. */
+export const MAX_RECOLORS = 8;
+
+/** A new recolour: white turned red until the user picks their own colours. */
+export const newRecolor = (from = '#ffffff', to = '#b8322a'): Recolor => ({ from, to, breadth: 30 });
 
 export const DEFAULT_REMOVAL: BackgroundRemoval = { enabled: false, color: null, intensity: 20, softness: 15, enclosed: true, method: 'colour' };
 
@@ -164,6 +169,9 @@ export interface EffectInfo {
 }
 
 const DRAWN: EffectControl[] = ['color', 'size', 'spread', 'seed'];
+/** Glows aren't random, so they have no Seed; their colour can be a gradient (v13). */
+const GLOW: EffectControl[] = ['color', 'gradient', 'size', 'spread'];
+const GLOW_SWATCHES = ['#ffd76a', '#ff6a3d', '#76ff4a', '#b06aff', '#ffffff'];
 
 const fx = (
   kind: EffectKind,
@@ -188,8 +196,8 @@ export const OVERLAY_BASE_SIZE = 0.3;
 
 /** Every effect (DESIGN.md §6.8), in the order the picker shows them. Overlays were the Foreground section until v8. */
 export const EFFECTS: EffectInfo[] = [
-  fx('outerGlow', 'Outer glow', 'Glows', { placement: 'border', intensity: 90, color: '#6fc3ff', size: 0.16, spread: 25 }, ['#ffd76a', '#ff6a3d', '#76ff4a', '#b06aff', '#ffffff']),
-  fx('innerGlow', 'Inner glow', 'Glows', { placement: 'over', intensity: 80, color: '#6fc3ff', size: 0.16, spread: 15 }, ['#ffd76a', '#ff6a3d', '#76ff4a', '#b06aff', '#ffffff']),
+  fx('outerGlow', 'Outer glow', 'Glows', { placement: 'border', intensity: 90, color: '#6fc3ff', size: 0.16, spread: 25 }, GLOW_SWATCHES, GLOW),
+  fx('innerGlow', 'Inner glow', 'Glows', { placement: 'over', intensity: 80, color: '#6fc3ff', size: 0.16, spread: 15 }, GLOW_SWATCHES, GLOW),
 
   fx('mist', 'Mist', 'Atmosphere', { placement: 'over', intensity: 80, color: '#dfe6ef', size: 0.3, spread: 50 }, ['#ffffff', '#c9d6c0', '#b7c4e0', '#8a7aa0']),
   fx('smoke', 'Smoke', 'Atmosphere', { placement: 'over', intensity: 75, color: '#9a9ca6', size: 0.3, spread: 50 }, ['#d6d8de', '#4a4c56', '#2a2a30', '#76ff4a']),
@@ -228,6 +236,11 @@ export function newEffect(kind: EffectKind, id = Math.random().toString(36).slic
     layout: 'scatter',
     tint: true,
     seed: 1,
+    rotation: 0,
+    scale: 1,
+    flip: false,
+    useGradient: false,
+    clip: 'none',
     ...d,
     gradient: copyGradient(d.gradient ?? DEFAULT_GRADIENT),
   };
@@ -316,7 +329,7 @@ export const MAX_DECORATIONS = 16;
 
 export function newDecoration(kind: DecorationKind, id = Math.random().toString(36).slice(2, 10)): Decoration {
   const d = decorationInfo(kind).defaults;
-  return { id, kind, visible: true, place: d.place, x: 0, y: -0.8, size: d.size, rotation: d.rotation ?? 0, mirror: d.mirror, flip: false, color: d.color, opacity: 1, image: null, tint: true, aspect: decorationInfo(kind).aspect, underFrame: false };
+  return { id, kind, visible: true, place: d.place, x: 0, y: -0.8, size: d.size, rotation: d.rotation ?? 0, mirror: d.mirror, flip: false, color: d.color, opacity: 1, image: null, tint: true, aspect: decorationInfo(kind).aspect, underFrame: false, clip: 'none' };
 }
 
 /** A picture decoration: a built-in icon (coloured) or one of the user's own pictures (its own colours). */
@@ -328,18 +341,23 @@ export function newPictureDecoration(image: PictureSource, aspect: number, color
 // ---- Phase 8: the label (DESIGN.md §6.10) ----
 
 export const LABEL_SHAPES: { id: LabelShape; name: string }[] = [
+  { id: 'ring', name: 'Ring text' },
   { id: 'banner', name: 'Banner' },
   { id: 'plaque', name: 'Plaque' },
   { id: 'pill', name: 'Pill' },
   { id: 'box', name: 'Box' },
   { id: 'plain', name: 'Plain text' },
-  { id: 'ring', name: 'Ring text' },
 ];
 
-/** A new label: a parchment banner across the bottom of the frame, in Cinzel, showing the token's name. */
+/**
+ * A new label (owner's defaults, v13): the token's name curved round the
+ * bottom of the ring in Spectral, 7 % of a square, bold, cream with a thin
+ * dark blue outline round the letters. The banner settings are kept for when
+ * another shape is picked.
+ */
 export function newLabel(): LabelSettings {
   return {
-    shape: 'banner',
+    shape: 'ring',
     text: null,
     place: 'bottom',
     x: 0,
@@ -355,25 +373,27 @@ export function newLabel(): LabelSettings {
     opacity: 1,
     outline: { width: 0.02, color: '#5a3d1e' },
     font: DEFAULT_FONT,
-    // Owner's defaults: 7 % of a square, black, bold, no outline round the letters.
     size: 0.14,
-    color: '#000000',
+    ...RING_TEXT_STYLE,
     bold: true,
     italic: false,
     letterSpacing: 0.04,
     align: 'center',
-    textOutline: { width: 0, color: '#000000' },
     shadow: { enabled: false, color: '#000000', opacity: 0.6, blur: 0.03 },
     shrinkToFit: true,
   };
 }
 
-/**
- * Ring text reads best light on a dark frame. (It used to add an outline and a
- * shadow too; the label has no controls for those any more, so it doesn't.)
- */
-export const RING_TEXT_STYLE: Partial<LabelSettings> = {
+/** Ring and plain text (no shape behind them): light letters with a thin dark outline (0.6 % of a square). */
+export const RING_TEXT_STYLE: Pick<LabelSettings, 'color' | 'textOutline'> = {
   color: '#fff4dc',
+  textOutline: { width: 0.012, color: '#040839' },
+};
+
+/** Text on a banner, plaque, pill or box: dark, with no outline. */
+export const SHAPE_TEXT_STYLE: Pick<LabelSettings, 'color' | 'textOutline'> = {
+  color: '#000000',
+  textOutline: { width: 0, color: '#040839' },
 };
 
 export function createDocument(name = 'Untitled token'): TokenDocument {

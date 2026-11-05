@@ -239,3 +239,47 @@ describe('performance', () => {
     expect(stacked).toBeLessThan(plain * 2 + 30);
   });
 });
+
+describe('owner feedback v13: turning, scaling, flipping, gradient glows and Keep inside', () => {
+  const R = SIZE / 2;
+
+  it('Rotation, Scale and Flip move the whole effect, and are part of what is cached', () => {
+    const base = draw(token([{ kind: 'edgeShadow', angle: 90 }]));
+    const turned = draw(token([{ kind: 'edgeShadow', angle: 90, rotation: 180 }]));
+    // An edge shadow at the bottom, turned half round, sits at the top.
+    expect(at(base, R, SIZE * 0.85)[0]).toBeLessThan(at(base, R, SIZE * 0.2)[0]);
+    expect(at(turned, R, SIZE * 0.2)[0]).toBeLessThan(at(turned, R, SIZE * 0.85)[0]);
+    expect(changed(base, draw(token([{ kind: 'smoke', scale: 2 }])))).toBeGreaterThan(0);
+    expect(changed(draw(token([{ kind: 'smoke' }])), draw(token([{ kind: 'smoke', flip: true }])))).toBeGreaterThan(10);
+  });
+
+  it('a glow coloured with a gradient takes the gradient’s colours, not its own', () => {
+    const green = { type: 'linear' as const, angle: 0, stops: [{ offset: 0, color: '#00ff00', opacity: 1 }, { offset: 1, color: '#00ff00', opacity: 1 }] };
+    const doc = (useGradient: boolean) => token([{ kind: 'outerGlow', color: '#ff0000', size: 0.4, useGradient, gradient: green }], { background: { ...createDocument().background, kind: 'none' } });
+    const plainGlow = draw(doc(false));
+    const graded = draw(doc(true));
+    // Just outside the frame's outer edge, on the right.
+    const p = at(plainGlow, SIZE - 4, R);
+    const q = at(graded, SIZE - 4, R);
+    expect(p[3]).toBeGreaterThan(20);
+    expect(p[0]).toBeGreaterThan(p[1]);
+    expect(q[1]).toBeGreaterThan(q[0]);
+  });
+
+  it('Keep inside: Background keeps an effect inside the opening, Token inside the outline', () => {
+    const glow = (clip: EffectLayer['clip']) => draw(token([{ kind: 'outerGlow', size: 0.4, clip }]));
+    const without = at(draw(token([])), SIZE - 3, R); // just the drop shadow there
+    expect(at(glow('none'), SIZE - 3, R)).not.toEqual(without); // reaches past the frame
+    expect(at(glow('token'), SIZE - 3, R)).toEqual(without);
+    expect(at(glow('background'), SIZE - 3, R)).toEqual(without);
+    // A tint over the art kept to the frame draws nothing in the middle of the opening.
+    const tint = (clip: EffectLayer['clip']) => draw(token([{ kind: 'vignette', spread: 100, clip, color: '#ff00ff', blend: 'normal', intensity: 100 }]));
+    expect(changed(draw(token([])), tint('frame'))).toBeLessThan(changed(draw(token([])), tint('none')));
+    // Kept to the art: nothing where the cut-out art is see-through.
+    const art = draw(token([{ kind: 'vignette', spread: 100, clip: 'art', color: '#ff00ff', blend: 'normal', intensity: 100 }]));
+    const none = draw(token([]));
+    let outsideArt = 0;
+    for (let i = 0; i < art.length; i += 4) if (art[i] !== none[i] && art[i + 3] === 0) outsideArt++;
+    expect(outsideArt).toBe(0);
+  });
+});

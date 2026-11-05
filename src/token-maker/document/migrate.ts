@@ -16,6 +16,7 @@ import {
   LIGHT_PRESETS,
   MAX_DECORATIONS,
   MAX_EFFECTS,
+  MAX_RECOLORS,
   MAX_SQUARES,
   MIN_SQUARES,
   newDecoration,
@@ -31,6 +32,7 @@ import {
   type BackgroundImageSource,
   type BackgroundLayer,
   type BlendMode,
+  type ClipTarget,
   type DesignFrame,
   type Decoration,
   type DecorationKind,
@@ -128,7 +130,43 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
       effects: arr(doc.effects).flatMap((e) => retiredEffect(obj(e))),
     };
   },
+  // v12 → v13 (owner feedback): the one hue-turning recolour became a list of colour-to-colour
+  // recolours (the old one becomes the first, turned to the colour it made). Picture frames now
+  // follow the outer spacing like every other frame; they used to fill the square, so a token
+  // with one in use gets no spacing and looks the same. New effect and decoration fields start
+  // at their defaults (filled in by sanitize).
+  12: (doc) => {
+    const art = obj(doc.art);
+    const { recolorColor, recolorShift, recolorBreadth, ...adjust } = obj(art.adjust);
+    const from = hex(recolorColor, '');
+    const shift = typeof recolorShift === 'number' ? recolorShift : 0;
+    const recolors = from && shift ? [{ from, to: turnHue(from, shift), breadth: typeof recolorBreadth === 'number' ? recolorBreadth : 30 }] : [];
+    const frame = obj(doc.frame);
+    return {
+      ...doc,
+      art: { ...art, adjust: { ...adjust, recolors } },
+      frame: frame.kind === 'image' ? { ...frame, outerSpacing: 0 } : frame,
+    };
+  },
 };
+
+/** A colour turned `degrees` round the colour wheel, keeping its lightness and strength (the v12 recolour). */
+export function turnHue(hexColour: string, degrees: number): string {
+  const t = parseInt(hexColour.slice(1), 16);
+  const r = (t >> 16) & 255;
+  const g = (t >> 8) & 255;
+  const b = t & 255;
+  const max = Math.max(r, g, b);
+  const c = max - Math.min(r, g, b);
+  if (!c) return hexColour;
+  let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+  h = (((h * 60 + degrees) % 360) + 360) % 360;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = max - c;
+  const k = Math.floor(h / 60);
+  const [rr, gg, bb] = k === 0 ? [c, x, 0] : k === 1 ? [x, c, 0] : k === 2 ? [0, c, x] : k === 3 ? [0, x, c] : k === 4 ? [x, 0, c] : [c, 0, x];
+  return '#' + [rr + m, gg + m, bb + m].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
 
 /**
  * The pictures each code-drawn effect the owner didn't keep became (v12). A
@@ -322,8 +360,15 @@ function effect(raw: Json, index: number): EffectLayer | null {
     size: num(raw.size, d.size, 0, 1),
     spread: num(raw.spread, d.spread, 0, 100),
     seed: Math.round(num(raw.seed, d.seed, 0, 1e6)),
+    rotation: num(raw.rotation, d.rotation, -360, 360),
+    scale: num(raw.scale, d.scale, 0.1, 5),
+    flip: bool(raw.flip, d.flip),
+    useGradient: bool(raw.useGradient, d.useGradient),
+    clip: oneOf(raw.clip, CLIP_TARGETS, d.clip),
   };
 }
+
+const CLIP_TARGETS: readonly ClipTarget[] = ['none', 'token', 'frame', 'background', 'art'];
 
 function lighting(raw: Json, d: LightingSettings): LightingSettings {
   const rim = obj(raw.rim);
@@ -368,6 +413,7 @@ function decoration(raw: Json, index: number): Decoration | null {
     color: hex(raw.color, d.color),
     opacity: num(raw.opacity, d.opacity, 0, 1),
     underFrame: bool(raw.underFrame, d.underFrame),
+    clip: oneOf(raw.clip, CLIP_TARGETS, d.clip),
   };
 }
 
@@ -455,13 +501,15 @@ export function designFrame(raw: unknown): DesignFrame | null {
 const MAX_STROKE_NUMBERS = 300_000;
 
 function adjustments(raw: Json): ImageAdjustments {
-  const out = { ...DEFAULT_ADJUST };
+  const out = { ...DEFAULT_ADJUST, recolors: [] as ImageAdjustments['recolors'] };
   for (const key of Object.keys(DEFAULT_ADJUST) as (keyof ImageAdjustments)[]) {
     if (key === 'invert') out.invert = bool(raw.invert, false);
-    else if (key === 'recolorColor') out.recolorColor = raw.recolorColor === null || raw.recolorColor === undefined ? null : hex(raw.recolorColor, '#ffffff');
-    else if (key === 'recolorBreadth') out.recolorBreadth = num(raw.recolorBreadth, DEFAULT_ADJUST.recolorBreadth, 0, 100);
-    else {
-      const [min, max] = key === 'hue' || key === 'recolorShift' ? [-180, 180] : ['sharpness', 'blur', 'grayscale', 'sepia'].includes(key) ? [0, 100] : [-100, 100];
+    else if (key === 'recolors') {
+      out.recolors = arr(raw.recolors)
+        .slice(0, MAX_RECOLORS)
+        .map((r) => ({ from: hex(r.from, '#ffffff'), to: hex(r.to, '#ffffff'), breadth: num(r.breadth, 30, 0, 100) }));
+    } else {
+      const [min, max] = key === 'hue' ? [-180, 180] : ['sharpness', 'blur', 'grayscale', 'sepia'].includes(key) ? [0, 100] : [-100, 100];
       out[key] = num(raw[key], 0, min, max);
     }
   }

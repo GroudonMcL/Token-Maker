@@ -420,3 +420,39 @@ describe('v11: background colours, and the built-in picture frames as Frame Make
     expect(migrateDocument(mine).frame.image?.source).toEqual({ type: 'upload', id: 'my-ring' });
   });
 });
+
+describe('v13: recolours, picture frames with outer spacing, and the new effect and decoration settings', () => {
+  const v12 = () => ({ ...JSON.parse(JSON.stringify(createDocument())), schemaVersion: 12 });
+  const ring = { source: { type: 'upload', id: 'my-ring' }, name: 'My ring', hole: [0.7, 0, 0, 0.7, -0.7, 0, 0, -0.7], outer: 0.96, nudge: { x: 0, y: 0, scale: 1 } };
+
+  it('a picture frame in use gets no outer spacing, so it still fills the square; other frames keep theirs', () => {
+    const old = v12();
+    old.frame = { ...old.frame, kind: 'image', outerSpacing: 0.2, image: ring };
+    expect(migrateDocument(old).frame.outerSpacing).toBe(0);
+    const drawn = v12();
+    drawn.frame = { ...drawn.frame, kind: 'code', outerSpacing: 0.2, image: ring };
+    expect(migrateDocument(drawn).frame.outerSpacing).toBe(0.2);
+  });
+
+  it('old effects and decorations start unturned, unclipped and in one colour', () => {
+    const old = v12();
+    const fx: Record<string, unknown> = { ...newEffect('outerGlow', 'g') };
+    const deco: Record<string, unknown> = { ...newDecoration('gem', 'd') };
+    for (const k of ['rotation', 'scale', 'flip', 'useGradient', 'clip']) delete fx[k];
+    delete deco.clip;
+    old.effects = [fx];
+    old.decorations = [deco];
+    const doc = migrateDocument(old);
+    expect(doc.effects[0]).toMatchObject({ rotation: 0, scale: 1, flip: false, useGradient: false, clip: 'none' });
+    expect(doc.decorations[0]!.clip).toBe('none');
+  });
+
+  it('checks the new settings', () => {
+    const doc = createDocument();
+    doc.effects = [{ ...newEffect('smoke', 's'), rotation: 999, scale: 50, clip: 'nowhere' as never }];
+    doc.decorations = [{ ...newDecoration('gem', 'd'), clip: 'art' }];
+    const back = migrateDocument(JSON.parse(JSON.stringify(doc)));
+    expect(back.effects[0]).toMatchObject({ rotation: 360, scale: 5, clip: 'none' });
+    expect(back.decorations[0]!.clip).toBe('art');
+  });
+});

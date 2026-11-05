@@ -71,9 +71,11 @@ test('a ribbon label in a fantasy font, then the name curved round the ring; the
   await fresh(page);
   const before = await exportPng(page, m);
 
-  // A banner with the token's name, in Pirata One.
+  // A new label is ring text (owner's default since v13); a banner with the token's name, in Pirata One.
   let panel = await openSection(page, 'Label');
   await panel.getByRole('button', { name: 'Add a label' }).click();
+  await expect(panel.getByRole('radio', { name: 'Ring text' })).toHaveAttribute('aria-checked', 'true');
+  await panel.getByRole('radio', { name: 'Banner' }).click();
   await expect(panel.getByRole('radio', { name: 'Banner' })).toHaveAttribute('aria-checked', 'true');
   const fonts = panel.getByRole('radiogroup', { name: 'Font' });
   await fonts.getByRole('radio', { name: 'Pirata One' }).click();

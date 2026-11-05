@@ -4,7 +4,7 @@
 // ring on every shape, shrink-to-fit, per-square sizes and snapping.
 import { createCanvas } from '@napi-rs/canvas';
 import { registerBundledFonts } from '../../../scripts/token-maker/nodeFonts';
-import { createDocument, newLabel, RING_TEXT_STYLE } from '../document/defaults';
+import { createDocument, newLabel, RING_TEXT_STYLE, SHAPE_TEXT_STYLE } from '../document/defaults';
 import type { LabelSettings, TokenDocument } from '../document/types';
 import { draggedLabel } from '../editor/labelActions';
 import { circleHole } from '../image/frameHole';
@@ -25,7 +25,8 @@ const measure = createCanvas(1, 1).getContext('2d') as unknown as Ctx;
 function tokenWith(label: Partial<LabelSettings>, patch: Partial<TokenDocument> = {}): TokenDocument {
   const d = { ...createDocument('Goblin Boss'), ...patch };
   d.shadows = { ...d.shadows, outer: { ...d.shadows.outer, enabled: false } };
-  d.label = { ...newLabel(), ...label };
+  // Written for a banner with dark, unoutlined text (the default before v13).
+  d.label = { ...newLabel(), shape: 'banner', ...SHAPE_TEXT_STYLE, ...label };
   return d;
 }
 
@@ -151,7 +152,7 @@ describe('curved text', () => {
 
   it('ring text follows a picture frame’s hole', () => {
     const doc = tokenWith({ shape: 'ring' });
-    doc.frame = { ...doc.frame, kind: 'image', image: { source: { type: 'upload', id: 'x' }, name: 'Ring', hole: circleHole(0.6), outer: 0.95, nudge: { x: 0, y: 0, scale: 1 } } };
+    doc.frame = { ...doc.frame, kind: 'image', outerSpacing: 0, image: { source: { type: 'upload', id: 'x' }, name: 'Ring', hole: circleHole(0.6), outer: 0.95, nudge: { x: 0, y: 0, scale: 1 } } };
     const l = layoutLabel(measure, doc, R)!;
     for (const p of onLine(l)) expect(Math.hypot(p.x, p.y) / R).toBeCloseTo((0.6 + 0.95) / 2, 1);
   });

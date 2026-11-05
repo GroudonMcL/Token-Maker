@@ -1,6 +1,6 @@
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Trash2, Upload } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ColorSwatches, ControlLabel, SegmentedButtons, Slider, TileGrid, Toggle } from '../components';
+import { Advanced, ColorSwatches, ControlLabel, SegmentedButtons, Slider, TileGrid, Toggle } from '../components';
 import { LABEL_SHAPES, newLabel } from '../document/defaults';
 import type { LabelAnchor, LabelSettings, LabelShape } from '../document/types';
 import { setLabelAnchor, setLabelOn, setLabelPlace, setLabelShape, updateLabel } from '../editor/labelActions';
@@ -19,6 +19,8 @@ const D = newLabel();
 const FILL_SWATCHES = ['#e9d9b4', '#f4efe4', '#8e2a22', '#1c2433', '#2f4a2a', '#4a2f5c', '#c9a24a', '#20140a'];
 const TEXT_SWATCHES = ['#000000', '#3a2412', '#fff4dc', '#ffffff', '#f0c850', '#8e2a22', '#c9d2de', '#76ff4a'];
 const LINE_SWATCHES = ['#5a3d1e', '#20140a', '#000000', '#ffffff', '#c9a24a', '#8e2a22'];
+const TEXT_LINE_SWATCHES = ['#040839', ...LINE_SWATCHES];
+const SHADOW_SWATCHES = ['#000000', '#20140a', '#1c2433', '#040839', '#8e2a22', '#ffffff'];
 
 /** Small pictures of each shape for the picker. */
 function ShapeIcon({ shape }: { shape: LabelShape }) {
@@ -65,7 +67,7 @@ export function LabelSection() {
         <button type="button" className="btn btn--wide" onClick={() => setLabelOn(true)}>
           Add a label
         </button>
-        <p className="control__hint">Puts the token's name on a banner. You can change the words, shape and font.</p>
+        <p className="control__hint">Puts the token's name round the ring. You can change the words, shape and font.</p>
       </div>
     );
   }
@@ -271,12 +273,57 @@ export function LabelSection() {
         <ColorSwatches
           label="Text outline colour"
           value={l.textOutline.color}
-          swatches={LINE_SWATCHES}
+          swatches={TEXT_LINE_SWATCHES}
           onChange={(color) => set({ textOutline: { ...l.textOutline, color } }, true)}
           onCommit={commitDoc}
         />
       )}
       <Toggle label="Shrink long names to fit" checked={l.shrinkToFit} onChange={(shrinkToFit) => set({ shrinkToFit })} />
+      <Advanced>
+        <Slider
+          label="Letter spacing"
+          unit="%"
+          min={-10}
+          max={50}
+          value={Math.round(l.letterSpacing * 100)}
+          defaultValue={Math.round(D.letterSpacing * 100)}
+          onChange={(v) => set({ letterSpacing: v / 100 }, true)}
+          onCommit={commitDoc}
+        />
+        <Toggle label="Text shadow" checked={l.shadow.enabled} onChange={(enabled) => set({ shadow: { ...l.shadow, enabled } })} />
+        {l.shadow.enabled && (
+          <>
+            <ColorSwatches
+              label="Shadow colour"
+              value={l.shadow.color}
+              swatches={SHADOW_SWATCHES}
+              onChange={(color) => set({ shadow: { ...l.shadow, color } }, true)}
+              onCommit={commitDoc}
+            />
+            <Slider
+              label="Shadow opacity"
+              unit="%"
+              min={0}
+              max={100}
+              value={Math.round(l.shadow.opacity * 100)}
+              defaultValue={Math.round(D.shadow.opacity * 100)}
+              onChange={(v) => set({ shadow: { ...l.shadow, opacity: v / 100 } }, true)}
+              onCommit={commitDoc}
+            />
+            <Slider
+              label="Shadow blur"
+              unit="% of a square"
+              min={0}
+              max={10}
+              step={0.1}
+              value={toPct(l.shadow.blur)}
+              defaultValue={toPct(D.shadow.blur)}
+              onChange={(v) => set({ shadow: { ...l.shadow, blur: fromPct(v) } }, true)}
+              onCommit={commitDoc}
+            />
+          </>
+        )}
+      </Advanced>
     </>
   );
 }

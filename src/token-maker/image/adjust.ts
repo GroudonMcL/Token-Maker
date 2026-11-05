@@ -31,59 +31,102 @@ export function hasColourAdjustments(a: ImageAdjustments): boolean {
   return a.invert || COLOUR_KEYS.some((k) => a[k] !== 0) || hasRecolor(a);
 }
 
-/** Recolour is on: a colour is chosen and turned. */
-export const hasRecolor = (a: Pick<ImageAdjustments, 'recolorColor' | 'recolorShift'>) => !!a.recolorColor && a.recolorShift !== 0;
+/** Recolour is on: at least one recolour changes something. */
+export const hasRecolor = (a: Pick<ImageAdjustments, 'recolors'>) => a.recolors.some((r) => r.from.toLowerCase() !== r.to.toLowerCase());
 
-/** How far either side of the chosen hue (in degrees) a breadth of 0–100 reaches. */
-export const recolorReach = (breadth: number) => 6 + (Math.min(100, Math.max(0, breadth)) / 100) * 84;
+/** How far from the chosen colour (CIE Lab distance, lightness counted half) a breadth of 0–100 reaches. */
+export const recolorReach = (breadth: number) => 6 + (Math.min(100, Math.max(0, breadth)) / 100) * 94;
 
-/** Hue in degrees (0–360) of an RGB colour, and its chroma (0–255). */
-function hueOf(r: number, g: number, b: number): [number, number] {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const c = max - min;
-  if (c === 0) return [0, 0];
-  let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
-  h *= 60;
-  return [h < 0 ? h + 360 : h, c];
+// ---- CIE Lab (D65), so a recolour can move lightness as well as hue ----
+
+const srgbToLinear = (v: number) => {
+  const c = v / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+};
+const linearToSrgb = (c: number) => 255 * (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.max(0, c) ** (1 / 2.4) - 0.055);
+const LIN = new Float32Array(256).map((_, v) => srgbToLinear(v));
+const labF = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+const labFInv = (t: number) => (t > 0.206893 ? t * t * t : (t - 16 / 116) / 7.787);
+const XN = 0.95047;
+const ZN = 1.08883;
+
+/** sRGB (0–255) → Lab, written into `out`. */
+export function rgbToLab(r: number, g: number, b: number, out: number[] = [0, 0, 0]): number[] {
+  const lr = LIN[r | 0]!;
+  const lg = LIN[g | 0]!;
+  const lb = LIN[b | 0]!;
+  const fx = labF((0.4124 * lr + 0.3576 * lg + 0.1805 * lb) / XN);
+  const fy = labF(0.2126 * lr + 0.7152 * lg + 0.0722 * lb);
+  const fz = labF((0.0193 * lr + 0.1192 * lg + 0.9505 * lb) / ZN);
+  out[0] = 116 * fy - 16;
+  out[1] = 500 * (fx - fy);
+  out[2] = 200 * (fy - fz);
+  return out;
 }
 
+/** Lab → sRGB (0–255, unclamped), written into `out`. */
+export function labToRgb(L: number, A: number, B: number, out: number[] = [0, 0, 0]): number[] {
+  const fy = (L + 16) / 116;
+  const x = XN * labFInv(fy + A / 500);
+  const y = labFInv(fy);
+  const z = ZN * labFInv(fy - B / 200);
+  out[0] = linearToSrgb(3.2406 * x - 1.5372 * y - 0.4986 * z);
+  out[1] = linearToSrgb(-0.9689 * x + 1.8758 * y + 0.0415 * z);
+  out[2] = linearToSrgb(0.0557 * x - 0.204 * y + 1.057 * z);
+  return out;
+}
+
+const hexLab = (hex: string) => {
+  const t = parseInt(hex.slice(1), 16);
+  return rgbToLab((t >> 16) & 255, (t >> 8) & 255, t & 255);
+};
+
 /**
- * Recolour (owner request): colours near the chosen one turn round the
- * colour wheel by `recolorShift`, keeping their lightness and strength.
- * Colours within half the reach change fully, fading out to the edge of
- * it; greys and nearly grey colours barely change, as they have no colour
- * to turn.
+ * Recolour (owner request, v13): pixels near a recolour's `from` colour take
+ * on its `to` colour, keeping their own shading. Lightness is remapped so
+ * black stays black and white stays white except where `from` sits (so
+ * white can become red, its shadows a darker red), and the colour moves by
+ * the difference between the two. Pixels within half the reach change
+ * fully, fading out to its edge.
  */
 function recolor(d: Uint8ClampedArray, a: ImageAdjustments): void {
-  const t = parseInt(a.recolorColor!.slice(1), 16);
-  const [h0, c0] = hueOf((t >> 16) & 255, (t >> 8) & 255, t & 255);
-  if (c0 === 0) return; // a grey has no hue to match
-  const reach = recolorReach(a.recolorBreadth);
-  const full = reach / 2;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i]!;
-    const g = d[i + 1]!;
-    const b = d[i + 2]!;
-    const [h, c] = hueOf(r, g, b);
-    if (c < 6) continue;
-    let dist = Math.abs(h - h0);
-    if (dist > 180) dist = 360 - dist;
-    if (dist >= reach) continue;
-    let w = dist <= full ? 1 : 1 - (dist - full) / (reach - full);
-    w = w * w * (3 - 2 * w); // smooth edge
-    w *= Math.min(1, c / 48);
-    // Turn the hue, keeping value (max) and chroma.
-    let nh = (h + a.recolorShift * w) % 360;
-    if (nh < 0) nh += 360;
-    const max = Math.max(r, g, b);
-    const x = c * (1 - Math.abs(((nh / 60) % 2) - 1));
-    const m = max - c;
-    const k = Math.floor(nh / 60);
-    const [rr, gg, bb] = k === 0 ? [c, x, 0] : k === 1 ? [x, c, 0] : k === 2 ? [0, c, x] : k === 3 ? [0, x, c] : k === 4 ? [x, 0, c] : [c, 0, x];
-    d[i] = rr + m;
-    d[i + 1] = gg + m;
-    d[i + 2] = bb + m;
+  const lab = [0, 0, 0];
+  const rgb = [0, 0, 0];
+  for (const rc of a.recolors) {
+    if (rc.from.toLowerCase() === rc.to.toLowerCase()) continue;
+    const [fL, fA, fB] = hexLab(rc.from) as [number, number, number];
+    const [tL, tA, tB] = hexLab(rc.to) as [number, number, number];
+    const reach = recolorReach(rc.breadth);
+    const full = reach / 2;
+    /** Lightness with `from`'s moved to `to`'s, black and white staying put. */
+    const mapL = (L: number) => (L <= fL ? (fL > 0 ? (L / fL) * tL : tL) : fL < 100 ? tL + ((L - fL) / (100 - fL)) * (100 - tL) : tL);
+    // Pictures repeat colours a lot (flat art especially), so results are kept by colour.
+    const seen = new Map<number, number>();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] === 0) continue;
+      const key = (d[i]! << 16) | (d[i + 1]! << 8) | d[i + 2]!;
+      let out = seen.get(key);
+      if (out === undefined) {
+        rgbToLab(d[i]!, d[i + 1]!, d[i + 2]!, lab);
+        const dl = (lab[0]! - fL) * 0.5;
+        const da = lab[1]! - fA;
+        const db = lab[2]! - fB;
+        const dist = Math.sqrt(dl * dl + da * da + db * db);
+        if (dist >= reach) out = -1;
+        else {
+          let w = dist <= full ? 1 : 1 - (dist - full) / (reach - full);
+          w = w * w * (3 - 2 * w); // smooth edge
+          const L = lab[0]! + (mapL(lab[0]!) - lab[0]!) * w;
+          labToRgb(L, lab[1]! + (tA - fA) * w, lab[2]! + (tB - fB) * w, rgb);
+          out = (clamp255(Math.round(rgb[0]!)) << 16) | (clamp255(Math.round(rgb[1]!)) << 8) | clamp255(Math.round(rgb[2]!));
+        }
+        if (seen.size < 1 << 18) seen.set(key, out);
+      }
+      if (out < 0) continue;
+      d[i] = (out >> 16) & 255;
+      d[i + 1] = (out >> 8) & 255;
+      d[i + 2] = out & 255;
+    }
   }
 }
 

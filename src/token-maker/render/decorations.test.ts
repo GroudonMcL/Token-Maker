@@ -242,7 +242,8 @@ describe('picture frames in the renderer', () => {
   });
   const framed = (patch: Partial<ImageFrame> = {}, size: TokenDocument['size'] = { preset: 'medium', squares: 1 }) => {
     const d = plain({ size });
-    d.frame = { ...d.frame, kind: 'image', image: image(patch) };
+    // No outer spacing: the picture fills the square.
+    d.frame = { ...d.frame, kind: 'image', outerSpacing: 0, image: image(patch) };
     d.art.assetId = 'asset:a';
     return d;
   };
@@ -250,6 +251,16 @@ describe('picture frames in the renderer', () => {
     ['asset:a', solid('#ff0000')],
     [frameAssetId({ type: 'upload', id: 'ring' }), ringPicture()],
   ];
+
+  it('gets smaller with outer spacing, hole and all, like every other frame (v13)', () => {
+    const d = framed();
+    d.frame.outerSpacing = 0.25; // a quarter of the half-size on a 1-square token
+    const img = draw(d, assets);
+    expect(img.at(128, 128 - 0.85 * 128)[3]).toBe(0); // where the ring was is now outside it
+    expect(img.at(128, 128 - 0.85 * 0.75 * 128)[0]).toBeGreaterThan(150); // the ring, a quarter in
+    const p = imageClipPolygon(d)[0]!;
+    expect(Math.hypot(p.x, p.y)).toBeCloseTo(0.76 * 0.75, 2);
+  });
 
   it('clips the art to the hole and draws the picture over it', () => {
     const img = draw(framed(), assets);
@@ -292,5 +303,30 @@ describe('picture frames in the renderer', () => {
     // Just below the ring at the bottom: shadow; just above the ring at the top: nothing.
     expect(img.at(128, 128 + 0.95 * 128 + 4)[3]).toBeGreaterThan(100);
     expect(img.at(128, 128 - 0.95 * 128 - 4)[3]).toBe(0);
+  });
+});
+
+describe('Keep inside (v13)', () => {
+  it('a decoration kept inside the token is cut off at the frame’s outer edge', () => {
+    const gem = (clip: Decoration['clip']) => {
+      const d = plain();
+      d.decorations = [{ ...newDecoration('gem', 'g'), place: 'free', x: 0, y: -0.95, size: 0.5, clip }];
+      return draw(d);
+    };
+    const none = draw(plain());
+    const free = gem('none');
+    const kept = gem('token');
+    // Above the frame's outer edge (5 % of the half-size from the top), only the unclipped gem shows.
+    expect(free.at(128, 3)).not.toEqual(none.at(128, 3));
+    expect(kept.at(128, 3)).toEqual(none.at(128, 3));
+    // Inside the frame both show.
+    expect(kept.at(128, 20)).toEqual(free.at(128, 20));
+  });
+
+  it('kept inside the art, a decoration on a token with no art is not drawn', () => {
+    const d = plain();
+    d.decorations = [{ ...newDecoration('gem', 'g'), clip: 'art' }];
+    const none = draw(plain());
+    expect(draw(d).data.every((v, i) => v === none.data[i])).toBe(true);
   });
 });
