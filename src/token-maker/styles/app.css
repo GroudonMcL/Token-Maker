@@ -1717,10 +1717,17 @@ input[type='range']::-moz-range-thumb {
   color: var(--text);
 }
 
-.segmented__btn[aria-checked='true'] {
+.segmented__btn[aria-checked='true'],
+.segmented__btn[aria-pressed='true'] {
   background: var(--surface-raised);
   color: var(--text);
   box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--accent);
+}
+
+/* Keep inside (v14): seven on/off buttons in even rows of four. */
+.keep-inside__row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* Tile grid */

@@ -199,39 +199,81 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   };
   const drawnFrame = () => frameLayer(design ?? doc.frame.style, frameGeometry, size);
 
-  // What an effect or decoration's Clip keeps it inside (v13), each drawn once when first asked for.
-  const masks = new Map<ClipTarget, CanvasImageSource | null>();
-  const clipMask = (target: ClipTarget): CanvasImageSource | null => {
-    if (target === 'none') return null;
-    if (masks.has(target)) return masks.get(target)!;
+  // Where an effect or decoration's Keep inside lets it show (v14: several at once), each part drawn once when first asked for.
+  // The background and the art stop at the frame's inner edge, and the frame's own pixels are cut out of them,
+  // so nothing kept inside them spills onto the frame.
+  const opening = hasFrame && !imageFrame ? shapePolygon(doc.shape, R, Math.max(insets.image, insets.frameInner) * R) : clip;
+  const cutFrame = (c: Ctx) => {
+    c.save();
+    c.globalCompositeOperation = 'destination-out';
+    if (frameImage) drawImageFrame(c, frameImage, frameR);
+    else if (hasFrame) c.drawImage(drawnFrame(), -R, -R);
+    c.restore();
+  };
+  const parts = new Map<ClipTarget, CanvasImageSource | null>();
+  const clipPart = (target: ClipTarget): CanvasImageSource | null => {
+    if (parts.has(target)) return parts.get(target)!;
     const c = newCanvas(size, size);
     const mctx = c.getContext('2d') as Ctx;
     mctx.translate(R, R);
     mctx.fillStyle = '#000';
     let ok = true;
-    if (target === 'token' || target === 'background') {
-      // The token's outline (the frame's outer edge, or a picture frame and its hole), or the opening.
-      tracePolygon(mctx, target === 'token' ? silhouette : clip);
+    const paintToken = () => {
+      // The token's outline: the frame's outer edge, or a picture frame and its hole.
+      tracePolygon(mctx, silhouette);
       mctx.fill();
-      if (target === 'token' && frameImage) drawImageFrame(mctx, frameImage, frameR);
+      if (frameImage) drawImageFrame(mctx, frameImage, frameR);
+    };
+    if (target === 'token') paintToken();
+    else if (target === 'outside') {
+      // Everything in the square but the token (pop-out parts and decorations may still cover it).
+      mctx.fillRect(-R, -R, size, size);
+      mctx.globalCompositeOperation = 'destination-out';
+      paintToken();
+    } else if (target === 'background') {
+      if (opening.length) {
+        tracePolygon(mctx, opening);
+        mctx.fill();
+        cutFrame(mctx);
+      } else ok = false;
     } else if (target === 'frame') {
       if (frameImage) drawImageFrame(mctx, frameImage, frameR);
       else if (hasFrame) mctx.drawImage(drawnFrame(), -R, -R);
       else ok = false;
     } else if (target === 'art') {
-      // The art where it shows, with its see-through parts left out, and the parts popping out over the frame.
-      if (art && shown && clip.length) {
+      // The art where it shows in the opening, with its see-through parts left out.
+      if (art && shown && opening.length) {
         mctx.save();
-        tracePolygon(mctx, clip);
+        tracePolygon(mctx, opening);
         mctx.clip();
         placeArt(mctx);
         mctx.drawImage(shown.image, -art.width / 2, -art.height / 2, art.width, art.height);
         mctx.restore();
-        if (pop) putLayer(mctx, pop);
+        cutFrame(mctx);
       } else ok = false;
+    } else if (target === 'popOut') {
+      // The parts of the art popping out over the frame.
+      if (pop) putLayer(mctx, pop);
+      else ok = false;
     }
-    const mask = ok ? (c as CanvasImageSource) : null;
-    masks.set(target, mask);
+    const part = ok ? (c as CanvasImageSource) : null;
+    parts.set(target, part);
+    return part;
+  };
+  const masks = new Map<string, CanvasImageSource | null>();
+  const clipMask = (targets: readonly ClipTarget[]): CanvasImageSource | null => {
+    const key = targets.join('+');
+    if (masks.has(key)) return masks.get(key)!;
+    const shownParts = targets.map(clipPart).filter((p): p is CanvasImageSource => !!p);
+    let mask: CanvasImageSource | null = null;
+    if (shownParts.length === 1) mask = shownParts[0]!;
+    else if (shownParts.length > 1) {
+      const c = newCanvas(size, size);
+      const mctx = c.getContext('2d') as Ctx;
+      for (const p of shownParts) mctx.drawImage(p, 0, 0);
+      mask = c as CanvasImageSource;
+    }
+    masks.set(key, mask);
     return mask;
   };
 

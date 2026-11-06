@@ -228,10 +228,11 @@ export function drawDecorations(
   /** Only the decorations under the frame (true), only those over it (false), or all of them. */
   underFrame?: boolean,
   /**
-   * The mask a decoration's Clip setting keeps it inside (v13): a 2R × 2R
-   * picture, centred, opaque where it may show. Without it, Clip is ignored.
+   * The mask a decoration's Keep inside setting keeps it inside (v14: the
+   * parts chosen, together): a 2R × 2R picture, centred, opaque where it may
+   * show, or null when none of them is there. Without it, Keep inside is ignored.
    */
-  clipMask?: (target: ClipTarget) => CanvasImageSource | null,
+  clipMask?: (targets: readonly ClipTarget[]) => CanvasImageSource | null,
 ): void {
   const geo = decorationGeometry(doc);
   for (const d of doc.decorations) {
@@ -245,8 +246,9 @@ export function drawDecorations(
     if (d.kind === 'picture' && !pic) continue;
     const bmp = pic ? pictureBitmap(pic, d.color, d.tint) : bitmap(d, hPx);
     const scale = hPx / bmp.h;
-    const mask = d.clip !== 'none' && clipMask ? clipMask(d.clip) : null;
-    if (d.clip !== 'none' && clipMask && !mask) continue; // nothing to show inside (no frame, no art)
+    const clipped = d.clip.length > 0 && !!clipMask;
+    const mask = clipped ? clipMask(d.clip) : null;
+    if (clipped && !mask) continue; // nothing to show inside (no frame, no art, no pop-out)
     // A clipped decoration is drawn on a layer of its own, then cut to its mask.
     const layer = mask ? newCanvas(Math.ceil(R * 2), Math.ceil(R * 2)) : null;
     const target = layer ? (layer.getContext('2d') as Ctx) : ctx;

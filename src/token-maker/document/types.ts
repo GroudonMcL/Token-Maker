@@ -4,7 +4,7 @@
 import type { FrameProject } from '../frameMaker/share/frameDesign';
 import type { FrameStyle, ShapeId } from '../render/catalog';
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 export type SizePreset = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'custom';
 
@@ -322,6 +322,8 @@ export interface LightingSettings {
   /** A thin bright edge on the side facing the light (best with a removed background). */
   /** Softness 0…100: 0 is a crisp edge, 100 fades gently into the art (Phase 7). */
   rim: { enabled: boolean; strength: number; width: number; softness: number };
+  /** How the light mixes with what it lights (v14); 'normal' is the light as it always was. */
+  blend: BlendMode;
   /** Light the background the same way, so it matches the art. */
   background: boolean;
   /** Light the frame from the same direction (and colour), so it matches the art. Works with the art unlit too. */
@@ -352,11 +354,13 @@ export type PictureSource = { type: 'library'; id: string } | { type: 'upload'; 
 export type EffectPlacement = 'behind' | 'over' | 'border';
 
 /**
- * What an effect or decoration is kept inside (v13): nothing (it may reach
- * anywhere), the whole token's outline, the frame's own drawn parts, the
- * opening the background fills, or the art's own visible pixels.
+ * Where an effect or decoration may show (v14; one choice in v13): the whole
+ * token's outline, the frame's own drawn parts, the opening the background
+ * fills (up to the frame's inner edge), the art's own visible pixels in that
+ * opening, the parts of the art popping out over the frame, or everywhere
+ * outside the token. Several can be chosen; none means it may reach anywhere.
  */
-export type ClipTarget = 'none' | 'token' | 'frame' | 'background' | 'art';
+export type ClipTarget = 'token' | 'frame' | 'background' | 'art' | 'popOut' | 'outside';
 
 /**
  * One effect in the stack, drawn bottom of the list first within its
@@ -400,8 +404,8 @@ export interface EffectLayer {
   flip: boolean;
   /** Glows: coloured with `gradient` instead of `color` (v13). */
   useGradient: boolean;
-  /** What it is kept inside (v13). */
-  clip: ClipTarget;
+  /** Where it is kept inside (v14: several at once; empty = anywhere). */
+  clip: ClipTarget[];
 }
 
 // ---- Layers built in later phases. Kept minimal so the shape is settled now. ----
@@ -465,8 +469,8 @@ export interface Decoration {
   tint: boolean;
   /** Drawn under the frame (after the art), so the frame covers it: wings or horns tucked behind the border. */
   underFrame: boolean;
-  /** What it is kept inside (v13). */
-  clip: ClipTarget;
+  /** Where it is kept inside (v14: several at once; empty = anywhere). */
+  clip: ClipTarget[];
 }
 
 // ---- Phase 8: the label (DESIGN.md §6.10) ----

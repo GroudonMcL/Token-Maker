@@ -443,16 +443,49 @@ describe('v13: recolours, picture frames with outer spacing, and the new effect 
     old.effects = [fx];
     old.decorations = [deco];
     const doc = migrateDocument(old);
-    expect(doc.effects[0]).toMatchObject({ rotation: 0, scale: 1, flip: false, useGradient: false, clip: 'none' });
-    expect(doc.decorations[0]!.clip).toBe('none');
+    expect(doc.effects[0]).toMatchObject({ rotation: 0, scale: 1, flip: false, useGradient: false, clip: [] });
+    expect(doc.decorations[0]!.clip).toEqual([]);
   });
 
   it('checks the new settings', () => {
     const doc = createDocument();
-    doc.effects = [{ ...newEffect('smoke', 's'), rotation: 999, scale: 50, clip: 'nowhere' as never }];
-    doc.decorations = [{ ...newDecoration('gem', 'd'), clip: 'art' }];
+    doc.effects = [{ ...newEffect('smoke', 's'), rotation: 999, scale: 50, clip: ['nowhere', 'frame'] as never }];
+    doc.decorations = [{ ...newDecoration('gem', 'd'), clip: ['outside', 'art', 'art'] }];
     const back = migrateDocument(JSON.parse(JSON.stringify(doc)));
-    expect(back.effects[0]).toMatchObject({ rotation: 360, scale: 5, clip: 'none' });
-    expect(back.decorations[0]!.clip).toBe('art');
+    expect(back.effects[0]).toMatchObject({ rotation: 360, scale: 5, clip: ['frame'] });
+    expect(back.decorations[0]!.clip).toEqual(['art', 'outside']);
+  });
+});
+
+describe('v13 → v14', () => {
+  const v13 = () => ({ ...JSON.parse(JSON.stringify(createDocument())), schemaVersion: 13 });
+
+  it('Keep inside becomes a list: Nothing is none, Art is Art and Pop-out', () => {
+    const old = v13();
+    old.effects = [
+      { ...newEffect('smoke', 'a'), clip: 'none' },
+      { ...newEffect('smoke', 'b'), clip: 'art' },
+      { ...newEffect('smoke', 'c'), clip: 'background' },
+    ];
+    old.decorations = [{ ...newDecoration('gem', 'd'), clip: 'frame' }];
+    const doc = migrateDocument(old);
+    expect(doc.effects.map((e) => e.clip)).toEqual([[], ['art', 'popOut'], ['background']]);
+    expect(doc.decorations[0]!.clip).toEqual(['frame']);
+  });
+
+  it('the light mixes as Normal; a label saved without a text shadow keeps it off', () => {
+    const old = v13();
+    delete old.lighting.blend;
+    old.label = { ...createDocument().label, text: 'Hi' };
+    delete old.label.shadow;
+    const doc = migrateDocument(old);
+    expect(doc.lighting.blend).toBe('normal');
+    expect(doc.label!.shadow.enabled).toBe(false);
+  });
+
+  it('checks the light’s blend mode', () => {
+    const doc = createDocument();
+    const back = migrateDocument(JSON.parse(JSON.stringify({ ...doc, lighting: { ...doc.lighting, blend: 'darken' } })));
+    expect(back.lighting.blend).toBe('normal');
   });
 });

@@ -172,9 +172,31 @@ export function lightLayer(ctx: Ctx, l: LightingSettings, size: number): void {
   ctx.restore();
 }
 
-/** The light's tint, darkening and glow over `box`, whatever is under it. */
+/**
+ * The light's tint, darkening and glow over `box`, whatever is under it. With
+ * a blend mode other than Normal (v14), it is lit on a copy that is then mixed
+ * back over what was there with that mode.
+ */
 function paintLight(ctx: Ctx, l: LightingSettings, box: { minX: number; maxX: number; minY: number; maxY: number }): void {
   if (l.strength <= 0) return;
+  if (l.blend && l.blend !== 'normal') {
+    const { width, height } = ctx.canvas;
+    const copy = newCanvas(width, height);
+    const cctx = copy.getContext('2d') as Ctx;
+    cctx.drawImage(ctx.canvas as CanvasImageSource, 0, 0);
+    cctx.setTransform(ctx.getTransform());
+    paintPlainLight(cctx, l, box);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = l.blend as GlobalCompositeOperation; // each blend mode is named as the canvas names it
+    ctx.drawImage(copy as CanvasImageSource, 0, 0);
+    ctx.restore();
+    return;
+  }
+  paintPlainLight(ctx, l, box);
+}
+
+function paintPlainLight(ctx: Ctx, l: LightingSettings, box: { minX: number; maxX: number; minY: number; maxY: number }): void {
   const s = l.strength / 100;
   const f = l.falloff / 100;
   const w = box.maxX - box.minX;

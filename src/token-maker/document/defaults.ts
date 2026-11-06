@@ -133,18 +133,19 @@ export const DEFAULT_LIGHTING: LightingSettings = {
   strength: 50,
   falloff: 40,
   rim: { enabled: false, strength: 60, width: 30, softness: 60 },
+  blend: 'normal',
   background: false,
   frame: false,
 };
 
 /** Lighting presets (DESIGN.md §6.5): they set the light, which then stays editable. */
-export const LIGHT_PRESETS: { id: LightPresetId; name: string; settings: Omit<LightingSettings, 'preset' | 'enabled' | 'background' | 'frame'> }[] = [
-  { id: 'torchlight', name: 'Torchlight', settings: { direction: 90, color: '#ffa04a', strength: 75, falloff: 60, rim: { enabled: true, strength: 70, width: 30, softness: 40 } } },
-  { id: 'moonlight', name: 'Moonlight', settings: { direction: 270, color: '#9db8ff', strength: 60, falloff: 55, rim: { enabled: true, strength: 50, width: 25, softness: 50 } } },
-  { id: 'holy', name: 'Holy glow', settings: { direction: 270, color: '#fff1b8', strength: 70, falloff: 25, rim: { enabled: true, strength: 80, width: 40, softness: 60 } } },
-  { id: 'fel', name: 'Fel green', settings: { direction: 135, color: '#76ff4a', strength: 70, falloff: 55, rim: { enabled: true, strength: 75, width: 35, softness: 35 } } },
-  { id: 'firelight', name: 'Firelight', settings: { direction: 45, color: '#ff6a22', strength: 80, falloff: 65, rim: { enabled: true, strength: 65, width: 30, softness: 30 } } },
-  { id: 'underdark', name: 'Underdark', settings: { direction: 225, color: '#8b5cd6', strength: 65, falloff: 80, rim: { enabled: false, strength: 40, width: 25, softness: 35 } } },
+export const LIGHT_PRESETS: { id: LightPresetId; name: string; settings: Omit<LightingSettings, 'preset' | 'enabled' | 'background' | 'frame' | 'blend'> }[] = [
+  { id: 'torchlight', name: 'Torchlight', settings: { direction: 90, color: '#ffa04a', strength: 75, falloff: 60, rim: { enabled: true, strength: 70, width: 50, softness: 100 } } },
+  { id: 'moonlight', name: 'Moonlight', settings: { direction: 270, color: '#9db8ff', strength: 60, falloff: 55, rim: { enabled: true, strength: 50, width: 50, softness: 100 } } },
+  { id: 'holy', name: 'Holy glow', settings: { direction: 270, color: '#fff1b8', strength: 70, falloff: 25, rim: { enabled: true, strength: 80, width: 50, softness: 100 } } },
+  { id: 'fel', name: 'Fel green', settings: { direction: 135, color: '#76ff4a', strength: 70, falloff: 55, rim: { enabled: true, strength: 75, width: 50, softness: 100 } } },
+  { id: 'firelight', name: 'Firelight', settings: { direction: 45, color: '#ff6a22', strength: 80, falloff: 65, rim: { enabled: true, strength: 65, width: 50, softness: 100 } } },
+  { id: 'underdark', name: 'Underdark', settings: { direction: 225, color: '#8b5cd6', strength: 65, falloff: 80, rim: { enabled: false, strength: 40, width: 50, softness: 100 } } },
 ];
 
 // ---- Phase 6: styles and effects ----
@@ -240,7 +241,7 @@ export function newEffect(kind: EffectKind, id = Math.random().toString(36).slic
     scale: 1,
     flip: false,
     useGradient: false,
-    clip: 'none',
+    clip: [],
     ...d,
     gradient: copyGradient(d.gradient ?? DEFAULT_GRADIENT),
   };
@@ -329,7 +330,7 @@ export const MAX_DECORATIONS = 16;
 
 export function newDecoration(kind: DecorationKind, id = Math.random().toString(36).slice(2, 10)): Decoration {
   const d = decorationInfo(kind).defaults;
-  return { id, kind, visible: true, place: d.place, x: 0, y: -0.8, size: d.size, rotation: d.rotation ?? 0, mirror: d.mirror, flip: false, color: d.color, opacity: 1, image: null, tint: true, aspect: decorationInfo(kind).aspect, underFrame: false, clip: 'none' };
+  return { id, kind, visible: true, place: d.place, x: 0, y: -0.8, size: d.size, rotation: d.rotation ?? 0, mirror: d.mirror, flip: false, color: d.color, opacity: 1, image: null, tint: true, aspect: decorationInfo(kind).aspect, underFrame: false, clip: [] };
 }
 
 /** A picture decoration: a built-in icon (coloured) or one of the user's own pictures (its own colours). */
@@ -379,7 +380,7 @@ export function newLabel(): LabelSettings {
     italic: false,
     letterSpacing: 0.04,
     align: 'center',
-    shadow: { enabled: false, color: '#000000', opacity: 0.6, blur: 0.03 },
+    shadow: { enabled: true, color: '#000000', opacity: 0.6, blur: 0.012 },
     shrinkToFit: true,
   };
 }

@@ -4,7 +4,7 @@
 // light direction on the token is turned into the picture's direction, so a
 // rotated or flipped picture is still lit from the right side.
 
-import type { ArtTransform, LightingSettings } from '../document/types';
+import type { ArtTransform, BlendMode, LightingSettings } from '../document/types';
 import { parseHex } from '../render/color';
 import type { PixelBuffer } from './adjust';
 
@@ -18,6 +18,8 @@ export interface ArtLight {
   /** 0…100 */
   falloff: number;
   rim: { enabled: boolean; strength: number; width: number; softness: number };
+  /** How the lit picture mixes with the picture as it was (v14). */
+  blend: BlendMode;
 }
 
 const round = (v: number) => Math.round(v * 100) / 100;
@@ -43,6 +45,7 @@ export function artLight(l: LightingSettings, t: Pick<ArtTransform, 'rotation' |
     strength: l.strength,
     falloff: l.falloff,
     rim: { ...l.rim },
+    blend: l.blend ?? 'normal',
   };
 }
 
@@ -85,6 +88,7 @@ export function applyLighting(buf: PixelBuffer, light: ArtLight): void {
     return d[(yi * w + xi) * 4 + 3]!;
   };
 
+  const mix = BLEND_FNS[light.blend ?? 'normal'];
   for (let y = 0, i = 0; y < h; y++) {
     for (let x = 0; x < w; x++, i += 4) {
       const a = d[i + 3]!;
@@ -103,8 +107,26 @@ export function applyLighting(buf: PixelBuffer, light: ArtLight): void {
       }
       for (let c = 0; c < 3; c++) {
         const tint = 1 - 0.6 * s + 0.6 * s * hue[c]!;
-        d[i + c] = d[i + c]! * tint * shade * lift + col[c]! * (glow + rim);
+        const was = d[i + c]!;
+        const lit = was * tint * shade * lift + col[c]! * (glow + rim);
+        d[i + c] = mix ? mix(was / 255, Math.min(1, lit / 255)) * 255 : lit;
       }
     }
   }
 }
+
+/**
+ * The blend modes as the canvas draws them (W3C compositing), mixing the lit
+ * colour `s` over the colour `b` it was, both 0…1. Normal is the lit colour itself.
+ */
+const BLEND_FNS: Record<BlendMode, ((b: number, s: number) => number) | null> = {
+  normal: null,
+  multiply: (b, s) => b * s,
+  screen: (b, s) => b + s - b * s,
+  overlay: (b, s) => (b <= 0.5 ? 2 * b * s : 1 - 2 * (1 - b) * (1 - s)),
+  'soft-light': (b, s) => {
+    if (s <= 0.5) return b - (1 - 2 * s) * b * (1 - b);
+    const dB = b <= 0.25 ? ((16 * b - 12) * b + 4) * b : Math.sqrt(b);
+    return b + (2 * s - 1) * (dB - b);
+  },
+};

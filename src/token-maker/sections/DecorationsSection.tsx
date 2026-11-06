@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Trash2, Upload } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
-import { ColorSwatches, ControlLabel, SegmentedButtons, Slider, Toggle } from '../components';
+import { ColorSwatches, ControlLabel, Slider, Toggle } from '../components';
 import { DECORATION_GROUPS, DECORATIONS, decorationInfo, MAX_DECORATIONS, newDecoration } from '../document/defaults';
 import type { Decoration, DecorationKind, SnapPoint } from '../document/types';
 import { addPictureDecoration, uploadPictureDecoration } from '../editor/pictureActions';
@@ -10,7 +10,7 @@ import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLi
 import { decorationGeometry, placements } from '../render/decorations';
 import { commitDoc, getDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { decorationThumbnails } from './decorationThumbs';
-import { CLIP_OPTIONS, clipHint } from './clipOptions';
+import { KeepInside } from './KeepInside';
 
 /** Per-square values are shown as a percentage of one grid square (1 unit = half a square). */
 const toPct = (v: number) => Math.round(v * 50 * 10) / 10;
@@ -288,8 +288,7 @@ function DecorationCard({
         />
         <Toggle label="Flip" checked={d.flip} onChange={(flip) => update(d.id, { flip })} />
         <Toggle label="Under the frame" checked={d.underFrame} onChange={(underFrame) => update(d.id, { underFrame })} />
-        <SegmentedButtons label="Keep inside" value={d.clip} options={CLIP_OPTIONS} onChange={(clip) => update(d.id, { clip })} />
-        <p className="control__hint">{clipHint(d.clip)}</p>
+        <KeepInside value={d.clip} onChange={(clip) => update(d.id, { clip })} />
       </div>
     </li>
   );
