@@ -257,7 +257,7 @@ export function newPictureEffect(image: PictureSource, id?: string): EffectLayer
   const lib = image.type === 'library' ? effectPicture(image.id) : undefined;
   // The user's own picture keeps its colours and fills the opening until they choose otherwise.
   if (!lib) return { ...e, image, tint: false, layout: 'fill', spread: 100, intensity: 100 };
-  return { ...e, image, ...lib.defaults, layout: lib.defaults.layout ?? 'scatter', tint: lib.defaults.tint ?? true, blur: lib.defaults.blur ?? 0 };
+  return { ...e, image, ...lib.defaults, layout: lib.defaults.layout ?? 'scatter', tint: lib.defaults.tint ?? true, blur: lib.defaults.blur ?? 0, clip: [...(lib.defaults.clip ?? e.clip)] };
 }
 
 // ---- Phase 7: decorations ----

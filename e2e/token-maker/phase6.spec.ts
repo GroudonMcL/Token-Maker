@@ -75,7 +75,7 @@ test('stack an outer glow, mist over the art and a vignette, reorder them and ex
   // The picker shows a live thumbnail for every drawn effect (and picture effects show their pictures).
   // Since v12 the elemental effects, conditions and more are pictures too.
   await expect(panel.locator('.tile[data-effect] img')).toHaveCount(9);
-  await expect(panel.locator('.tile[data-effect-picture] img')).toHaveCount(39);
+  await expect(panel.locator('.tile[data-effect-picture] img')).toHaveCount(47);
 
   await panel.getByRole('button', { name: /^Outer glow$/ }).click();
   await panel.getByRole('button', { name: /^Mist$/ }).click();
