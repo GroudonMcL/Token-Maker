@@ -33,6 +33,8 @@ export interface ToolState {
   autoTool: boolean;
   /** What the eyedropper picks: the background colour to remove, or the colour to recolour. Not remembered. */
   eyedropperFor: 'removal' | 'recolor';
+  /** With 'recolor': which recolour, and which of its two colours, the eyedropper picks. Not remembered. */
+  recolorTarget: { index: number; end: 'from' | 'to' };
   /** The Export tab is open: the red export square gets handles to give the token more or less room. Not remembered. */
   editBounds: boolean;
 }
@@ -54,6 +56,7 @@ export const DEFAULTS: ToolState = {
   selectedDecoration: null,
   autoTool: false,
   eyedropperFor: 'removal',
+  recolorTarget: { index: 0, end: 'from' },
   editBounds: false,
 };
 
@@ -94,7 +97,8 @@ export const setTool = (tool: Tool) => toolStore.setState({ tool, autoTool: fals
 /** Turns a tool on or off because a tab was opened or left (Background, Pop-out). */
 export const setAutoTool = (tool: Tool) => toolStore.setState({ tool, autoTool: tool !== 'move' });
 /** The eyedropper, picking a colour for `target`. */
-export const pickColourFor = (target: ToolState['eyedropperFor']) => toolStore.setState({ tool: 'eyedropper', autoTool: false, eyedropperFor: target });
+export const pickColourFor = (target: ToolState['eyedropperFor'], recolorTarget: ToolState['recolorTarget'] = DEFAULTS.recolorTarget) =>
+  toolStore.setState({ tool: 'eyedropper', autoTool: false, eyedropperFor: target, recolorTarget });
 export const setBrush = (patch: Partial<Omit<ToolState, 'tool' | 'autoTool'>>) => toolStore.setState(patch);
 export const selectDecoration = (id: string | null) => toolStore.setState({ selectedDecoration: id });
 /** Shows or hides the red export square's handles (the Export tab's size settings). */

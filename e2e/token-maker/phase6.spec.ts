@@ -107,7 +107,7 @@ test('stack an outer glow, mist over the art and a vignette, reorder them and ex
   await expect(again.getByRole('list', { name: 'Effects, top first' }).getByRole('listitem')).toHaveCount(3);
 });
 
-test('changing placement, colour and intensity', async ({ page, isMobile }) => {
+test('changing placement, colour and opacity', async ({ page, isMobile }) => {
   const m = !!isMobile;
   const panel = await effectsPanel(page);
   await panel.getByRole('button', { name: /^Outer glow$/ }).click();
@@ -120,9 +120,9 @@ test('changing placement, colour and intensity', async ({ page, isMobile }) => {
   expect(behind![3]).toBeLessThan(onBorder![3]! - 30);
 
   await panel.getByRole('radio', { name: 'On border' }).click();
-  const intensity = panel.getByRole('textbox', { name: 'Intensity value' });
-  await intensity.fill('0');
-  await intensity.press('Enter');
+  const opacity = panel.getByRole('textbox', { name: 'Opacity value' });
+  await opacity.fill('0');
+  await opacity.press('Enter');
   const [off] = await exportPixels(page, m, [OUTSIDE]);
   expect(off![3]).toBeLessThan(onBorder![3]! - 30);
 });
@@ -130,7 +130,7 @@ test('changing placement, colour and intensity', async ({ page, isMobile }) => {
 test('three stacked effects stay smooth while a slider moves', async ({ page }) => {
   const panel = await effectsPanel(page);
   for (const name of ['Outer glow', 'Mist', 'Vignette']) await panel.getByRole('button', { name: new RegExp(`^${name}$`) }).click();
-  const slider = panel.getByRole('slider', { name: 'Intensity' });
+  const slider = panel.getByRole('slider', { name: 'Opacity' });
   await slider.scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   // Count how long frames take while the slider moves.

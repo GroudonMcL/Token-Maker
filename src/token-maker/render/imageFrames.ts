@@ -4,7 +4,7 @@
 // token. The built-in picture frames became Frame Maker designs in v11
 // (render/builtInDesigns.ts).
 
-import type { ImageFrame, ImageFrameSource } from '../document/types';
+import type { ImageFrame, ImageFrameSource, TokenDocument } from '../document/types';
 import type { Ctx } from './frameKit';
 
 /** The asset-store key of a picture frame. */
@@ -14,7 +14,19 @@ export const frameAssetId = (source: ImageFrameSource) => `frame:${source.type}:
 export const activeImageFrame = (frame: { kind: string; image: ImageFrame | null }): ImageFrame | null =>
   frame.kind === 'image' ? frame.image : null;
 
-/** Draws a frame picture filling the token's square (fitted, keeping its shape), centred on the origin. */
+/** Most of the token's half-size the outer spacing may take from a picture frame. */
+const MAX_PICTURE_MARGIN = 0.6;
+
+/**
+ * How big a picture frame is drawn, as a share of the token's square (v13):
+ * the outer spacing is room round it, as it is round every other frame.
+ * Its hole and its outer edge shrink with it.
+ */
+export function imageFrameScale(doc: Pick<TokenDocument, 'frame' | 'size'>): number {
+  return 1 - Math.min(MAX_PICTURE_MARGIN, Math.max(0, doc.frame.outerSpacing / doc.size.squares));
+}
+
+/** Draws a frame picture filling the token's square (fitted, keeping its shape), centred on the origin; pass R × imageFrameScale(). */
 export function drawImageFrame(ctx: Ctx, image: { image: CanvasImageSource; width: number; height: number }, R: number): void {
   const k = (2 * R) / Math.max(image.width, image.height);
   const w = image.width * k;

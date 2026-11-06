@@ -1,7 +1,7 @@
 // Changes to the label (DESIGN.md §6.10), shared by the Label section and
 // dragging the label on the canvas.
 
-import { newLabel, RING_TEXT_STYLE } from '../document/defaults';
+import { newLabel, RING_TEXT_STYLE, SHAPE_TEXT_STYLE } from '../document/defaults';
 import type { LabelAnchor, LabelSettings, LabelShape, TokenDocument } from '../document/types';
 import { labelPlacement, labelSnapPoint, LABEL_SNAP, RING_SNAP } from '../render/label';
 import type { Point } from '../render/shapes';
@@ -52,19 +52,22 @@ export function setLabelAnchor(anchor: LabelAnchor): void {
 /** Labels with no shape behind the words: their text needs the light, outlined style. */
 const shapeless = (shape: LabelShape) => shape === 'ring' || shape === 'plain';
 
-const SHAPE_TEXT = { color: newLabel().color };
+/** True when the label's text still has `style`'s colour and outline (not changed by hand). */
+const hasStyle = (l: LabelSettings, style: typeof RING_TEXT_STYLE) =>
+  l.color === style.color && l.textOutline.width === style.textOutline.width && (style.textOutline.width === 0 || l.textOutline.color === style.textOutline.color);
 
 /**
- * A new shape. Ring and plain text have no shape behind them, so dark text
- * meant for a banner switches to the light ring colour (and back),
- * unless its colour was changed by hand.
+ * A new shape. Ring and plain text have no shape behind them, so they use
+ * light outlined letters; a banner, plaque, pill or box uses dark letters
+ * with no outline. Switching between the two swaps them, unless the text's
+ * colour or outline was changed by hand.
  */
 export function setLabelShape(shape: LabelShape): void {
   updateLabel((l) => {
     if (l.shape === shape) return l;
     let next: LabelSettings = { ...l, shape };
-    if (shapeless(shape) && !shapeless(l.shape) && l.color === SHAPE_TEXT.color) next = { ...next, ...RING_TEXT_STYLE };
-    else if (shapeless(l.shape) && !shapeless(shape) && l.color === RING_TEXT_STYLE.color) next = { ...next, ...SHAPE_TEXT };
+    if (shapeless(shape) && !shapeless(l.shape) && hasStyle(l, SHAPE_TEXT_STYLE)) next = { ...next, ...RING_TEXT_STYLE, textOutline: { ...RING_TEXT_STYLE.textOutline } };
+    else if (shapeless(l.shape) && !shapeless(shape) && hasStyle(l, RING_TEXT_STYLE)) next = { ...next, ...SHAPE_TEXT_STYLE, textOutline: { ...SHAPE_TEXT_STYLE.textOutline } };
     if (shape === 'ring' && l.place === 'free') next.angle = angleOf({ x: l.x, y: l.y });
     return next;
   });

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { newLabel, RING_TEXT_STYLE } from '../document/defaults';
+import { newLabel, RING_TEXT_STYLE, SHAPE_TEXT_STYLE } from '../document/defaults';
 import { FONTS } from '../fonts/catalog';
 import { getDoc, resetDoc, undo, updateDoc } from '../state/tokenStore';
 import { LabelSection } from './LabelSection';
@@ -10,7 +10,7 @@ const controlsShown = (container: HTMLElement) => expect(container.querySelector
 beforeEach(() => resetDoc());
 
 describe('Label section', () => {
-  it('adds a banner showing the token name, and removes it again', () => {
+  it('adds ring text showing the token name, and removes it again', () => {
     updateDoc((d) => ({ ...d, name: 'Goblin Boss' }));
     render(<LabelSection />);
     fireEvent.click(screen.getByRole('button', { name: 'Add a label' }));
@@ -22,19 +22,23 @@ describe('Label section', () => {
     expect(getDoc().label).not.toBeNull();
   });
 
-  it('has every shape, and ring text switches to the light outlined style', () => {
+  it('has every shape, Ring text first; a shape behind the text switches to dark letters with no outline, and back', () => {
     updateDoc((d) => ({ ...d, label: newLabel() }));
     const { container } = render(<LabelSection />);
     const shapes = within(screen.getByRole('radiogroup', { name: 'Shape' }));
-    expect(shapes.getAllByRole('radio').map((r) => r.textContent)).toEqual(['Banner', 'Plaque', 'Pill', 'Box', 'Plain text', 'Ring text']);
-    fireEvent.click(shapes.getByRole('radio', { name: 'Ring text' }));
-    expect(getDoc().label).toMatchObject({ shape: 'ring', color: RING_TEXT_STYLE.color });
+    expect(shapes.getAllByRole('radio').map((r) => r.textContent)).toEqual(['Ring text', 'Banner', 'Plaque', 'Pill', 'Box', 'Plain text']);
     // No shape behind ring text, so no shape colour; it gets how much of the ring it may cover.
     expect(screen.queryByText('Shape colour')).toBeNull();
     expect(screen.getByText('Most of the ring it covers')).toBeInTheDocument();
     fireEvent.click(shapes.getByRole('radio', { name: 'Box' }));
-    expect(getDoc().label).toMatchObject({ shape: 'box', color: newLabel().color });
+    expect(getDoc().label).toMatchObject({ shape: 'box', ...SHAPE_TEXT_STYLE });
     expect(screen.getByRole('radiogroup', { name: 'Corners' })).toBeInTheDocument();
+    fireEvent.click(shapes.getByRole('radio', { name: 'Ring text' }));
+    expect(getDoc().label).toMatchObject({ shape: 'ring', ...RING_TEXT_STYLE });
+    // A colour chosen by hand is kept.
+    updateDoc((d) => ({ ...d, label: { ...d.label!, color: '#76ff4a' } }));
+    fireEvent.click(shapes.getByRole('radio', { name: 'Banner' }));
+    expect(getDoc().label?.color).toBe('#76ff4a');
     controlsShown(container);
   });
 
@@ -67,7 +71,7 @@ describe('Label section', () => {
   });
 
   it('bold, italic, alignment and position', () => {
-    updateDoc((d) => ({ ...d, label: newLabel() }));
+    updateDoc((d) => ({ ...d, label: { ...newLabel(), shape: 'banner' } }));
     render(<LabelSection />);
     fireEvent.click(screen.getByRole('button', { name: 'Italic' }));
     expect(getDoc().label?.italic).toBe(true);
@@ -85,23 +89,34 @@ describe('Label section', () => {
     expect(getDoc().label!.y).toBeLessThan(-0.5);
   });
 
-  it('shrink to fit, a text outline, and no other advanced text styles (owner request)', () => {
-    updateDoc((d) => ({ ...d, label: newLabel() }));
+  it('shrink to fit, a text outline, and letter spacing and a text shadow in Advanced', () => {
+    updateDoc((d) => ({ ...d, label: { ...newLabel(), textOutline: { width: 0, color: '#040839' } } }));
     render(<LabelSection />);
     fireEvent.click(screen.getByRole('switch', { name: 'Shrink long names to fit' }));
     expect(getDoc().label?.shrinkToFit).toBe(false);
-    expect(screen.queryByRole('button', { name: 'Advanced' })).toBeNull();
-    expect(screen.queryByText('Letter spacing')).toBeNull();
-    expect(screen.queryByRole('switch', { name: 'Text shadow' })).toBeNull();
-    // The text outline is back in the main settings; its colour shows once it has a width.
+    // The text outline is in the main settings; its colour shows once it has a width.
     expect(screen.queryByText('Text outline colour')).toBeNull();
     fireEvent.change(screen.getByRole('slider', { name: /^Text outline/ }), { target: { value: '2' } });
     expect(getDoc().label?.textOutline.width).toBeCloseTo(0.04);
     expect(screen.getByText('Text outline colour')).toBeInTheDocument();
+    // Letter spacing and the text shadow are back, in Advanced.
+    expect(screen.getByText('Letter spacing')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
+    fireEvent.change(screen.getByRole('slider', { name: /^Letter spacing/ }), { target: { value: '20' } });
+    expect(getDoc().label?.letterSpacing).toBeCloseTo(0.2);
+    expect(screen.queryByText('Shadow colour')).toBeNull();
+    fireEvent.click(screen.getByRole('switch', { name: 'Text shadow' }));
+    expect(getDoc().label?.shadow.enabled).toBe(true);
+    expect(screen.getByText('Shadow colour')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('slider', { name: /^Shadow opacity/ }), { target: { value: '30' } });
+    expect(getDoc().label?.shadow.opacity).toBeCloseTo(0.3);
   });
 
-  it('starts at 7 % of a square, black, bold, with no outline round the letters', () => {
+  it('starts as ring text in Spectral, 7 % of a square, bold, #fff4dc with a 0.6 % #040839 outline (owner’s defaults)', () => {
     const l = newLabel();
-    expect([Math.round(l.size * 50 * 10) / 10, l.color, l.bold, l.textOutline.width]).toEqual([7, '#000000', true, 0]);
+    expect(l).toMatchObject({ shape: 'ring', font: 'spectral', color: '#fff4dc', bold: true, textOutline: { color: '#040839' } });
+    expect(Math.round(l.size * 50 * 10) / 10).toBe(7);
+    expect(Math.round(l.textOutline.width * 50 * 100) / 100).toBe(0.6);
+    expect(FONTS[0]!.id).toBe('spectral');
   });
 });

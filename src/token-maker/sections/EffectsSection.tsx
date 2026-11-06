@@ -2,12 +2,13 @@ import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Shuffle, Trash2, Upload }
 import { useEffect, useId, useRef, useState } from 'react';
 import { Advanced, ColorSwatches, ControlLabel, DirectionDial, GradientEditor, SegmentedButtons, Slider, Toggle } from '../components';
 import { EFFECT_GROUPS, EFFECTS, effectInfo, MAX_EFFECTS, newEffect, newPictureEffect, type EffectControl } from '../document/defaults';
-import type { BlendMode, EffectKind, EffectLayer, EffectPlacement } from '../document/types';
+import type { BlendMode, EffectKind, EffectLayer, EffectPlacement, Gradient } from '../document/types';
 import { addPictureEffect, uploadPictureEffect } from '../editor/pictureActions';
 import { EFFECT_PICTURES, effectPicture, pictureThumbUrl } from '../render/pictureLibrary';
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { effectThumbnails } from './effectThumbs';
+import { CLIP_OPTIONS, clipHint } from './clipOptions';
 
 const PLACEMENTS: { value: EffectPlacement; label: string }[] = [
   { value: 'behind', label: 'Behind art' },
@@ -22,6 +23,16 @@ const BLENDS: { value: BlendMode; label: string }[] = [
   { value: 'overlay', label: 'Overlay (contrast)' },
   { value: 'soft-light', label: 'Soft light' },
 ];
+
+/** A glow's first gradient: white at its edge, fading into its colour. */
+const glowGradientFrom = (color: string): Gradient => ({
+  type: 'radial',
+  angle: 90,
+  stops: [
+    { offset: 0, color: '#ffffff', opacity: 1 },
+    { offset: 1, color, opacity: 1 },
+  ],
+});
 
 const LAYOUTS = [
   { value: 'scatter', label: 'Scatter' },
@@ -217,14 +228,15 @@ function EffectCard({
   const label = (c: EffectControl, fallback: string) => info.labels?.[c] ?? fallback;
   const where = PLACEMENTS.find((p) => p.value === e.placement)!.label.toLowerCase();
   const swatches = e.kind === 'picture' && e.image?.type === 'library' ? (effectPicture(e.image.id)?.swatches ?? info.swatches) : info.swatches;
-  // Colour only matters for a picture when it's coloured in.
-  const showColor = uses('color') && (e.kind !== 'picture' || e.tint);
+  const glow = e.kind === 'outerGlow' || e.kind === 'innerGlow';
+  // Colour only matters for a picture when it's coloured in, and for a glow when it isn't a gradient.
+  const showColor = uses('color') && (e.kind !== 'picture' || e.tint) && !(glow && e.useGradient);
   return (
     <li className="overlay-card" data-open={open} data-hidden={!e.visible || undefined} data-effect={e.kind} data-effect-id={e.id}>
       <div className="overlay-card__head">
         <button type="button" className="overlay-card__toggle" aria-expanded={open} aria-controls={bodyId} onClick={onToggle}>
           <ChevronDown size={16} aria-hidden="true" className="overlay-card__chevron" />
-          <span className="overlay-card__swatch" style={{ background: e.color }} aria-hidden="true" />
+          <span className="overlay-card__swatch" style={{ background: e.kind === 'gradient' || (glow && e.useGradient) ? gradientCss(e.gradient) : e.color }} aria-hidden="true" />
           <span className="overlay-card__name">{name}</span>
           <span className="overlay-card__note">{where}</span>
         </button>
@@ -244,7 +256,7 @@ function EffectCard({
       <div className="overlay-card__body" id={bodyId} hidden={!open}>
         <SegmentedButtons label="Placement" value={e.placement} options={PLACEMENTS} onChange={(placement) => update(e.id, { placement })} />
         <Slider
-          label="Intensity"
+          label="Opacity"
           unit="%"
           min={0}
           max={100}
@@ -253,18 +265,23 @@ function EffectCard({
           onChange={(intensity) => update(e.id, { intensity }, true)}
           onCommit={commitDoc}
         />
-        <Slider
-          label="Blur"
-          unit="% of a square"
-          min={0}
-          max={25}
-          step={0.5}
-          value={toPct(e.blur)}
-          defaultValue={0}
-          onChange={(v) => update(e.id, { blur: fromPct(v) }, true)}
-          onCommit={commitDoc}
-        />
-        {uses('gradient') && (
+        {glow && (
+          <SegmentedButtons
+            label="Colour with"
+            value={e.useGradient ? 'gradient' : 'solid'}
+            options={[
+              { value: 'solid', label: 'One colour' },
+              { value: 'gradient', label: 'Gradient' },
+            ]}
+            onChange={(v) => {
+              const useGradient = v === 'gradient';
+              // The first time, the gradient starts from the glow's own colour.
+              const untouched = JSON.stringify(e.gradient) === JSON.stringify(start.gradient);
+              update(e.id, useGradient && untouched ? { useGradient, gradient: glowGradientFrom(e.color) } : { useGradient });
+            }}
+          />
+        )}
+        {uses('gradient') && (!glow || e.useGradient) && (
           <GradientEditor
             value={e.gradient}
             onChange={(gradient, transient) => update(e.id, { gradient }, transient)}
@@ -287,20 +304,71 @@ function EffectCard({
             onCommit={commitDoc}
           />
         )}
-        <Advanced>
-          {uses('size') && (e.kind !== 'picture' || e.layout === 'scatter') && (
+        {uses('size') && (e.kind !== 'picture' || e.layout === 'scatter') && (
+          <Slider
+            label={label('size', 'Size')}
+            unit="% of a square"
+            min={0}
+            max={e.kind === 'picture' ? 100 : 50}
+            step={0.5}
+            value={toPct(e.size)}
+            defaultValue={toPct(start.size)}
+            onChange={(v) => update(e.id, { size: fromPct(v) }, true)}
+            onCommit={commitDoc}
+          />
+        )}
+        <Slider
+          label="Rotation"
+          unit="°"
+          min={-180}
+          max={180}
+          value={Math.round(e.rotation)}
+          defaultValue={0}
+          onChange={(rotation) => update(e.id, { rotation }, true)}
+          onCommit={commitDoc}
+        />
+        {uses('seed') && (e.kind !== 'picture' || e.layout === 'scatter') && (
+          <div className="effect-seed" data-control="effect-seed">
             <Slider
-              label={label('size', 'Size')}
-              unit="% of a square"
-              min={0}
-              max={e.kind === 'picture' ? 100 : 50}
-              step={0.5}
-              value={toPct(e.size)}
-              defaultValue={toPct(start.size)}
-              onChange={(v) => update(e.id, { size: fromPct(v) }, true)}
+              label="Seed"
+              min={1}
+              max={999}
+              value={Math.min(999, Math.max(1, e.seed))}
+              defaultValue={start.seed}
+              onChange={(seed) => update(e.id, { seed }, true)}
               onCommit={commitDoc}
             />
-          )}
+            <button type="button" className="btn btn--ghost btn--small" data-control="button" onClick={() => update(e.id, { seed: 1 + Math.floor(Math.random() * 999) })}>
+              <Shuffle size={14} aria-hidden="true" />
+              Shuffle
+            </button>
+          </div>
+        )}
+        <SegmentedButtons label="Keep inside" value={e.clip} options={CLIP_OPTIONS} onChange={(clip) => update(e.id, { clip })} />
+        <p className="control__hint">{clipHint(e.clip)}</p>
+        <Advanced>
+          <Slider
+            label="Scale"
+            unit="%"
+            min={10}
+            max={300}
+            value={Math.round(e.scale * 100)}
+            defaultValue={100}
+            onChange={(v) => update(e.id, { scale: v / 100 }, true)}
+            onCommit={commitDoc}
+          />
+          <Toggle label="Flip" checked={e.flip} onChange={(flip) => update(e.id, { flip })} />
+          <Slider
+            label="Blur"
+            unit="% of a square"
+            min={0}
+            max={25}
+            step={0.5}
+            value={toPct(e.blur)}
+            defaultValue={0}
+            onChange={(v) => update(e.id, { blur: fromPct(v) }, true)}
+            onCommit={commitDoc}
+          />
           {uses('spread') && (e.kind !== 'picture' || e.layout === 'scatter') && (
             <Slider
               label={label('spread', 'Spread')}
@@ -335,17 +403,15 @@ function EffectCard({
               ))}
             </select>
           </div>
-          {uses('seed') && (e.kind !== 'picture' || e.layout === 'scatter') && (
-            <button type="button" className="btn btn--ghost btn--small" data-control="button" onClick={() => update(e.id, { seed: (e.seed % 9999) + 1 })}>
-              <Shuffle size={14} aria-hidden="true" />
-              Shuffle
-            </button>
-          )}
         </Advanced>
       </div>
     </li>
   );
 }
+
+/** A CSS picture of a gradient, for the card's swatch. */
+const gradientCss = (g: Gradient) =>
+  `linear-gradient(90deg, ${[...g.stops].sort((a, b) => a.offset - b.offset).map((st) => `${st.color} ${Math.round(st.offset * 100)}%`).join(', ')})`;
 
 const SIDES = ['the right', 'bottom right', 'the bottom', 'bottom left', 'the left', 'top left', 'the top', 'top right'];
 const sideWords = (d: number) => SIDES[Math.round((((d % 360) + 360) % 360) / 45) % 8]!;

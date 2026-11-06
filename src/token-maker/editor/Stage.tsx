@@ -362,7 +362,13 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       toast(recolor ? 'Tap on the picture to pick the colour to change.' : 'Tap on the picture to pick its background colour.', 'error');
       return;
     }
-    if (recolor) updateDoc((d) => ({ ...d, art: { ...d.art, adjust: { ...d.art.adjust, recolorColor: colour } } }));
+    if (recolor) {
+      const { index, end } = toolStore.getState().recolorTarget;
+      updateDoc((d) => ({
+        ...d,
+        art: { ...d.art, adjust: { ...d.art.adjust, recolors: d.art.adjust.recolors.map((r, i) => (i === index ? { ...r, [end]: colour } : r)) } },
+      }));
+    }
     else updateDoc((d) => ({ ...d, art: { ...d.art, removal: { ...d.art.removal, enabled: true, color: colour } } }));
     setTool('move');
   };
@@ -573,7 +579,8 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     }
   };
   // ---- The red export square's handles (Export tab): more or less room round the token ----
-  const editBounds = useTool((s) => s.editBounds) && !!art && tool === 'move';
+  // Shown with or without art, so the room round a frame can be set before a picture is added.
+  const editBounds = useTool((s) => s.editBounds) && tool === 'move';
   const boundsDist = (e: ReactPointerEvent) => {
     const rect = stageRef.current!.getBoundingClientRect();
     return Math.max(Math.abs(e.clientX - rect.left - cx), Math.abs(e.clientY - rect.top - cy), 1);
@@ -712,7 +719,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
         style={{ width: R * 2, height: R * 2, left: cx - R, top: cy - R }}
       />
       <canvas ref={maskRef} className="stage__mask" aria-hidden="true" />
-      {art && (
+      {(art || editBounds) && (
         // The exported picture's edge: anything outside it is cut off.
         <svg className="stage__overlay" width={box.width} height={box.height} aria-hidden="true">
           <rect className="stage__bounds" data-testid="export-bounds" data-editing={editBounds || undefined} x={cx - R} y={cy - R} width={R * 2} height={R * 2} />
@@ -901,6 +908,7 @@ function ToolBar({ bottom }: { bottom: number }) {
   const mode = useTool((s) => s.brushMode);
   const popOutMode = useTool((s) => s.popOutMode);
   const eyedropperFor = useTool((s) => s.eyedropperFor);
+  const recolorEnd = useTool((s) => s.recolorTarget.end);
   const canUndo = useCanUndo();
   const names: Record<string, string> = { brush: 'Brush', background: 'Move background', popout: 'Pop-out brush', eyedropper: 'Eyedropper' };
   return (
@@ -938,7 +946,7 @@ function ToolBar({ bottom }: { bottom: number }) {
       ) : tool === 'background' ? (
         <span className="stage__tool-hint">Drag to move the background, or a corner to resize it</span>
       ) : (
-        <span className="stage__tool-hint">{eyedropperFor === 'recolor' ? 'Tap the colour to change' : 'Tap the background colour'}</span>
+        <span className="stage__tool-hint">{eyedropperFor === 'recolor' ? (recolorEnd === 'to' ? 'Tap the colour to change it to' : 'Tap the colour to change') : 'Tap the background colour'}</span>
       )}
       <button type="button" className="btn btn--primary btn--small" onClick={() => setTool('move')}>
         <Check size={16} aria-hidden="true" />

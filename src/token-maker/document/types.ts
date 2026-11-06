@@ -4,7 +4,7 @@
 import type { FrameProject } from '../frameMaker/share/frameDesign';
 import type { FrameStyle, ShapeId } from '../render/catalog';
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 export type SizePreset = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'custom';
 
@@ -77,12 +77,22 @@ export interface ImageAdjustments {
   grayscale: number;
   sepia: number;
   invert: boolean;
-  /** Recolour: the colour to change (#rrggbb), or null for none. */
-  recolorColor: string | null;
-  /** Degrees round the colour wheel to turn that colour (-180…180). */
-  recolorShift: number;
-  /** 0…100: how wide a range of colours around it changes too. */
-  recolorBreadth: number;
+  /** Recolours (v13), applied in order: each turns one colour of the picture into another. */
+  recolors: Recolor[];
+}
+
+/**
+ * One recolour (v13): pixels near `from` take on `to`, keeping their own
+ * shading, so white can become red and black can become gold (the v12
+ * recolour only turned hues, so it could do nothing with greys).
+ */
+export interface Recolor {
+  /** The colour to change (#rrggbb). */
+  from: string;
+  /** What it becomes (#rrggbb). */
+  to: string;
+  /** 0…100: how different a colour may be from `from` and still change. */
+  breadth: number;
 }
 
 export interface BackgroundRemoval {
@@ -342,6 +352,13 @@ export type PictureSource = { type: 'library'; id: string } | { type: 'upload'; 
 export type EffectPlacement = 'behind' | 'over' | 'border';
 
 /**
+ * What an effect or decoration is kept inside (v13): nothing (it may reach
+ * anywhere), the whole token's outline, the frame's own drawn parts, the
+ * opening the background fills, or the art's own visible pixels.
+ */
+export type ClipTarget = 'none' | 'token' | 'frame' | 'background' | 'art';
+
+/**
  * One effect in the stack, drawn bottom of the list first within its
  * placement. Every kind shares these fields.
  */
@@ -350,7 +367,7 @@ export interface EffectLayer {
   kind: EffectKind;
   visible: boolean;
   placement: EffectPlacement;
-  /** 0…100: how strong it is. */
+  /** 0…100: how see-through it is (shown as Opacity). */
   intensity: number;
   color: string;
   /** Per square: how far it reaches (flame height, glow width, particle size). */
@@ -375,6 +392,16 @@ export interface EffectLayer {
   layout: 'scatter' | 'fill';
   /** A picture effect: coloured with `color` instead of its own colours (v8). */
   tint: boolean;
+  /** Degrees, clockwise: the whole effect turned round the token's centre (v13). */
+  rotation: number;
+  /** The whole effect scaled round the token's centre, 1 = as drawn (v13). */
+  scale: number;
+  /** Flipped left to right (v13). */
+  flip: boolean;
+  /** Glows: coloured with `gradient` instead of `color` (v13). */
+  useGradient: boolean;
+  /** What it is kept inside (v13). */
+  clip: ClipTarget;
 }
 
 // ---- Layers built in later phases. Kept minimal so the shape is settled now. ----
@@ -438,6 +465,8 @@ export interface Decoration {
   tint: boolean;
   /** Drawn under the frame (after the art), so the frame covers it: wings or horns tucked behind the border. */
   underFrame: boolean;
+  /** What it is kept inside (v13). */
+  clip: ClipTarget;
 }
 
 // ---- Phase 8: the label (DESIGN.md §6.10) ----
