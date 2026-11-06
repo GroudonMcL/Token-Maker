@@ -17,6 +17,8 @@ import { effectPicture } from './pictureLibrary';
 import type { RenderSource } from './render';
 import { tracePolygon, type Ctx } from './frameKit';
 import { shapePolygon, type Point } from './shapes';
+import { shadowOnly, traceBeyond } from './effectKit';
+import { EFFECT_STYLES } from './effectStyles';
 
 /** One drawing step of an effect. */
 export interface Pass {
@@ -66,28 +68,6 @@ function normalize(v: Point): Point {
 /** The way flames, mist and smoke go: out from the edge, bent upwards. */
 function rising(s: EffectScene, p: EdgePoint, lift: number): Point {
   return normalize({ x: p.nx * (s.border ? 1 : 0.45) + UP.x * lift, y: p.ny * (s.border ? 1 : 0.45) + UP.y * lift });
-}
-
-/** Draws only the blurred shadow of `draw`: the shape itself is drawn far off the canvas. */
-function shadowOnly(ctx: Ctx, s: EffectScene, color: string, blur: number, draw: (c: Ctx) => void): void {
-  const far = s.area.R * 8 + blur * 4;
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = Math.max(0.5, blur);
-  ctx.shadowOffsetX = far;
-  ctx.translate(-far, 0);
-  draw(ctx);
-  ctx.restore();
-}
-
-/** Traces a rectangle well beyond the token (for "everything but" fills). */
-function traceBeyond(ctx: Ctx, s: EffectScene): void {
-  const r = s.area.R * 3;
-  ctx.moveTo(-r, -r);
-  ctx.lineTo(r, -r);
-  ctx.lineTo(r, r);
-  ctx.lineTo(-r, r);
-  ctx.closePath();
 }
 
 /** A soft round blob, stretched sideways by `stretch`. */
@@ -351,13 +331,24 @@ const picture: Painter = (s) => {
   ];
 };
 
+/**
+ * An effect with several looks (effectStyles.ts): draws the one its Style
+ * picks, or the classic look for the first style, an unknown one, or where
+ * the picked look doesn't apply.
+ */
+function styled(kind: EffectKind, classic: Painter): Painter {
+  const styles = EFFECT_STYLES[kind];
+  if (!styles) return classic;
+  return (s) => styles.find((x) => x.id === s.fx.style)?.paint?.(s) ?? classic(s);
+}
+
 export const PAINTERS: Record<EffectKind, Painter> = {
-  innerGlow,
-  outerGlow,
-  mist,
-  smoke,
+  innerGlow: styled('innerGlow', innerGlow),
+  outerGlow: styled('outerGlow', outerGlow),
+  mist: styled('mist', mist),
+  smoke: styled('smoke', smoke),
   vignette: overlay('vignette'),
   gradient: overlay('gradient'),
-  edgeShadow: overlay('shadow'),
+  edgeShadow: styled('edgeShadow', overlay('shadow')),
   picture,
 };

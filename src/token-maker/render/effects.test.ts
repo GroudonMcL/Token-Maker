@@ -8,6 +8,7 @@ import { createDocument, EFFECTS, newEffect, newPictureEffect } from '../documen
 import type { EffectKind, EffectLayer, EffectPlacement, TokenDocument } from '../document/types';
 import { setCanvasFactory } from '../image/processedArt';
 import { PAINTERS } from './effectPainters';
+import { EFFECT_STYLES } from './effectStyles';
 import { clearEffectCache, drawEffect, type EffectArea } from './effects';
 import type { Ctx } from './frameKit';
 import { computeInsets } from '../document/sizing';
@@ -96,6 +97,25 @@ describe('every effect', () => {
       expect(same(first, second)).toBe(true);
       expect(changed(plain, first), `${kind} ${placement} changed nothing`).toBeGreaterThan(20);
     });
+  });
+
+  // Each look an effect can have (Style) draws something of its own, in every placement.
+  const STYLES = Object.entries(EFFECT_STYLES).flatMap(([kind, styles]) => styles!.slice(1).map((st) => [kind as EffectKind, st.id] as const));
+  describe.each(PLACEMENTS)('placed %s', (placement) => {
+    it.each(STYLES)('%s in the %s style draws something, the same way every time', (kind, style) => {
+      const doc = token([{ kind, placement, style }]);
+      clearEffectCache();
+      const first = draw(doc);
+      clearEffectCache();
+      expect(same(first, draw(doc))).toBe(true);
+      expect(changed(plain, first), `${kind} ${style} ${placement} changed nothing`).toBeGreaterThan(20);
+    });
+  });
+
+  it.each(STYLES)('%s: the %s style looks different from the classic look over the art', (kind, style) => {
+    const classic = draw(token([{ kind, placement: kind === 'outerGlow' ? 'border' : 'over' }]));
+    const styled = draw(token([{ kind, placement: kind === 'outerGlow' ? 'border' : 'over', style }]));
+    expect(changed(classic, styled)).toBeGreaterThan(20);
   });
 
   it.each(RANDOM)('%s: Shuffle (another seed) gives another layout', (kind) => {

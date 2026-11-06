@@ -22,6 +22,7 @@ import type {
 import { SCHEMA_VERSION } from './types';
 import { DEFAULT_FONT } from '../fonts/catalog';
 import { effectPicture } from '../render/pictureLibrary';
+import { EFFECT_STYLES } from '../render/effectStyles';
 
 /** Creature sizes (DESIGN.md §2). Tiny covers half a square and Small 0.8 of one (owner request, v8). */
 export const SIZE_PRESETS: { id: Exclude<SizePreset, 'custom'>; name: string; squares: number }[] = [
@@ -242,6 +243,7 @@ export function newEffect(kind: EffectKind, id = Math.random().toString(36).slic
     flip: false,
     useGradient: false,
     clip: [],
+    style: EFFECT_STYLES[kind]?.[0]?.id ?? '',
     ...d,
     gradient: copyGradient(d.gradient ?? DEFAULT_GRADIENT),
   };

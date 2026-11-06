@@ -231,7 +231,7 @@ function passLayer(scene: EffectScene, pass: Pass, index: number, size: number, 
   const { fx, area } = scene;
   // Everything that changes the picture; not Intensity, blend mode or visibility, which apply when compositing.
   const extra = fx.kind === 'gradient' || glowGradient(fx) ? fx.gradient : fx.kind === 'picture' ? [fx.image, fx.layout, fx.tint] : 0;
-  const key = JSON.stringify([fx.kind, fx.placement, fx.color, fx.size, fx.spread, fx.seed, fx.angle, fx.softness, extra, index, area, size, scene.time, subjectKey, Math.round(blurPx * 10), fx.rotation, fx.scale, fx.flip, glowGradient(fx)]);
+  const key = JSON.stringify([fx.kind, fx.style, fx.placement, fx.color, fx.size, fx.spread, fx.seed, fx.angle, fx.softness, extra, index, area, size, scene.time, subjectKey, Math.round(blurPx * 10), fx.rotation, fx.scale, fx.flip, glowGradient(fx)]);
   const hit = cache.get(key);
   if (hit) {
     cache.delete(key);

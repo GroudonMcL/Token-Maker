@@ -7,6 +7,7 @@ import { readFrameDesign } from '../frameMaker/share/frameDesign';
 import { builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
 import { cleanChoices } from '../frameMaker/project/colourSlots';
 import { FRAME_STYLES, SHAPES } from '../render/catalog';
+import { EFFECT_STYLES } from '../render/effectStyles';
 import {
   copyGradient,
   createDocument,
@@ -157,6 +158,9 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
     const label = isObject(doc.label) && !isObject(doc.label.shadow) ? { ...doc.label, shadow: { enabled: false } } : doc.label;
     return { ...doc, effects: withClip(doc.effects), decorations: withClip(doc.decorations), label };
   },
+  // v14 → v15: effects can have several looks (Style). Saved effects keep their classic look
+  // (filled in by sanitize).
+  14: (doc) => doc,
 };
 
 /** A colour turned `degrees` round the colour wheel, keeping its lightness and strength (the v12 recolour). */
@@ -374,6 +378,7 @@ function effect(raw: Json, index: number): EffectLayer | null {
     flip: bool(raw.flip, d.flip),
     useGradient: bool(raw.useGradient, d.useGradient),
     clip: clipTargets(raw.clip, d.clip),
+    style: oneOf(raw.style, (EFFECT_STYLES[d.kind] ?? []).map((x) => x.id), d.style),
   };
 }
 

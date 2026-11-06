@@ -489,3 +489,25 @@ describe('v13 → v14', () => {
     expect(back.lighting.blend).toBe('normal');
   });
 });
+
+describe('v14 → v15', () => {
+  const v14 = () => ({ ...JSON.parse(JSON.stringify(createDocument())), schemaVersion: 14 });
+
+  it('saved effects keep their classic look', () => {
+    const old = v14();
+    old.effects = [newEffect('outerGlow', 'a'), newEffect('mist', 'b'), newEffect('vignette', 'c')].map(({ style: _style, ...e }) => e);
+    const doc = migrateDocument(old);
+    expect(doc.effects.map((e) => e.style)).toEqual(['soft', 'haze', '']);
+  });
+
+  it('keeps a known style and replaces an unknown one with the classic look', () => {
+    const doc = createDocument();
+    doc.effects = [
+      { ...newEffect('outerGlow', 'a'), style: 'aura' },
+      { ...newEffect('smoke', 'b'), style: 'sparkly' },
+      { ...newEffect('vignette', 'c'), style: 'rays' },
+    ];
+    const back = migrateDocument(JSON.parse(JSON.stringify(doc)));
+    expect(back.effects.map((e) => e.style)).toEqual(['aura', 'puffs', '']);
+  });
+});
