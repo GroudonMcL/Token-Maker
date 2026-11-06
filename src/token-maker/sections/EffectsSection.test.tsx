@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { EFFECT_PICTURES } from '../render/pictureLibrary';
+import { EFFECT_PICTURES, offeredAsEffect } from '../render/pictureLibrary';
 import { getDoc, resetDoc, undo } from '../state/tokenStore';
 import { EffectsSection } from './EffectsSection';
 
@@ -39,12 +39,14 @@ describe('Effects section', () => {
     render(<EffectsSection />);
     const group = (name: string) => within(screen.getByRole('group', { name }));
     expect(group('Elemental').getByRole('button', { name: 'Fire' })).toBeInTheDocument();
-    expect(group('Conditions').getByRole('button', { name: 'Blood spatter' })).toBeInTheDocument();
-    expect(group('Conditions').getByRole('button', { name: 'Petrified' })).toBeInTheDocument();
+    expect(group('Conditions').getByRole('button', { name: 'Blood splat' })).toBeInTheDocument();
+    expect(group('Conditions').getByRole('button', { name: 'Petrified marble' })).toBeInTheDocument();
     expect(group('Atmosphere').getByRole('button', { name: 'Lens flare' })).toBeInTheDocument();
     expect(group('Overlays').getByRole('button', { name: 'Cobwebs' })).toBeInTheDocument();
-    // Each built-in picture is listed once.
-    for (const p of EFFECT_PICTURES) expect(document.querySelectorAll(`[data-effect-picture="${p.id}"]`)).toHaveLength(1);
+    // Each picture offered as an effect is listed once; the rest (decorations only, or retired) not at all.
+    for (const p of EFFECT_PICTURES) expect(document.querySelectorAll(`[data-effect-picture="${p.id}"]`), p.id).toHaveLength(offeredAsEffect(p) ? 1 : 0);
+    expect(screen.queryByRole('button', { name: 'Poison gas' })).toBeNull(); // now a decoration only
+    expect(screen.queryByRole('button', { name: 'Petrified' })).toBeNull(); // retired
   });
 
   it('reorders, hides and removes effects, each one undo step', () => {
