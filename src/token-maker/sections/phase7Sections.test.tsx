@@ -31,24 +31,13 @@ beforeEach(() => {
 });
 
 describe('Decorations section', () => {
-  it('adds decorations snapped to the frame', () => {
+  it('no longer offers the code-drawn class icons (owner removed them), but still shows ones a token already has', () => {
+    updateDoc((d) => ({ ...d, decorations: [newDecoration('sword', 'a'), newDecoration('shield', 'b')] }));
     render(<DecorationsSection />);
-    fireEvent.click(screen.getByRole('button', { name: /^Dagger$/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Shield$/ }));
-    expect(getDoc().decorations.map((d) => [d.kind, d.place, d.mirror])).toEqual([
-      ['dagger', 'bottomRight', false],
-      ['shield', 'bottom', false],
-    ]);
+    expect(screen.queryByRole('group', { name: 'Class icons' })).toBeNull();
+    for (const name of ['Sword', 'Dagger', 'Shield', 'Staff', 'Bow', 'Holy symbol', 'Lute']) expect(screen.queryByRole('button', { name: new RegExp(`^${name}$`) })).toBeNull();
     const cards = within(screen.getByRole('list', { name: 'Decorations, top first' })).getAllByRole('listitem');
-    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['shield', 'dagger']);
-  });
-
-  it('no longer offers the code-drawn sword (owner removed it), but still shows one a token already has', () => {
-    updateDoc((d) => ({ ...d, decorations: [newDecoration('sword', 'old')] }));
-    render(<DecorationsSection />);
-    expect(within(screen.getByRole('group', { name: 'Class icons' })).queryByRole('button', { name: /^Sword$/ })).toBeNull();
-    const cards = within(screen.getByRole('list', { name: 'Decorations, top first' })).getAllByRole('listitem');
-    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['sword']);
+    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['shield', 'sword']);
   });
 
   it('offers clipart pictures for treasure, creatures and trims (owner request)', () => {
@@ -66,8 +55,9 @@ describe('Decorations section', () => {
   });
 
   it('moves it to another snap point or frees it, mirrors, removes, and undoes', () => {
+    updateDoc((d) => ({ ...d, decorations: [newDecoration('shield', 's')] }));
+    selectDecoration('s');
     render(<DecorationsSection />);
-    fireEvent.click(screen.getByRole('button', { name: /^Shield$/ }));
     const card = screen.getByRole('list', { name: 'Decorations, top first' });
     fireEvent.click(within(card).getByRole('radio', { name: 'Bottom left' }));
     expect(getDoc().decorations[0]!.place).toBe('bottomLeft');
@@ -87,8 +77,9 @@ describe('Decorations section', () => {
   });
 
   it('shows its controls', () => {
+    updateDoc((d) => ({ ...d, decorations: [newDecoration('shield', 's')] }));
+    selectDecoration('s');
     const { container } = render(<DecorationsSection />);
-    fireEvent.click(screen.getByRole('button', { name: /^Shield$/ }));
     controlsShown(container);
   });
 });
