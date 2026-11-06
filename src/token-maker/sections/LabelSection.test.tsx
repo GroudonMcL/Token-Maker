@@ -104,10 +104,13 @@ describe('Label section', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
     fireEvent.change(screen.getByRole('slider', { name: /^Letter spacing/ }), { target: { value: '20' } });
     expect(getDoc().label?.letterSpacing).toBeCloseTo(0.2);
+    // The text shadow starts on (owner’s defaults: 60 % opacity, 0.6 % blur).
+    expect(getDoc().label?.shadow).toMatchObject({ enabled: true, opacity: 0.6, blur: 0.012 });
+    expect(screen.getByText('Shadow colour')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('switch', { name: 'Text shadow' }));
+    expect(getDoc().label?.shadow.enabled).toBe(false);
     expect(screen.queryByText('Shadow colour')).toBeNull();
     fireEvent.click(screen.getByRole('switch', { name: 'Text shadow' }));
-    expect(getDoc().label?.shadow.enabled).toBe(true);
-    expect(screen.getByText('Shadow colour')).toBeInTheDocument();
     fireEvent.change(screen.getByRole('slider', { name: /^Shadow opacity/ }), { target: { value: '30' } });
     expect(getDoc().label?.shadow.opacity).toBeCloseTo(0.3);
   });

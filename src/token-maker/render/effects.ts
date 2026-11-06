@@ -124,20 +124,21 @@ export function drawEffects(
   time = 0,
   assets: AssetMap = NO_ASSETS,
   /**
-   * The mask an effect's Clip setting keeps it inside (v13): a size × size
-   * picture, opaque where it may show. Without it, Clip is ignored.
+   * The mask an effect's Keep inside setting keeps it inside (v14: the parts
+   * chosen, together): a size × size picture, opaque where it may show, or
+   * null when none of them is there. Without it, Keep inside is ignored.
    */
-  clipMask?: (target: ClipTarget) => CanvasImageSource | null,
+  clipMask?: (targets: readonly ClipTarget[]) => CanvasImageSource | null,
 ): void {
   for (const fx of effects) {
     if (!fx.visible || fx.placement !== placement || fx.intensity <= 0) continue;
     const subj = fx.kind === 'outerGlow' && placement !== 'border' ? subject : null;
-    if (fx.clip === 'none' || !clipMask) {
+    if (!fx.clip.length || !clipMask) {
       drawEffect(ctx, fx, area, size, subj, time, assets);
       continue;
     }
     const mask = clipMask(fx.clip);
-    if (!mask) continue; // nothing to show it inside (no frame, no art)
+    if (!mask) continue; // nothing to show it inside (no frame, no art, no pop-out)
     // Drawn on a layer of its own, cut to the mask, then mixed in with its blend mode.
     const layer = newCanvas(size, size);
     const lctx = layer.getContext('2d') as Ctx;

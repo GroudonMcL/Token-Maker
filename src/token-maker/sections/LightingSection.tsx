@@ -2,7 +2,8 @@ import { Flame, FlameKindling, Moon, Sparkles, Sun, Zap } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { ColorSwatches, ControlLabel, DirectionDial, Slider, Toggle } from '../components';
 import { DEFAULT_LIGHTING, LIGHT_PRESETS } from '../document/defaults';
-import type { LightingSettings, LightPresetId } from '../document/types';
+import type { BlendMode, LightingSettings, LightPresetId } from '../document/types';
+import { BLENDS } from './blendOptions';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 
 const SWATCHES = ['#ffe2b0', '#ffa04a', '#ff6a22', '#fff1b8', '#9db8ff', '#76ff4a', '#8b5cd6', '#ff4a6a', '#ffffff'];
@@ -26,6 +27,7 @@ const setLight = (patch: Partial<LightingSettings>, transient = false) =>
 export function LightingSection() {
   const l = useDoc((d) => d.lighting);
   const whatId = useId();
+  const blendId = useId();
   const applyPreset = (id: LightPresetId) => {
     // Clicking the preset in use turns it off again: back to a new token's light (none).
     if (l.enabled && l.preset === id) {
@@ -77,6 +79,16 @@ export function LightingSection() {
             onChange={(strength) => setLight({ strength }, true)}
             onCommit={commitDoc}
           />
+          <div className="control" data-control="light-blend">
+            <ControlLabel htmlFor={blendId} label="Blend mode" />
+            <select id={blendId} className="text-input" value={l.blend} onChange={(ev) => setLight({ blend: ev.target.value as BlendMode })}>
+              {BLENDS.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <Slider
             label="Darkness away from the light"
             unit="%"

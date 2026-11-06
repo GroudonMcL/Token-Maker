@@ -10,6 +10,7 @@ import { setCanvasFactory } from '../image/processedArt';
 import { PAINTERS } from './effectPainters';
 import { clearEffectCache, drawEffect, type EffectArea } from './effects';
 import type { Ctx } from './frameKit';
+import { computeInsets } from '../document/sizing';
 import { renderToken, type RenderSource } from './render';
 import { pictureAssetId } from './pictureLibrary';
 import { cutOutArt } from './sampleArt';
@@ -269,17 +270,32 @@ describe('owner feedback v13: turning, scaling, flipping, gradient glows and Kee
   it('Keep inside: Background keeps an effect inside the opening, Token inside the outline', () => {
     const glow = (clip: EffectLayer['clip']) => draw(token([{ kind: 'outerGlow', size: 0.4, clip }]));
     const without = at(draw(token([])), SIZE - 3, R); // just the drop shadow there
-    expect(at(glow('none'), SIZE - 3, R)).not.toEqual(without); // reaches past the frame
-    expect(at(glow('token'), SIZE - 3, R)).toEqual(without);
-    expect(at(glow('background'), SIZE - 3, R)).toEqual(without);
+    expect(at(glow([]), SIZE - 3, R)).not.toEqual(without); // reaches past the frame
+    expect(at(glow(['token']), SIZE - 3, R)).toEqual(without);
+    expect(at(glow(['background']), SIZE - 3, R)).toEqual(without);
+    expect(at(glow(['outside']), SIZE - 3, R)).toEqual(at(glow([]), SIZE - 3, R));
     // A tint over the art kept to the frame draws nothing in the middle of the opening.
     const tint = (clip: EffectLayer['clip']) => draw(token([{ kind: 'vignette', spread: 100, clip, color: '#ff00ff', blend: 'normal', intensity: 100 }]));
-    expect(changed(draw(token([])), tint('frame'))).toBeLessThan(changed(draw(token([])), tint('none')));
+    expect(changed(draw(token([])), tint(['frame']))).toBeLessThan(changed(draw(token([])), tint([])));
     // Kept to the art: nothing where the cut-out art is see-through.
-    const art = draw(token([{ kind: 'vignette', spread: 100, clip: 'art', color: '#ff00ff', blend: 'normal', intensity: 100 }]));
+    const art = draw(token([{ kind: 'vignette', spread: 100, clip: ['art'], color: '#ff00ff', blend: 'normal', intensity: 100 }]));
     const none = draw(token([]));
     let outsideArt = 0;
     for (let i = 0; i < art.length; i += 4) if (art[i] !== none[i] && art[i + 3] === 0) outsideArt++;
     expect(outsideArt).toBe(0);
+  });
+
+  it('Keep inside: Background and Art stop at the frame’s inner edge, so nothing spills onto the frame', () => {
+    const base = token([]);
+    const ins = computeInsets(base);
+    // The middle of the frame band, on the right.
+    const bandX = SIZE - R * ((ins.frameOuter + ins.frameInner) / 2);
+    const tint = (clip: EffectLayer['clip']) => draw(token([{ kind: 'vignette', spread: 100, clip, color: '#ff00ff', blend: 'normal', intensity: 100 }]));
+    const none = draw(base);
+    for (const clip of [['background'], ['art'], ['background', 'art']] as EffectLayer['clip'][]) {
+      const img = tint(clip);
+      expect(changed(none, img)).toBeGreaterThan(0);
+      expect(at(img, bandX, R)).toEqual(at(none, bandX, R));
+    }
   });
 });

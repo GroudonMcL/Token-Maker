@@ -293,7 +293,7 @@ describe('placing the label', () => {
   });
 
   it('the label is drawn on top of everything, inside the square', () => {
-    const doc = tokenWith({ shape: 'box', place: 'free', x: 0.95, y: 0, fill: '#ff0000', size: 0.3 });
+    const doc = tokenWith({ shape: 'box', place: 'free', x: 0.95, y: 0, fill: '#ff0000', size: 0.3, shadow: { ...newLabel().shadow, enabled: false } });
     const canvas = createCanvas(300, 300);
     const ctx = canvas.getContext('2d');
     ctx.translate(20, 20);

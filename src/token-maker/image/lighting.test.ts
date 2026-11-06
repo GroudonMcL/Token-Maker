@@ -5,6 +5,13 @@ import type { LightingSettings } from '../document/types';
 import type { PixelBuffer } from './adjust';
 import { applyLighting, artLight, imageAngle, type ArtLight } from './lighting';
 import { artEdits, isUnedited } from './process';
+import { createCanvas } from '@napi-rs/canvas';
+import type { TokenDocument } from '../document/types';
+import type { Ctx } from '../render/frameKit';
+import { renderToken } from '../render/render';
+import { setCanvasFactory } from './processedArt';
+
+setCanvasFactory((w, h) => createCanvas(w, h) as unknown as HTMLCanvasElement);
 
 const grey = (w = 40, h = 40, alpha: (x: number, y: number) => number = () => 255): PixelBuffer => {
   const data = new Uint8ClampedArray(w * h * 4);
@@ -14,6 +21,7 @@ const grey = (w = 40, h = 40, alpha: (x: number, y: number) => number = () => 25
 const px = (b: PixelBuffer, x: number, y: number) => Array.from(b.data.slice((y * b.width + x) * 4, (y * b.width + x) * 4 + 4));
 const lum = (p: number[]) => 0.299 * p[0]! + 0.587 * p[1]! + 0.114 * p[2]!;
 const light = (patch: Partial<ArtLight> = {}): ArtLight => ({
+  blend: 'normal',
   angle: 90,
   color: '#ffffff',
   strength: 80,
@@ -109,5 +117,45 @@ describe('lighting', () => {
     expect(LIGHT_PRESETS.map((p) => p.name)).toEqual(['Torchlight', 'Moonlight', 'Holy glow', 'Fel green', 'Firelight', 'Underdark']);
     expect(LIGHT_PRESETS.find((p) => p.id === 'torchlight')!.settings.direction).toBe(90); // from below
     expect(LIGHT_PRESETS.find((p) => p.id === 'moonlight')!.settings.direction).toBe(270); // from above
+  });
+});
+
+describe('light blend mode (v14)', () => {
+  it('Normal lights as before; Multiply only darkens and Screen only lightens', () => {
+    const lit = (blend: ArtLight['blend']) => {
+      const b = grey();
+      applyLighting(b, light({ blend }));
+      return b;
+    };
+    const normal = lit('normal');
+    const plain = grey();
+    applyLighting(plain, light());
+    expect(Array.from(normal.data)).toEqual(Array.from(plain.data));
+    const multiply = lit('multiply');
+    const screen = lit('screen');
+    for (let i = 0; i < multiply.data.length; i += 4) {
+      expect(multiply.data[i]!).toBeLessThanOrEqual(129);
+      expect(screen.data[i]!).toBeGreaterThanOrEqual(127);
+    }
+    expect(Array.from(lit('overlay').data)).not.toEqual(Array.from(normal.data));
+  });
+
+  it('the art light carries the blend mode; presets have a wide, fully soft rim', () => {
+    const l: LightingSettings = { ...DEFAULT_LIGHTING, enabled: true, blend: 'soft-light' };
+    expect(artLight(l, { rotation: 0, flipX: false, flipY: false })!.blend).toBe('soft-light');
+    for (const p of LIGHT_PRESETS) expect(p.settings.rim).toMatchObject({ width: 50, softness: 100 });
+  });
+
+  it('changes how the lit background looks', () => {
+    const draw = (blend: TokenDocument['lighting']['blend']) => {
+      const d = createDocument();
+      d.background = { ...d.background, kind: 'color', color: '#808080' };
+      d.lighting = { ...d.lighting, background: true, strength: 80, blend };
+      const c = createCanvas(64, 64);
+      const ctx = c.getContext('2d');
+      renderToken(ctx as unknown as Ctx, d, new Map(), 64);
+      return Array.from(ctx.getImageData(0, 0, 64, 64).data);
+    };
+    expect(draw('screen')).not.toEqual(draw('normal'));
   });
 });

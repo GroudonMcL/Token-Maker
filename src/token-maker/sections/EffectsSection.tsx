@@ -8,7 +8,8 @@ import { EFFECT_PICTURES, effectPicture, pictureThumbUrl } from '../render/pictu
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { effectThumbnails } from './effectThumbs';
-import { CLIP_OPTIONS, clipHint } from './clipOptions';
+import { KeepInside } from './KeepInside';
+import { BLENDS } from './blendOptions';
 
 const PLACEMENTS: { value: EffectPlacement; label: string }[] = [
   { value: 'behind', label: 'Behind art' },
@@ -16,13 +17,6 @@ const PLACEMENTS: { value: EffectPlacement; label: string }[] = [
   { value: 'border', label: 'On border' },
 ];
 
-const BLENDS: { value: BlendMode; label: string }[] = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'multiply', label: 'Multiply (darken)' },
-  { value: 'screen', label: 'Screen (lighten)' },
-  { value: 'overlay', label: 'Overlay (contrast)' },
-  { value: 'soft-light', label: 'Soft light' },
-];
 
 /** A glow's first gradient: white at its edge, fading into its colour. */
 const glowGradientFrom = (color: string): Gradient => ({
@@ -344,8 +338,7 @@ function EffectCard({
             </button>
           </div>
         )}
-        <SegmentedButtons label="Keep inside" value={e.clip} options={CLIP_OPTIONS} onChange={(clip) => update(e.id, { clip })} />
-        <p className="control__hint">{clipHint(e.clip)}</p>
+        <KeepInside value={e.clip} onChange={(clip) => update(e.id, { clip })} />
         <Advanced>
           <Slider
             label="Scale"

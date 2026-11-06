@@ -148,6 +148,15 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
       frame: frame.kind === 'image' ? { ...frame, outerSpacing: 0 } : frame,
     };
   },
+  // v13 → v14: Keep inside takes several choices. Nothing becomes none chosen; Art becomes Art and
+  // Pop-out, which it used to cover together. A label saved without a text shadow keeps it off
+  // (new labels have one). The light's blend mode starts at Normal (filled in by sanitize).
+  13: (doc) => {
+    const clip = (c: unknown) => (c === 'none' || typeof c !== 'string' ? [] : c === 'art' ? ['art', 'popOut'] : [c]);
+    const withClip = (list: unknown) => (Array.isArray(list) ? list.map((x) => (isObject(x) ? { ...x, clip: clip(x.clip) } : x)) : list);
+    const label = isObject(doc.label) && !isObject(doc.label.shadow) ? { ...doc.label, shadow: { enabled: false } } : doc.label;
+    return { ...doc, effects: withClip(doc.effects), decorations: withClip(doc.decorations), label };
+  },
 };
 
 /** A colour turned `degrees` round the colour wheel, keeping its lightness and strength (the v12 recolour). */
@@ -364,11 +373,14 @@ function effect(raw: Json, index: number): EffectLayer | null {
     scale: num(raw.scale, d.scale, 0.1, 5),
     flip: bool(raw.flip, d.flip),
     useGradient: bool(raw.useGradient, d.useGradient),
-    clip: oneOf(raw.clip, CLIP_TARGETS, d.clip),
+    clip: clipTargets(raw.clip, d.clip),
   };
 }
 
-const CLIP_TARGETS: readonly ClipTarget[] = ['none', 'token', 'frame', 'background', 'art'];
+const CLIP_TARGETS: readonly ClipTarget[] = ['token', 'frame', 'background', 'art', 'popOut', 'outside'];
+/** The Keep inside choices, in the order they are offered, each once. */
+const clipTargets = (v: unknown, fallback: ClipTarget[]): ClipTarget[] =>
+  Array.isArray(v) ? CLIP_TARGETS.filter((t) => v.includes(t)) : [...fallback];
 
 function lighting(raw: Json, d: LightingSettings): LightingSettings {
   const rim = obj(raw.rim);
@@ -385,6 +397,7 @@ function lighting(raw: Json, d: LightingSettings): LightingSettings {
       width: num(rim.width, d.rim.width, 0, 100),
       softness: num(rim.softness, d.rim.softness, 0, 100),
     },
+    blend: oneOf(raw.blend, BLENDS, d.blend),
     background: bool(raw.background, d.background),
     frame: bool(raw.frame, d.frame),
   };
@@ -413,7 +426,7 @@ function decoration(raw: Json, index: number): Decoration | null {
     color: hex(raw.color, d.color),
     opacity: num(raw.opacity, d.opacity, 0, 1),
     underFrame: bool(raw.underFrame, d.underFrame),
-    clip: oneOf(raw.clip, CLIP_TARGETS, d.clip),
+    clip: clipTargets(raw.clip, d.clip),
   };
 }
 

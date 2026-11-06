@@ -306,7 +306,7 @@ describe('picture frames in the renderer', () => {
   });
 });
 
-describe('Keep inside (v13)', () => {
+describe('Keep inside (v14)', () => {
   it('a decoration kept inside the token is cut off at the frame’s outer edge', () => {
     const gem = (clip: Decoration['clip']) => {
       const d = plain();
@@ -314,8 +314,8 @@ describe('Keep inside (v13)', () => {
       return draw(d);
     };
     const none = draw(plain());
-    const free = gem('none');
-    const kept = gem('token');
+    const free = gem([]);
+    const kept = gem(['token']);
     // Above the frame's outer edge (5 % of the half-size from the top), only the unclipped gem shows.
     expect(free.at(128, 3)).not.toEqual(none.at(128, 3));
     expect(kept.at(128, 3)).toEqual(none.at(128, 3));
@@ -325,8 +325,24 @@ describe('Keep inside (v13)', () => {
 
   it('kept inside the art, a decoration on a token with no art is not drawn', () => {
     const d = plain();
-    d.decorations = [{ ...newDecoration('gem', 'g'), clip: 'art' }];
+    d.decorations = [{ ...newDecoration('gem', 'g'), clip: ['art'] }];
     const none = draw(plain());
     expect(draw(d).data.every((v, i) => v === none.data[i])).toBe(true);
+  });
+
+  it('kept outside, a decoration shows only beyond the token; with Token too, everywhere', () => {
+    const gem = (clip: Decoration['clip']) => {
+      const d = plain();
+      d.decorations = [{ ...newDecoration('gem', 'g'), place: 'free', x: 0, y: -0.95, size: 0.5, clip }];
+      return draw(d);
+    };
+    const none = draw(plain());
+    const free = gem([]);
+    const out = gem(['outside']);
+    const both = gem(['token', 'outside']);
+    expect(out.at(128, 3)).toEqual(free.at(128, 3));
+    expect(out.at(128, 20)).toEqual(none.at(128, 20));
+    expect(both.at(128, 3)).toEqual(free.at(128, 3));
+    expect(both.at(128, 20)).toEqual(free.at(128, 20));
   });
 });
