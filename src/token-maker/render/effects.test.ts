@@ -82,7 +82,7 @@ function changed(a: Uint8ClampedArray, b: Uint8ClampedArray): number {
 const same = (a: Uint8ClampedArray, b: Uint8ClampedArray) => a.length === b.length && a.every((v, i) => v === b[i]);
 
 /** Effects with a random layout (the glows, flat tints and smooth overlays have none). */
-const RANDOM: EffectKind[] = EFFECTS.map((e) => e.kind).filter((k) => !['innerGlow', 'outerGlow', 'unconscious', 'vignette', 'gradient', 'edgeShadow'].includes(k));
+const RANDOM: EffectKind[] = EFFECTS.map((e) => e.kind).filter((k) => !['innerGlow', 'outerGlow', 'unconscious', 'vignette', 'gradient', 'edgeShadow', 'edgeLight', 'spotlight'].includes(k));
 
 describe('every effect', () => {
   const plain = draw(token([]));

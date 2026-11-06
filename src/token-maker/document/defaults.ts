@@ -214,6 +214,8 @@ export const EFFECTS: EffectInfo[] = [
     ['gradient'],
   ),
   fx('edgeShadow', 'Edge shadow', 'Overlays', { placement: 'over', intensity: 80, color: '#000000', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, angle: 90, blend: 'multiply' }, ['#1b1020', '#0b1a2a', '#2a1a0b'], ['color', 'angle', 'spread', 'softness'], { spread: 'Reach', angle: 'Side' }),
+  fx('edgeLight', 'Edge light', 'Overlays', { placement: 'over', intensity: 80, color: '#ffe6a8', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, angle: 270, blend: 'screen' }, ['#ffffff', '#9fd4ff', '#ffb36b', '#c9a0ff'], ['color', 'angle', 'spread', 'softness'], { spread: 'Reach', angle: 'Side' }),
+  fx('spotlight', 'Spotlight', 'Overlays', { placement: 'over', intensity: 85, color: '#fff1c9', size: OVERLAY_BASE_SIZE, spread: 45, softness: 60, angle: 270, blend: 'screen' }, ['#ffffff', '#9fd4ff', '#ffb36b', '#c9a0ff'], ['color', 'angle', 'spread', 'softness'], { spread: 'Size', angle: 'Towards' }),
 
   // Picture effects use the settings of the picture picked (src/render/pictureLibrary.ts).
   fx('picture', 'Picture', 'Pictures', { placement: 'over', intensity: 90, color: '#ffffff', size: 0.3, spread: 40 }, ['#ffd76a', '#ff6a3d', '#6fc3ff', '#76ff4a', '#b06aff', '#8a0b0b'], ['picture', 'color', 'size', 'spread', 'seed'], { size: 'Picture size', spread: 'Amount' }),

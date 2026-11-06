@@ -8,7 +8,7 @@ import { mix, rgba, shade } from './color';
 import type { EffectKind } from '../document/types';
 import type { EdgePoint, EffectScene } from './effects';
 import { clamp01, hexRgb, makeNoise, shadowOnly, smoothstep, textureOver, traceBeyond } from './effectKit';
-import type { Pass } from './effectPainters';
+import type { Painter, Pass } from './effectPainters';
 import { tracePolygon, type Ctx } from './frameKit';
 import { shapePolygon, type Point } from './shapes';
 
@@ -166,12 +166,12 @@ const outerRays: StylePainter = (s) => {
 };
 
 /** Tongues of light round the edge points: `amp` how far they reach, `freq` how many, `sharp` how pointed. */
-function tongues(s: EffectScene, pts: EdgePoint[], fbm: (x: number, y: number, o?: number) => number, amp: number, freq: number, sharp: number, base: number, sign = 1): Point[] {
+function tongues(s: EffectScene, pts: EdgePoint[], fbm: (x: number, y: number, o?: number) => number, amp: number, freq: number, sharp: number, base: number, sign = 1, least = 0.15, perSpread = 0.35): Point[] {
   const count = pts.length;
   return pts.map((p, i) => {
     const v = fbm((i / count) * freq, 3.3, 4);
     const peak = Math.pow(clamp01((v - 0.25) / 0.6), sharp);
-    const d = base + sign * amp * (0.15 + s.spread * 0.35 + peak);
+    const d = base + sign * amp * (least + s.spread * perSpread + peak);
     return { x: p.x + p.nx * d, y: p.y + p.ny * d };
   });
 }
@@ -227,6 +227,75 @@ const innerBrightRim: StylePainter = (s) => {
     { clip: 'area', alpha: 0.7, paint: (ctx) => innerHalo(ctx, s, c, reach * 1.5, choke, 2) },
     { clip: 'area', alpha: 0.9, paint: (ctx) => innerHalo(ctx, s, c, reach * 0.55, choke, 2) },
     { clip: 'area', paint: (ctx) => innerHalo(ctx, s, hot(c, 0.8), reach * 0.18, reach * 0.04, 4) },
+  ];
+};
+
+/** Aura: flickering tongues of light reaching in from the edge (Outer glow's Aura, inwards). Inside the opening only. */
+const innerAura: StylePainter = (s) => {
+  if (s.border) return null;
+  const { reach } = s;
+  const c = s.fx.color;
+  const { fbm } = makeNoise(s.fx.seed * 7919 + 9);
+  const pts = s.edge(220); // inside the opening, these point inwards
+  // The area between its edge and a line of tongues.
+  const ring = (ctx: Ctx, poly: Point[], color: string, blur: number) =>
+    shadowOnly(ctx, s, color, blur, (cc) => {
+      cc.beginPath();
+      s.traceArea(cc);
+      cc.moveTo(poly[0]!.x, poly[0]!.y);
+      for (let i = poly.length - 1; i >= 0; i--) cc.lineTo(poly[i]!.x, poly[i]!.y);
+      cc.closePath();
+      cc.fillStyle = '#000';
+      cc.fill('evenodd');
+    });
+  return [
+    { clip: 'area', alpha: 0.6, paint: (ctx) => ring(ctx, tongues(s, pts, fbm, reach, 14, 1.6, 0, 1, 0.1, 0.3), c, reach * 0.3) },
+    { clip: 'area', alpha: 0.9, paint: (ctx) => ring(ctx, tongues(s, pts, fbm, reach * 0.55, 23, 2.2, 0, 1, 0.1, 0.3), mix(c, hot(c), 0.4), reach * 0.14) },
+    { clip: 'area', alpha: 0.9, paint: (ctx) => innerHalo(ctx, s, hot(c, 0.75), reach * 0.08, reach * 0.02, 2) },
+  ];
+};
+
+/** Wisps: swirling wisps of light curling in from the edge, thickest there. Inside the opening only. */
+const innerWisps: StylePainter = (s) => {
+  if (s.border) return null;
+  const { reach, box } = s;
+  const c = s.fx.color;
+  const { fbm } = makeNoise(s.fx.seed * 7919 + 10);
+  const edgeR = s.area.R - s.area.opening;
+  const cx = (box.minX + box.maxX) / 2;
+  const cy = (box.minY + box.maxY) / 2;
+  const base = hexRgb(c);
+  const bright = hexRgb(hot(c, 0.7));
+  return [
+    { clip: 'area', alpha: 0.5, paint: (ctx) => innerHalo(ctx, s, c, reach * 0.5, 0, 2) },
+    {
+      clip: 'area',
+      paint: (ctx) => {
+        let heat = 0;
+        textureOver(
+          ctx,
+          box,
+          c,
+          (u, v) => {
+            const x = box.minX + u - cx;
+            const y = box.minY + v - cy;
+            // How far in from the edge, in units of the glow's reach (round-ish openings).
+            const depth = (edgeR - Math.hypot(x, y)) / (reach * (1.6 + s.spread * 1.5));
+            const a = Math.atan2(y, x);
+            const fx = Math.cos(a) * 2.2;
+            const fy = Math.sin(a) * 2.2;
+            const w = fbm(fx + 4, fy + depth * 1.5, 4);
+            const val = fbm(fx * 1.6 + w * 2, fy * 1.6 + depth * 2.5 - w, 5);
+            const ridge = 1 - Math.abs(val - 0.5) * 2;
+            const fall = 1 - smoothstep(0, 1, depth);
+            heat = Math.pow(ridge, 3);
+            return (Math.pow(ridge, 4) * 1.2 + 0.25) * fall * fall;
+          },
+          220,
+          () => [base[0] + (bright[0] - base[0]) * heat, base[1] + (bright[1] - base[1]) * heat, base[2] + (bright[2] - base[2]) * heat],
+        );
+      },
+    },
   ];
 };
 
@@ -378,6 +447,8 @@ export const EFFECT_STYLES: Partial<Record<EffectKind, EffectStyle[]>> = {
   innerGlow: [
     { id: 'soft', name: 'Soft' },
     { id: 'brightRim', name: 'Bright rim', paint: innerBrightRim },
+    { id: 'aura', name: 'Aura', paint: innerAura },
+    { id: 'wisps', name: 'Wisps', paint: innerWisps },
   ],
   mist: [
     { id: 'haze', name: 'Haze' },
@@ -392,4 +463,57 @@ export const EFFECT_STYLES: Partial<Record<EffectKind, EffectStyle[]>> = {
     { id: 'flat', name: 'Flat' },
     { id: 'depth', name: 'Depth', paint: edgeDepth },
   ],
+};
+
+// ---- Light (round 2: the opposites of Edge shadow) ----
+
+/** The unit vector towards the effect's Side (angle; 90 = bottom). */
+function towards(s: EffectScene): { x: number; y: number } {
+  const a = (s.fx.angle * Math.PI) / 180;
+  return { x: Math.cos(a), y: Math.sin(a) };
+}
+
+/** Edge light: a band of light coming in from one side (the classic edge shadow, lit). */
+export const edgeLight: Painter = (s) => {
+  const rr = Math.max(s.box.maxX - s.box.minX, s.box.maxY - s.box.minY) / 2;
+  const d = towards(s);
+  const depth = Math.max(1, 2 * rr * (s.fx.spread / 100));
+  const soft = s.fx.softness / 100;
+  return [
+    {
+      clip: 'area',
+      paint: (ctx) => {
+        ctx.rotate(Math.atan2(d.y, d.x) - Math.PI / 2);
+        const g = ctx.createLinearGradient(0, rr * 1.42, 0, rr - depth);
+        g.addColorStop(0, rgba(s.fx.color, 1));
+        g.addColorStop(Math.min(0.95, (1 - soft) * 0.9 + 0.02), rgba(s.fx.color, 0.95));
+        g.addColorStop(1, rgba(s.fx.color, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(-rr * 1.5, -rr * 1.5, rr * 3, rr * 3);
+      },
+    },
+  ];
+};
+
+/** Spotlight: a soft round pool of light, off towards one side; Spread sets its size. */
+export const spotlight: Painter = (s) => {
+  const rr = s.area.R;
+  const d = towards(s);
+  const size = 0.35 + (s.fx.spread / 100) * 0.7;
+  const soft = s.fx.softness / 100;
+  return [
+    {
+      clip: 'area',
+      paint: (ctx) => {
+        const cx = d.x * rr * 0.3;
+        const cy = d.y * rr * 0.3;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr * size);
+        g.addColorStop(0, rgba(s.fx.color, 0.95));
+        g.addColorStop(Math.max(0.05, 0.6 - soft * 0.55), rgba(s.fx.color, 0.7));
+        g.addColorStop(1, rgba(s.fx.color, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(-rr * 2, -rr * 2, rr * 4, rr * 4);
+      },
+    },
+  ];
 };

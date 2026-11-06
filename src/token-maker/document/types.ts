@@ -343,6 +343,9 @@ export type EffectKind =
   | 'vignette'
   | 'gradient'
   | 'edgeShadow'
+  // Light (v15): the opposites of Edge shadow
+  | 'edgeLight'
+  | 'spotlight'
   // A picture: a built-in one or the user's own (v8). Since v12 the built-in pictures
   // are also the elemental effects, conditions and more (render/pictureLibrary.ts).
   | 'picture';

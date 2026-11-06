@@ -18,7 +18,7 @@ import type { RenderSource } from './render';
 import { tracePolygon, type Ctx } from './frameKit';
 import { shapePolygon, type Point } from './shapes';
 import { shadowOnly, traceBeyond } from './effectKit';
-import { EFFECT_STYLES } from './effectStyles';
+import { EFFECT_STYLES, edgeLight, spotlight } from './effectStyles';
 
 /** One drawing step of an effect. */
 export interface Pass {
@@ -350,5 +350,7 @@ export const PAINTERS: Record<EffectKind, Painter> = {
   vignette: overlay('vignette'),
   gradient: overlay('gradient'),
   edgeShadow: styled('edgeShadow', overlay('shadow')),
+  edgeLight,
+  spotlight,
   picture,
 };
