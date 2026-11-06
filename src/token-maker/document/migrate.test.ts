@@ -495,7 +495,11 @@ describe('v14 → v15', () => {
 
   it('saved effects keep their classic look', () => {
     const old = v14();
-    old.effects = [newEffect('outerGlow', 'a'), newEffect('mist', 'b'), newEffect('vignette', 'c')].map(({ style: _style, ...e }) => e);
+    old.effects = [newEffect('outerGlow', 'a'), newEffect('mist', 'b'), newEffect('vignette', 'c')].map((e) => {
+      const saved: Partial<typeof e> = { ...e };
+      delete saved.style;
+      return saved;
+    });
     const doc = migrateDocument(old);
     expect(doc.effects.map((e) => e.style)).toEqual(['soft', 'haze', '']);
   });
