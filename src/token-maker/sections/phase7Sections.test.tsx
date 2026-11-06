@@ -1,10 +1,10 @@
 import 'fake-indexeddb/auto';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { createDocument } from '../document/defaults';
+import { createDocument, newDecoration } from '../document/defaults';
 import { selectDecoration } from '../editor/tools';
 import { createPreset, presetToCode } from '../presets/preset';
 import { savedPresets } from '../presets/presetStore';
-import { getDoc, resetDoc, undo } from '../state/tokenStore';
+import { getDoc, resetDoc, undo, updateDoc } from '../state/tokenStore';
 import { DecorationsSection } from './DecorationsSection';
 import { FrameSection } from './FrameSection';
 import { PresetsSection } from './PresetsSection';
@@ -33,22 +33,31 @@ beforeEach(() => {
 describe('Decorations section', () => {
   it('adds decorations snapped to the frame', () => {
     render(<DecorationsSection />);
-    fireEvent.click(screen.getByRole('button', { name: /^Sword$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Dagger$/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Shield$/ }));
     expect(getDoc().decorations.map((d) => [d.kind, d.place, d.mirror])).toEqual([
-      ['sword', 'bottomRight', false],
+      ['dagger', 'bottomRight', false],
       ['shield', 'bottom', false],
     ]);
     const cards = within(screen.getByRole('list', { name: 'Decorations, top first' })).getAllByRole('listitem');
-    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['shield', 'sword']);
+    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['shield', 'dagger']);
+  });
+
+  it('no longer offers the code-drawn sword (owner removed it), but still shows one a token already has', () => {
+    updateDoc((d) => ({ ...d, decorations: [newDecoration('sword', 'old')] }));
+    render(<DecorationsSection />);
+    expect(within(screen.getByRole('group', { name: 'Class icons' })).queryByRole('button', { name: /^Sword$/ })).toBeNull();
+    const cards = within(screen.getByRole('list', { name: 'Decorations, top first' })).getAllByRole('listitem');
+    expect(cards.map((c) => c.getAttribute('data-decoration'))).toEqual(['sword']);
   });
 
   it('offers clipart pictures for treasure, creatures and trims (owner request)', () => {
     render(<DecorationsSection />);
     for (const [group, names] of [
       ['Treasure', ['Gem', 'Round gem', 'Crown', 'Star']],
-      ['Creatures', ['Skull', 'Horn', 'Wing']],
-      ['Trims', ['Ribbon', 'Laurel', 'Chain', 'Leaf']],
+      ['Creatures', ['Skull', 'Horn', 'Wing', 'Gold wing', 'Silver wing']],
+      // Decoration art part 2: the old laurel, chain and leaf are retired.
+      ['Trims', ['Ribbon', 'Parchment scroll', 'Red sash', 'Gold laurel', 'Silver laurel', 'Oak sprig']],
     ] as const) {
       const tiles = within(screen.getByRole('group', { name: group })).getAllByRole('button');
       expect(tiles.map((t) => t.textContent)).toEqual(names);

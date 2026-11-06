@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Trash2, Upload } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import { ColorSwatches, ControlLabel, Slider, Toggle } from '../components';
-import { DECORATION_GROUPS, DECORATIONS, decorationInfo, MAX_DECORATIONS, newDecoration } from '../document/defaults';
+import { DECORATION_GROUPS, DECORATIONS, decorationInfo, MAX_DECORATIONS, newDecoration, RETIRED_DECORATIONS } from '../document/defaults';
 import type { Decoration, DecorationKind, SnapPoint } from '../document/types';
 import { addPictureDecoration, uploadPictureDecoration } from '../editor/pictureActions';
 import { selectDecoration, useTool } from '../editor/tools';
@@ -113,11 +113,11 @@ export function DecorationsSection() {
                     </>
                   ) : PICTURE_GROUPS.has(group) ? (
                     // Owner request: shaded clipart instead of the code-drawn treasure, creatures and trims.
-                    DECORATION_PICTURES.filter((p) => p.group === group).map((p) => (
+                    DECORATION_PICTURES.filter((p) => p.group === group && !p.retired).map((p) => (
                       <PictureTile key={p.id} id={p.id} name={p.name} url={pictureThumbUrl(p.id)} disabled={full} onAdd={() => void addPictureDecoration({ type: 'library', id: p.id })} />
                     ))
                   ) : (
-                    DECORATIONS.filter((x) => x.group === group).map((x) => (
+                    DECORATIONS.filter((x) => x.group === group && !RETIRED_DECORATIONS.has(x.kind)).map((x) => (
                       <button key={x.kind} type="button" className="tile" data-decoration={x.kind} disabled={full} onClick={() => add(x.kind)}>
                         <span className="tile__preview" aria-hidden="true">
                           {thumbs?.get(x.kind) ? <img src={thumbs.get(x.kind)} alt="" width={44} height={44} /> : <span className="tile__blank" />}

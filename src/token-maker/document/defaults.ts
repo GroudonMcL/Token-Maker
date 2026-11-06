@@ -329,6 +329,12 @@ export const DECORATIONS: DecorationInfo[] = [
 
 export const decorationInfo = (kind: DecorationKind): DecorationInfo => DECORATIONS.find((d) => d.kind === kind)!;
 
+/**
+ * Code-drawn decorations the owner removed (decoration art round): no longer
+ * offered in the picker, but still drawn on tokens that already have them.
+ */
+export const RETIRED_DECORATIONS: ReadonlySet<DecorationKind> = new Set<DecorationKind>(['sword']);
+
 /** Most decorations one token can have. */
 export const MAX_DECORATIONS = 16;
 

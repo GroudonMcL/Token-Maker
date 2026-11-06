@@ -43,6 +43,11 @@ export interface LibraryDecorationPicture {
   group: 'Ornaments' | 'Treasure' | 'Creatures' | 'Trims' | 'Pictures';
   /** Where it starts (else the picture decoration's own defaults). */
   start?: { place: SnapPoint; size: number; mirror: boolean };
+  /**
+   * Replaced by the owner's later picks: no longer offered in the picker,
+   * but kept (with its file) so tokens that already use it still draw it.
+   */
+  retired?: boolean;
 }
 
 const fx = (
@@ -143,7 +148,11 @@ const art = (
   color: string,
   start: LibraryDecorationPicture['start'],
   tint = false,
-): LibraryDecorationPicture => ({ id: `deco-art-${id}`, name, color, swatches: [color, ...METAL.filter((c) => c !== color)], tint, group, start });
+  retired = false,
+): LibraryDecorationPicture => ({ id: `deco-art-${id}`, name, color, swatches: [color, ...METAL.filter((c) => c !== color)], tint, group, start, ...(retired ? { retired } : {}) });
+
+/** Light silver: tinted pictures drawn in grey start this colour, so they look like silver until recoloured. */
+const SILVER = '#e8ecf2';
 
 /** Picture decorations: ornaments, treasure, creatures and trims, then flat icons with a dark outline (coloured by the decoration's colour). */
 export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
@@ -178,10 +187,18 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   art('skull', 'Skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }),
   art('horn', 'Horn', 'Creatures', '#b89a86', { place: 'topRight', size: 0.3, mirror: true }),
   art('wing', 'Wing', 'Creatures', '#f2f2f2', { place: 'right', size: 0.4, mirror: true }),
+  // Decoration art round, part 2 (owner's picks): more wings, ribbons, laurels and a leaf; chain retired.
+  art('wing-gold', 'Gold wing', 'Creatures', '#e0b84a', { place: 'right', size: 0.4, mirror: true }),
+  art('wing-silver', 'Silver wing', 'Creatures', SILVER, { place: 'right', size: 0.4, mirror: true }, true),
   art('ribbon', 'Ribbon', 'Trims', '#b3202c', { place: 'bottom', size: 0.24, mirror: false }),
-  art('laurel', 'Laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }),
-  art('chain', 'Chain', 'Trims', '#b8bcc4', { place: 'bottom', size: 0.2, mirror: false }),
-  art('leaf', 'Leaf', 'Trims', '#3f9a3a', { place: 'topLeft', size: 0.3, mirror: false }),
+  art('scroll', 'Parchment scroll', 'Trims', '#d9c27a', { place: 'bottom', size: 0.18, mirror: false }),
+  art('sash', 'Red sash', 'Trims', '#d42a2a', { place: 'bottom', size: 0.28, mirror: false }),
+  art('laurel', 'Laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }, false, true),
+  art('laurel-gold', 'Gold laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }),
+  art('laurel-silver', 'Silver laurel', 'Trims', SILVER, { place: 'bottomLeft', size: 0.6, mirror: true }, true),
+  art('chain', 'Chain', 'Trims', '#b8bcc4', { place: 'bottom', size: 0.2, mirror: false }, false, true),
+  art('leaf', 'Leaf', 'Trims', '#3f9a3a', { place: 'topLeft', size: 0.3, mirror: false }, false, true),
+  art('oak-sprig', 'Oak sprig', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }, true),
   deco('skull-icon', 'Skull icon', '#e9e1cc', ['#e9e1cc', '#3a3a3a', '#76ff4a', '#c0263a']),
   deco('heart', 'Heart', '#c0263a', ['#c0263a', '#ff6fb5', '#ffffff']),
   deco('broken-heart', 'Broken heart', '#c0263a', ['#c0263a', '#5a0606', '#8a8a8a']),
