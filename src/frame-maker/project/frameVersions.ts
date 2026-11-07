@@ -48,6 +48,7 @@ import {
 import { cellsLayer, chainLayer, gearsLayer, groupLayer, knotworkLayer, NEW_EFFECT } from './defaults';
 import { wear } from './styles';
 import { categoryOf } from './frameCategories';
+import { briarRoses, wreathRoses } from './libraryFrames';
 import type { ColourSlot } from './colourSlots';
 import type { Layer, StageSettings } from './types';
 
@@ -2250,7 +2251,8 @@ const VERSIONS: Version[] = [
       { ...briar('Briar', '#3a2a1a', '#1a120a'), effects: [bevel({ size: 0.5, gloss: 0.3 }), DROP] },
       { ...briar('Second briar', '#4a3420', '#1e140a', { count: 1, thickness: 0.06, waveLength: 2.2, seed: 7 }), effects: [bevel({ size: 0.5, gloss: 0.3 }), contact(0.6)] },
       { ...growthLayer('vine'), name: 'Leaves', count: 1, thickness: 0.025, amplitude: 0.2, waveLength: 1.9, extra: 'leaves', extraSize: 0.3, color: '#2a3a1a', extraColor: '#2e5a22', seed: 3, effects: [bevel({ size: 0.4, gloss: 0.3 }), contact(0.5)] },
-      { ...repeatLayer(), name: 'Roses', element: 'spiral', count: 8, at: 0.5, size: 1.1, fill: '#a01828', raised: false, effects: [bevel({ size: 0.4, gloss: 0.5 }), contact(0.6)] },
+      // Frame review (owner's pick): shaded rose pictures in the spirals' red, with depth.
+      briarRoses(),
     ],
   },
   {
@@ -3295,11 +3297,12 @@ const VERSIONS: Version[] = [
   {
     id: 'rose-wreath-red',
     name: 'Red rose wreath',
-    description: 'A wooden hoop shaded with gradients, a leafy vine, red berries and four deep red roses.',
+    description: 'A wooden hoop shaded with gradients, a leafy vine, red berries, four red roses and four rosebuds.',
     after: 'rose-wreath',
     stage: ROSE_STAGE,
-    colours: [slot('leaves', 'Leaf colour', '#4a8a2a', ['Vine']), slot('roses', 'Rose colour', '#b01828', ['Roses', 'Berries'])],
-    layers: () => [...woodHoop(HOOP_WOOD), roseVine('#3a5220', '#4a8a2a'), roseVine('#3a5220', '#c8283a', { extra: 'berries', count: 1, seed: 7, size: 0.28 }), roseBlooms('#b01828', [bevel({ size: 0.4, gloss: 0.5 }), contact(0.7)])],
+    colours: [slot('leaves', 'Leaf colour', '#4a8a2a', ['Vine']), slot('roses', 'Rose colour', '#b01828', ['Roses', 'Buds', 'Berries'])],
+    // Frame review (owner's pick): real rose pictures instead of the drawn spirals.
+    layers: () => [...woodHoop(HOOP_WOOD), roseVine('#3a5220', '#4a8a2a'), roseVine('#3a5220', '#c8283a', { extra: 'berries', count: 1, seed: 7, size: 0.28 }), ...wreathRoses()],
   },
   {
     id: 'rose-wreath-briar',

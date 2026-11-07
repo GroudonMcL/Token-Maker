@@ -444,6 +444,10 @@ const VERSIONS: Record<string, FrameCategory> = {
   // Made from amethyst-geode.
   'amethyst-geode-amethyst': 'Stone & Earth',
   'amethyst-geode-agate': 'Stone & Earth',
+  // Library pictures (version 13): stone frames built like Marble.
+  'veined-stone': 'Stone & Earth',
+  'weathered-stone': 'Stone & Earth',
+  'grey-stone': 'Stone & Earth',
 };
 
 const FILED: Record<string, FrameCategory> = { ...ORIGINALS, ...VERSIONS };
