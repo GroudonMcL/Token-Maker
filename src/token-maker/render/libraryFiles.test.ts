@@ -33,6 +33,8 @@ describe('built-in pictures', () => {
   it('ornaments keep their own colours only when they have some', () => {
     const ornaments = DECORATION_PICTURES.filter((p) => p.group === 'Ornaments');
     expect(ornaments.length).toBe(24);
+    // Decoration review: 16 are retired from the picker but kept so saved tokens still draw.
+    expect(ornaments.filter((p) => !p.retired).length).toBe(8);
     expect(ornaments.find((p) => p.id === 'deco-orn-royal-crown')?.tint).toBe(false);
     expect(ornaments.find((p) => p.id === 'deco-orn-heraldic-dragon')?.tint).toBe(true);
   });

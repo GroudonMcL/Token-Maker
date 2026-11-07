@@ -44,7 +44,8 @@ describe('Decorations section', () => {
     render(<DecorationsSection />);
     for (const [group, names] of [
       // Decoration art part 1: the first gem, round gem, crown, star and skull are retired.
-      ['Treasure', ['Diamond', 'Cut stone', 'Round brilliant', 'Pearl', 'Circlet', 'Gold crown', 'Coronet', 'Gold star', 'Ornate star']],
+      // Decoration review: cut stone is retired too.
+      ['Treasure', ['Diamond', 'Round brilliant', 'Pearl', 'Circlet', 'Gold crown', 'Coronet', 'Gold star', 'Ornate star']],
       ['Creatures', ['Painted skull', 'Engraved skull', 'Skull and crossbones', 'Horn', 'Smooth horn', 'Wing', 'Gold wing', 'Silver wing']],
       // Decoration art part 2: the old laurel, chain and leaf are retired.
       ['Trims', ['Ribbon', 'Parchment scroll', 'Red sash', 'Gold laurel', 'Silver laurel', 'Oak sprig']],
@@ -53,6 +54,20 @@ describe('Decorations section', () => {
       expect(tiles.map((t) => t.textContent)).toEqual(names);
       for (const t of tiles) expect(t.getAttribute('data-decoration-picture')).toMatch(/^deco-art-/);
     }
+  });
+
+  it('offers only the ornaments and pictures the owner kept (decoration review)', () => {
+    render(<DecorationsSection />);
+    const ornaments = within(screen.getByRole('group', { name: 'Ornaments' })).getAllByRole('button');
+    expect(ornaments.map((t) => t.textContent)).toEqual([
+      'Celtic vine corner', 'Corner decoration', 'Golden laurel', 'Gold victorian ring', 'Filigree circle', 'Corner flourish', 'Flourish divider', 'Laurel wreath',
+    ]);
+    // Every flat icon is retired; the group stays for the user's own pictures.
+    const pictures = within(screen.getByRole('group', { name: 'Pictures' }));
+    expect(pictures.queryAllByRole('button', { name: /Heart|Potion|Flag/ })).toEqual([]);
+    expect(pictures.getByRole('button', { name: 'Use your own picture' })).toBeTruthy();
+    const effects = within(screen.getByRole('group', { name: 'Effect pictures' })).getAllByRole('button');
+    expect(effects.some((t) => t.getAttribute('data-decoration-picture') === 'fx-hearts-shine')).toBe(false);
   });
 
   it('moves it to another snap point or frees it, mirrors, removes, and undoes', () => {
