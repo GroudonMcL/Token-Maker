@@ -1,10 +1,10 @@
-// The Themes button: a sun (light theme) or moon (dark theme) that opens a
+// The Themes button: a painter's palette that opens a
 // small menu of Token Maker's themes, each shown by its own colours. The
 // choice applies to both apps at once. It replaced the separate light/dark switch.
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Moon, Sun } from 'lucide-react';
-import { PALETTES, paletteMode, usePalette } from './palettes';
+import { Check, Palette } from 'lucide-react';
+import { PALETTES, usePalette } from './palettes';
 import './shell-ui.css';
 
 export function PalettePicker({ className = 'icon-btn' }: { className?: string }) {
@@ -24,7 +24,6 @@ export function PalettePicker({ className = 'icon-btn' }: { className?: string }
   }, [open]);
 
   const current = PALETTES.find((p) => p.id === palette)!;
-  const Icon = paletteMode(palette) === 'light' ? Sun : Moon;
   const close = () => {
     setOpen(false);
     button.current?.focus();
@@ -33,7 +32,7 @@ export function PalettePicker({ className = 'icon-btn' }: { className?: string }
   return (
     <div className="palette-picker">
       <button ref={button} type="button" className={className} aria-label="Themes" title={`Themes: ${current.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <Icon size={18} />
+        <Palette size={18} />
       </button>
       {open && (
         <div

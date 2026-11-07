@@ -67,11 +67,9 @@ describe('AppShell (desktop)', () => {
     expect(screen.getByRole('tab', { name: 'Export' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('keeps the menu style in the top bar’s panel settings', () => {
+  it('has no panel settings button: the Advanced drop-downs always show', () => {
     render(<AppShell />);
-    expect(screen.queryByRole('radiogroup', { name: 'Menu style' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Panel settings' }));
-    expect(within(screen.getByRole('dialog', { name: 'Panel settings' })).getByRole('radiogroup', { name: 'Menu style' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Panel settings' })).toBeNull();
   });
 
   it('has the top bar, toolbar and Export button', () => {

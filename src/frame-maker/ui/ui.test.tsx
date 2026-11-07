@@ -87,6 +87,22 @@ describe('editor panels', () => {
     // Many role searches over a big dialog: slow when the machine is busy.
   }, 20_000);
 
+  it('the template picker searches, filters by tag and has a tab per group', async () => {
+    render(<TemplateDialog mode="new" onClose={() => {}} />);
+    await userEvent.click(screen.getByRole('tab', { name: /^Editable layers/ }));
+    expect(screen.getByRole('button', { name: 'Paladin Editable' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Paladin' })).toBeNull();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search frames' }), 'hellfire');
+    expect(screen.getByRole('button', { name: 'Hellfire ring' })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').every((t) => t.getAttribute('aria-selected') === 'false')).toBe(true);
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Search frames' }));
+    await userEvent.click(screen.getByRole('tab', { name: /^All frames/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Fire / lava' }));
+    expect(screen.getByRole('button', { name: 'Magma' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stamped' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+  }, 20_000);
+
   it('picking a frame in "add" mode adds it as a layer', async () => {
     render(<TemplateDialog mode="addFrame" onClose={() => {}} />);
     await userEvent.click(screen.getByRole('button', { name: 'Wizard' }));
@@ -219,10 +235,14 @@ describe('converting Token Maker frames (Phase 4)', () => {
     const editable = FRAME_PRESETS.filter((p) => canConvert(p.style));
     // Every frame but "No frame" (Arcane and Infernal share their drawing code).
     expect(editable.length).toBe(FRAME_PRESETS.length - 1);
-    // Queried within their own sections: the dialog also lists every built-in design, so searching all of it is slow.
-    const editableSection = within(screen.getByRole('region', { name: 'Token Maker frames as editable layers' }));
+    // Each original under its own category's tab, the editable ones under theirs.
+    for (const f of FRAME_PRESETS) {
+      await userEvent.click(screen.getByRole('tab', { name: new RegExp(`^${categoryOf(f.id)}`) }));
+      expect(within(screen.getByRole('tabpanel')).getByRole('button', { name: f.name })).toBeInTheDocument();
+    }
+    await userEvent.click(screen.getByRole('tab', { name: /^Editable layers/ }));
+    const editableSection = within(screen.getByRole('tabpanel'));
     for (const f of editable) expect(editableSection.getByRole('button', { name: `${f.name} Editable` })).toBeInTheDocument();
-    for (const f of FRAME_PRESETS) expect(within(screen.getByRole('region', { name: categoryOf(f.id) })).getByRole('button', { name: f.name })).toBeInTheDocument();
     expect(editableSection.queryByRole('button', { name: 'No frame Editable' })).toBeNull();
     await userEvent.click(editableSection.getByRole('button', { name: 'Paladin Editable' }));
     const p = history.getState().present;
@@ -234,6 +254,7 @@ describe('converting Token Maker frames (Phase 4)', () => {
   it('in "add" mode an editable frame is added as a group', async () => {
     loadProject(createProject([bandFillLayer()]));
     render(<TemplateDialog mode="addFrame" onClose={() => {}} />);
+    await userEvent.click(screen.getByRole('tab', { name: /^Editable layers/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Polished Editable' }));
     expect(top()).toMatchObject({ type: 'group', name: 'Polished' });
   });

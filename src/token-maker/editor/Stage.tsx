@@ -34,8 +34,18 @@ const MIN_TOKEN = 160;
 const MAX_TOKEN = 640;
 const HANDLE_MARGIN = 18;
 const VIEW_MAX = 8;
-/** The token canvas never gets bigger than this many pixels across, however far the view is zoomed. */
-const MAX_CANVAS = 4096;
+/**
+ * The token canvas never gets bigger than this many pixels across, however
+ * far the view is zoomed: past it the browser just scales the picture up.
+ * Drawing the whole token at 4096px or more made zooming in laggy.
+ */
+const MAX_CANVAS = 2560;
+/** …and while something is being dragged or painted, at most this many. */
+const MAX_DRAG_CANVAS = 1536;
+/** After the view stops zooming, wait this long before redrawing the token sharp for the new size. */
+const ZOOM_SETTLE_MS = 160;
+/** However far the view is moved, at least this much of the token stays on screen. */
+const VIEW_KEEP = 64;
 /**
  * Pixel density of the token preview while a slider or the art is being
  * dragged (Phase 10): drawing fewer pixels keeps phones smooth, and the
@@ -62,7 +72,16 @@ type Gesture =
   | { kind: 'decor'; start: Decoration; from: Placement; x: number; y: number }
   | { kind: 'decorScale' | 'decorRotate'; start: Decoration; centre: Point; startPoint: Point }
   | { kind: 'label'; start: LabelSettings; from: Point; x: number; y: number }
+  | { kind: 'pick' }
   | { kind: 'bounds'; spacing: number; d0: number };
+
+/** The eyedropper's bubble: the colour under the pointer, shown while it is held down and dragged. */
+interface Loupe {
+  x: number;
+  y: number;
+  colour: string | null;
+  touch: boolean;
+}
 
 /**
  * The canvas: the token (drawn by the same renderer as the export), the whole
@@ -90,6 +109,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
   const selectedId = useTool((s) => s.selectedDecoration);
   const selected = doc.decorations.find((d) => d.id === selectedId && d.visible) ?? null;
   const [cursor, setCursor] = useState<Point | null>(null);
+  const [loupe, setLoupe] = useState<Loupe | null>(null);
   const [movingLabel, setMovingLabel] = useState(false);
   // Redraw when a label font finishes loading.
   const fontVersion = useFontVersion();
@@ -142,14 +162,31 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
   const cx = cx0 + view.x;
   const cy = cy0 + view.y;
 
-  /** Keeps the scale in range and the token centre on screen; at 100% the token sits in the middle. */
+  // The token is redrawn for a new view size only once zooming stops; until
+  // then the browser scales the last drawing, so the wheel stays smooth.
+  const [drawnScale, setDrawnScale] = useState(view.scale);
+  useEffect(() => {
+    if (drawnScale === view.scale) return;
+    const timer = setTimeout(() => setDrawnScale(view.scale), ZOOM_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [view.scale, drawnScale]);
+  const drawnR = (tokenCss / 2) * drawnScale;
+
+  /**
+   * Keeps the scale in range and part of the token on screen; at 100% the
+   * token sits in the middle. Zoomed in, the token's centre may go off
+   * screen, so its edge can be brought to the middle and zoomed in on.
+   */
   const clampView = (v: View): View => {
     const scale = Math.min(VIEW_MAX, Math.max(1, v.scale));
     if (scale <= 1.001) return HOME;
+    const r = (tokenCss / 2) * scale;
+    const keepX = Math.min(VIEW_KEEP, box.width / 2);
+    const keepY = Math.min(VIEW_KEEP, availH / 2);
     return {
       scale,
-      x: Math.min(box.width - cx0, Math.max(-cx0, v.x)),
-      y: Math.min(box.height - reserveBottom - cy0, Math.max(reserveTop - cy0, v.y)),
+      x: Math.min(box.width - keepX + r - cx0, Math.max(keepX - r - cx0, v.x)),
+      y: Math.min(box.height - reserveBottom - keepY + r - cy0, Math.max(reserveTop + keepY - r - cy0, v.y)),
     };
   };
 
@@ -189,21 +226,29 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     ctx.restore();
   }
 
-  // Draw on the next frame whenever anything visual changes.
+  // The token itself: drawn on the next frame whenever it changes, but not
+  // when the view only moves (the canvas is just placed somewhere else).
+  const dpr = typeof window === 'undefined' ? 1 : Math.min(3, window.devicePixelRatio || 1);
+  const tokenPx = Math.max(1, Math.round(Math.min(settling ? MAX_DRAG_CANVAS : MAX_CANVAS, drawnR * 2 * (settling ? Math.min(dpr, DRAG_DPR) : dpr))));
   useEffect(() => {
     if (!box.width || !box.height) return;
     const frame = requestAnimationFrame(() => {
-      const dpr = Math.min(3, window.devicePixelRatio || 1);
       const token = tokenRef.current;
-      if (token) {
-        const px = Math.min(MAX_CANVAS, Math.round(R * 2 * (settling ? Math.min(dpr, DRAG_DPR) : dpr)));
-        if (token.width !== px) {
-          token.width = px;
-          token.height = px;
-        }
-        const tctx = token.getContext('2d');
-        if (tctx) renderToken(tctx, doc, assets, px, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined });
+      if (!token) return;
+      if (token.width !== tokenPx) {
+        token.width = tokenPx;
+        token.height = tokenPx;
       }
+      const tctx = token.getContext('2d');
+      if (tctx) renderToken(tctx, doc, assets, tokenPx, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [box.width, box.height, tokenPx, doc, assets, display, painting, fontVersion]);
+
+  // The art behind the token, and the brush overlays: cheap, so drawn for every view change.
+  useEffect(() => {
+    if (!box.width || !box.height) return;
+    const frame = requestAnimationFrame(() => {
       const context = contextRef.current;
       if (context) {
         const w = Math.round(box.width * dpr);
@@ -257,7 +302,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     return () => cancelAnimationFrame(frame);
     // clip and drawArt are derived from doc
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [box, R, cx, cy, doc, assets, art, display, tool, showRemoved, showPopOut, showGhost, fontVersion, settling]);
+  }, [box, R, cx, cy, doc, art, display, tool, showRemoved, showPopOut, showGhost, dpr]);
 
   const strokeContext = (): StrokeContext | null =>
     art ? { transform: doc.art.transform, width: art.width, height: art.height, clip, R } : null;
@@ -329,9 +374,15 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       return;
     }
     if (pointers.current.size === 1 && tool === 'eyedropper') {
-      pickBackground(e.clientX, e.clientY);
-      gesture.current = null;
+      // Hold and drag to see the colour under the pointer in a bubble; letting go picks it.
+      gesture.current = { kind: 'pick' };
+      showLoupe(e);
       return;
+    }
+    if (gesture.current?.kind === 'pick') {
+      // A second finger: no pick.
+      gesture.current = null;
+      setLoupe(null);
     }
     if (pointers.current.size === 1 && painting) {
       const c = strokeContext()!;
@@ -352,11 +403,22 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     startPan();
   };
 
-  /** Eyedropper: the tapped colour becomes the background colour to remove, or the colour to recolour. */
+  /** The picture's colour under a point on screen, or null off the picture. */
+  const colourAt = (clientX: number, clientY: number): string | null => {
+    if (!art) return null;
+    const q = imagePointAt(doc.art.transform, art.width, art.height, clip, toUnits(clientX, clientY));
+    return pickColour(sourcePixels(art, DRAFT_SIDE), q.x, q.y);
+  };
+
+  const showLoupe = (e: ReactPointerEvent) => {
+    const rect = stageRef.current!.getBoundingClientRect();
+    setLoupe({ x: e.clientX - rect.left, y: e.clientY - rect.top, colour: colourAt(e.clientX, e.clientY), touch: e.pointerType !== 'mouse' });
+  };
+
+  /** Eyedropper: the picked colour becomes the background colour to remove, or the colour to recolour. */
   const pickBackground = (clientX: number, clientY: number) => {
     if (!art) return;
-    const q = imagePointAt(doc.art.transform, art.width, art.height, clip, toUnits(clientX, clientY));
-    const colour = pickColour(sourcePixels(art, DRAFT_SIDE), q.x, q.y);
+    const colour = colourAt(clientX, clientY);
     const recolor = toolStore.getState().eyedropperFor === 'recolor';
     if (!colour) {
       toast(recolor ? 'Tap on the picture to pick the colour to change.' : 'Tap on the picture to pick its background colour.', 'error');
@@ -385,6 +447,10 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
     }
     if (!g || !pointers.current.has(e.pointerId)) return;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (g.kind === 'pick') {
+      showLoupe(e);
+      return;
+    }
     if (g.kind === 'background') {
       // Offsets are fractions of the token's half-size; R here includes the view zoom.
       const offsetX = Math.min(5, Math.max(-5, g.offsetX + (e.clientX - g.x) / R));
@@ -463,6 +529,14 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       return;
     }
     if (!pointers.current.delete(e.pointerId)) return;
+    if (gesture.current?.kind === 'pick') {
+      gesture.current = null;
+      setLoupe(null);
+      setDragging(false);
+      // Let go: the colour under the pointer is picked (not when the pointer was cancelled).
+      if (e.type === 'pointerup') pickBackground(e.clientX, e.clientY);
+      return;
+    }
     if (pointers.current.size === 0) {
       setDragging(false);
       setMovingLabel(false);
@@ -850,6 +924,7 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
       {painting && cursor && (
         <span className="stage__brush-cursor" aria-hidden="true" style={{ left: cursor.x, top: cursor.y, width: brushSize, height: brushSize }} />
       )}
+      {loupe && tool === 'eyedropper' && <PickLoupe loupe={loupe} width={box.width} />}
       {/* Not while a brush or tool is on, so it never gets in the way of painting near the bottom. */}
       {art && overflow.length > 0 && tool === 'move' && (
         <button
@@ -946,13 +1021,45 @@ function ToolBar({ bottom }: { bottom: number }) {
       ) : tool === 'background' ? (
         <span className="stage__tool-hint">Drag to move the background, or a corner to resize it</span>
       ) : (
-        <span className="stage__tool-hint">{eyedropperFor === 'recolor' ? (recolorEnd === 'to' ? 'Tap the colour to change it to' : 'Tap the colour to change') : 'Tap the background colour'}</span>
+        <span className="stage__tool-hint">
+          {eyedropperFor === 'recolor' ? (recolorEnd === 'to' ? 'Tap the colour to change it to' : 'Tap the colour to change') : 'Tap the background colour'}, or hold and drag to look
+        </span>
       )}
       <button type="button" className="btn btn--primary btn--small" onClick={() => setTool('move')}>
         <Check size={16} aria-hidden="true" />
         Done
       </button>
     </div>
+  );
+}
+
+/**
+ * The eyedropper's bubble: a swatch of the colour under the pointer and its
+ * code. Above a finger (so the finger doesn't hide it), beside a mouse.
+ */
+function PickLoupe({ loupe, width }: { loupe: Loupe; width: number }) {
+  const SIZE = 64;
+  const lift = loupe.touch ? 84 : 52;
+  // Kept on screen: below the point when the point is near the top, to the left near the right edge.
+  const flipY = loupe.y - lift - SIZE / 2 < 4;
+  const top = flipY ? loupe.y + lift : loupe.y - lift;
+  const side = loupe.touch ? 0 : loupe.x + 40 + SIZE / 2 > width ? -40 : 40;
+  const left = Math.min(width - SIZE / 2 - 4, Math.max(SIZE / 2 + 4, loupe.x + side));
+  return (
+    <>
+      <span className="stage__pick-point" aria-hidden="true" style={{ left: loupe.x, top: loupe.y }} />
+      <div
+        className="stage__loupe"
+        data-testid="pick-loupe"
+        data-empty={!loupe.colour || undefined}
+        role="status"
+        aria-live="polite"
+        style={{ left, top }}
+      >
+        <span className="stage__loupe-swatch" style={{ background: loupe.colour ?? undefined, width: SIZE, height: SIZE }} />
+        <code className="stage__loupe-code">{loupe.colour ?? 'Off picture'}</code>
+      </div>
+    </>
   );
 }
 

@@ -1,6 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
-import { useMenuStyle } from '../state/menuStyle';
 
 /**
  * A collapsible panel section. Anything passed as `advanced`
@@ -76,23 +75,10 @@ export function Section({
   );
 }
 
-/**
- * The "Advanced" drop-down. The menu style decides how it shows: hidden
- * entirely (Simple), a closed drop-down (Advanced) or always open with no
- * drop-down (Expert).
- */
+/** The "Advanced" drop-down: closed until clicked. */
 export function Advanced({ children }: { children: ReactNode }) {
-  const style = useMenuStyle();
   const [open, setOpen] = useState(false);
   const bodyId = useId();
-  if (style === 'simple') return null;
-  if (style === 'expert') {
-    return (
-      <div className="advanced advanced--expert" data-control="advanced">
-        {children}
-      </div>
-    );
-  }
   return (
     <div className="advanced" data-open={open} data-control="advanced">
       <div className="advanced__header">

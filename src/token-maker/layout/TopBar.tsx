@@ -8,7 +8,6 @@ import { AppSwitch } from '../../shell/AppSwitch';
 import { inSite } from '../../shell/apps';
 import { PalettePicker } from '../../shell/PalettePicker';
 import { BrandMark } from './BrandMark';
-import { PanelSettings } from './PanelSettings';
 
 /** Logo, Batch toggle, Undo/Redo, New (DESIGN.md §8). Inside Token Maker the title is the switch between the apps. */
 export function TopBar({ compact }: { compact: boolean }) {
@@ -49,7 +48,6 @@ export function TopBar({ compact }: { compact: boolean }) {
         {compact && <span className="visually-hidden">New</span>}
       </button>
       <div className="topbar__group" data-control="theme">
-        <PanelSettings />
         <PalettePicker />
       </div>
     </header>

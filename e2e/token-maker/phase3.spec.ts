@@ -138,6 +138,26 @@ test('restore brings back part of the removed background', async ({ page, isMobi
   expect(near(bg!, [0xfb, 0xfb, 0xf8])).toBe(true);
 });
 
+test('holding and dragging the eyedropper shows the colour under the pointer, and letting go picks it', async ({ page, isMobile }) => {
+  test.skip(!!isMobile, 'covered by the desktop and tablet runs');
+  await upload(page);
+  const panel = await removeBackground(page);
+  await panel.getByRole('button', { name: 'Pick colour' }).click();
+  const box = (await page.getByTestId('token-canvas').boundingBox())!;
+  const loupe = page.getByTestId('pick-loupe');
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.2);
+  await page.mouse.down();
+  await expect(loupe).toBeVisible();
+  // Dragged onto the red body: the bubble follows and shows its colour.
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.65, { steps: 6 });
+  await expect(loupe.locator('code')).toHaveText('#7a2e2e');
+  await expect(panel.getByText('Picked')).toHaveCount(0);
+  await page.mouse.up();
+  await expect(loupe).toHaveCount(0);
+  await expect(panel.getByText('Picked')).toBeVisible();
+  await expect(panel.locator('.bg-colour code')).toHaveText('#7a2e2e');
+});
+
 test('the eyedropper picks the background colour from the picture', async ({ page, isMobile }) => {
   test.skip(!!isMobile, 'covered by the desktop and tablet runs');
   await upload(page);

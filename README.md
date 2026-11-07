@@ -2,7 +2,7 @@
 
 <https://tokenmaker.uk>
 
-**Token Maker** and **Frame Maker** in one web app. Token Maker makes tokens for D&D and other tabletop RPGs; Frame Maker designs the frames that go round them. The app titles at the left of each app's top bar switch between the apps. Both stay open while you switch, so you lose nothing. The Themes button (a moon, or a sun for a light theme) in either app's top bar picks the theme for both apps: Dark unless another is picked; Light and Day are the light ones (`src/shell/palettes.css`).
+**Token Maker** and **Frame Maker** in one web app. Token Maker makes tokens for D&D and other tabletop RPGs; Frame Maker designs the frames that go round them. The app titles at the left of each app's top bar switch between the apps. Both stay open while you switch, so you lose nothing. The Themes button (a painter's palette) in either app's top bar picks the theme for both apps: Dark unless another is picked; Light and Day are the light ones (`src/shell/palettes.css`).
 
 **Sending a frame from Frame Maker to Token Maker:** in Frame Maker, click **Export**. On the main page (both apps together) the menu starts on **Frame for Token Maker**. Click **Send to Token Maker**. The page switches to Token Maker, which uses the design as the token's frame and keeps it in its list of Frame Maker designs (**Frame & shape → Frame type → Frame Maker**). Nothing is downloaded.
 

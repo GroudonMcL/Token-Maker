@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSection, setMenuStyle } from './panel';
+import { openSection } from './panel';
 
-// Owner feedback after Phase 10 (document v8): menu styles, slider resets,
+// Owner feedback after Phase 10 (document v8): slider resets,
 // the resizable panel, the two-way theme, picture effects and decorations,
 // plain and turned labels, the new creature sizes, and a clear message when
 // the image server is missing.
@@ -11,22 +11,6 @@ async function sample(page: Page) {
   await page.getByRole('button', { name: /Try a sample/ }).click();
   await expect(page.locator('.token-summary__name').first()).toHaveText('True Goblin');
 }
-
-test('menu style hides, folds or shows the Advanced settings, and is remembered', async ({ page }) => {
-  await sample(page);
-  const style = (name: 'Simple' | 'Expert') => setMenuStyle(page, name);
-  await style('Simple');
-  let panel = await openSection(page, 'Colour');
-  await expect(panel.getByRole('button', { name: 'Advanced' })).toHaveCount(0);
-  await expect(panel.getByRole('textbox', { name: 'Hue value' })).toHaveCount(0);
-  await style('Expert');
-  panel = await openSection(page, 'Colour');
-  await expect(panel.getByRole('button', { name: 'Advanced' })).toHaveCount(0);
-  await expect(panel.getByRole('textbox', { name: 'Hue value' })).toBeVisible();
-  await page.reload();
-  panel = await openSection(page, 'Colour');
-  await expect(panel.getByRole('textbox', { name: 'Hue value' })).toBeVisible();
-});
 
 test('a slider reset button puts its default back as one undo step', async ({ page }) => {
   await sample(page);

@@ -100,7 +100,8 @@ test('add each generator from the menu; Druid, Knotwork, Artificer and Barbarian
   for (const frame of ['Druid', 'Knotwork', 'Artificer', 'Barbarian']) {
     await page.getByRole('button', { name: 'New' }).click();
     const dialog = page.getByRole('dialog', { name: 'New project' });
-    await dialog.getByRole('region', { name: 'Token Maker frames as editable layers' }).getByRole('button', { name: new RegExp(`^${frame}`) }).click();
+    await dialog.getByRole('tab', { name: /^Editable layers/ }).click();
+    await dialog.getByRole('tabpanel').getByRole('button', { name: new RegExp(`^${frame}`) }).click();
     await expect(dialog).toBeHidden();
     const types = (await data(page)).layers.map((l: { type: string }) => l.type);
     expect(types.some((t: string) => ['growth', 'knotwork', 'gears', 'repeat'].includes(t))).toBe(true);

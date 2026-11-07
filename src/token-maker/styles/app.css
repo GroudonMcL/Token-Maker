@@ -444,6 +444,46 @@ button:disabled {
   pointer-events: none;
 }
 
+/* The eyedropper's bubble: the colour under the pointer while it is held and dragged */
+.stage__pick-point {
+  position: absolute;
+  z-index: 3;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.stage__loupe {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.stage__loupe-swatch {
+  display: block;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55), var(--shadow-md);
+  background: repeating-conic-gradient(#bbb 0 25%, #eee 0 50%) 50% / 12px 12px;
+}
+
+.stage__loupe-code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 .stage:not([data-has-art]) .stage__token {
   border-radius: 50%;
   outline: 2px dashed var(--border-strong);
@@ -721,16 +761,6 @@ button:disabled {
 .panel-resizer:active::after {
   opacity: 1;
   background: var(--accent);
-}
-
-/* Simple / Advanced / Expert switch, in the top bar's Panel settings */
-.menu-style {
-  padding: var(--space-1) var(--space-2) var(--space-2);
-}
-
-.panel-settings {
-  position: fixed;
-  width: min(300px, calc(100vw - 24px));
 }
 
 /* Shadows section: a dot on each shadow that's on */
@@ -1152,12 +1182,6 @@ button:disabled {
 
 .advanced__chevron {
   transition: transform var(--dur) var(--ease);
-}
-
-.advanced--expert {
-  display: grid;
-  gap: var(--space-4);
-  padding-top: var(--space-4);
 }
 
 .advanced__body {

@@ -90,7 +90,13 @@ function toArt(src: RenderSource, pixels: PixelBuffer, mask: Uint8Array | null):
   return { source: { image: c, width: src.width, height: src.height }, mask, maskWidth: pixels.width, maskHeight: pixels.height };
 }
 
-const unedited = (src: RenderSource): ProcessedArt => ({ source: src, mask: null, maskWidth: 0, maskHeight: 0 });
+/** The art as it is, one object per picture, so the preview can tell nothing changed (and not redraw on every render). */
+const uneditedArt = new WeakMap<RenderSource, ProcessedArt>();
+const unedited = (src: RenderSource): ProcessedArt => {
+  let art = uneditedArt.get(src);
+  if (!art) uneditedArt.set(src, (art = { source: src, mask: null, maskWidth: 0, maskHeight: 0 }));
+  return art;
+};
 
 /** The processed art if it is already computed at this size, else null. */
 export function peekProcessedArt(src: RenderSource, edits: ArtEdits, side = fullSide(src)): ProcessedArt | null {
