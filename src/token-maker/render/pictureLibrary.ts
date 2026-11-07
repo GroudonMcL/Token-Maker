@@ -239,6 +239,9 @@ const art = (
   retired = false,
 ): LibraryDecorationPicture => ({ id: `deco-art-${id}`, name, color, swatches: [color, ...METAL.filter((c) => c !== color)], tint, group, start, ...(retired ? { retired } : {}) });
 
+/** A picture in the Pictures group; `tint` false keeps its own colours. */
+const pic = (id: string, name: string, color: string, tint: boolean): LibraryDecorationPicture => ({ ...deco(id, name, color), tint });
+
 /** No longer offered in the picker (owner's decoration review), but kept so tokens that use it still draw. */
 const retire = (p: LibraryDecorationPicture): LibraryDecorationPicture => ({ ...p, retired: true });
 
@@ -247,17 +250,33 @@ const SILVER = '#e8ecf2';
 
 /** Picture decorations: ornaments, treasure, creatures and trims, then flat icons with a dark outline (coloured by the decoration's colour). */
 export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
+  // Decoration review (owner's picks): unwanted pictures are wrapped in retire(), and the new
+  // alternatives follow the picture they were found for.
   orn('celtic-vine-corner', 'Celtic vine corner', false),
-  // Decoration review (owner's picks): retired ornaments and every flat icon below.
+  orn('leafy-vine-corner', 'Leafy vine corner', false),
   retire(orn('leaf-ornament', 'Leaf ornament', false)),
   orn('corner-decoration', 'Corner decoration', false),
   retire(orn('engraved-lion', 'Engraved lion', false)),
   retire(orn('bejeweled-lion', 'Bejeweled lion', false)),
-  orn('golden-laurel', 'Golden laurel', true),
+  retire(orn('golden-laurel', 'Golden laurel', true)),
+  orn('bright-gold-laurel-wreath', 'Bright gold laurel wreath', true),
   orn('gold-victorian-ring', 'Gold victorian ring', true),
+  orn('gold-floral-flourish-ring', 'Gold floral flourish ring', true),
+  orn('gold-scroll-ring', 'Gold scroll ring', true),
+  orn('gold-lace-ring', 'Gold lace ring', true),
   orn('filigree-circle', 'Filigree circle', false),
+  orn('fine-filigree-ring', 'Fine filigree ring', false),
+  orn('scalloped-scroll-ring', 'Scalloped scroll ring', false),
+  orn('baroque-scroll-ring', 'Baroque scroll ring', false),
+  orn('four-point-filigree-ring', 'Four-point filigree ring', false),
   orn('corner-flourish', 'Corner flourish', false),
-  orn('flourish-divider', 'Flourish divider', false),
+  orn('acanthus-corner', 'Acanthus corner', false),
+  orn('fine-scroll-corner', 'Fine scroll corner', false),
+  orn('baroque-scroll-corner', 'Baroque scroll corner', false),
+  retire(orn('flourish-divider', 'Flourish divider', false)),
+  orn('scroll-divider', 'Scroll divider', false),
+  orn('ivy-divider', 'Ivy divider', false),
+  orn('bold-scroll-divider', 'Bold scroll divider', false),
   orn('laurel-wreath', 'Laurel wreath', false),
   retire(orn('heraldic-dragon', 'Heraldic dragon', false)),
   retire(orn('heraldic-griffin', 'Heraldic griffin', false)),
@@ -266,16 +285,24 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   retire(orn('lion-rampant', 'Lion rampant', true)),
   retire(orn('gold-griffin', 'Gold griffin', true)),
   retire(orn('royal-crown', 'Royal crown', true)),
+  orn('pale-gold-imperial-crown', 'Pale gold imperial crown', true),
   retire(orn('celtic-knot', 'Celtic knot', false)),
   retire(orn('gold-fleur-de-lis', 'Gold fleur de lis', true)),
   retire(orn('fleur-de-lis', 'Fleur de lis', false)),
-  retire(orn('knotwork-divider', 'Knotwork divider', false)),
+  orn('knotwork-divider', 'Knotwork divider', false),
+  orn('celtic-knot-crest', 'Celtic knot crest', false),
+  orn('copper-celtic-plait', 'Copper Celtic plait', true),
   retire(orn('antique-corner', 'Antique corner', false)),
-  retire(orn('dragon-head', 'Dragon head', false)),
+  orn('dragon-head', 'Dragon head', false),
+  orn('dragon-head-silhouette', 'Dragon head silhouette', false),
+  orn('tribal-dragon-head', 'Tribal dragon head', false),
   // Decoration art round, part 1 (owner's picks): new gems, crowns, stars, skulls and a horn replace the first set.
   art('gem', 'Gem', 'Treasure', '#d0202a', { place: 'top', size: 0.34, mirror: false }, false, true),
   art('diamond', 'Diamond', 'Treasure', '#d0202a', { place: 'top', size: 0.3, mirror: false }, true),
   art('cut-stone', 'Cut stone', 'Treasure', '#2f7fd8', { place: 'top', size: 0.32, mirror: false }, true, true),
+  art('faceted-gem', 'Faceted gem', 'Treasure', '#2f7fd8', { place: 'top', size: 0.32, mirror: false }, true),
+  art('emerald-cut-gem', 'Emerald-cut gem', 'Treasure', '#2f7fd8', { place: 'top', size: 0.32, mirror: false }, true),
+  art('diamond-cut-gem', 'Diamond-cut gem', 'Treasure', '#2f7fd8', { place: 'top', size: 0.32, mirror: false }, true),
   art('round-gem', 'Round gem', 'Treasure', '#2e8b57', { place: 'bottom', size: 0.3, mirror: false }, false, true),
   art('round-brilliant', 'Round brilliant', 'Treasure', '#2e8b57', { place: 'bottom', size: 0.3, mirror: false }, true),
   art('pearl', 'Pearl', 'Treasure', '#f4efe6', { place: 'bottom', size: 0.26, mirror: false }, true),
@@ -288,9 +315,12 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   art('star-ornate', 'Ornate star', 'Treasure', '#e8c35a', { place: 'topRight', size: 0.3, mirror: true }, true),
   art('skull', 'Skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }, false, true),
   art('skull-painted', 'Painted skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }),
+  art('realistic-skull', 'Realistic skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }),
   art('skull-engraved', 'Engraved skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }, true),
   art('skull-crossbones', 'Skull and crossbones', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.4, mirror: false }, true),
   art('horn', 'Horn', 'Creatures', '#b89a86', { place: 'topRight', size: 0.3, mirror: true }),
+  art('antelope-horn', 'Antelope horn', 'Creatures', '#b89a86', { place: 'topRight', size: 0.3, mirror: true }),
+  art('curved-horn', 'Curved horn', 'Creatures', '#b89a86', { place: 'topRight', size: 0.3, mirror: true }),
   art('horn-smooth', 'Smooth horn', 'Creatures', '#d8c9a8', { place: 'topRight', size: 0.32, mirror: true }, true),
   art('wing', 'Wing', 'Creatures', '#f2f2f2', { place: 'right', size: 0.4, mirror: true }),
   // Decoration art round, part 2 (owner's picks): more wings, ribbons, laurels and a leaf; chain retired.
@@ -305,6 +335,9 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   art('chain', 'Chain', 'Trims', '#b8bcc4', { place: 'bottom', size: 0.2, mirror: false }, false, true),
   art('leaf', 'Leaf', 'Trims', '#3f9a3a', { place: 'topLeft', size: 0.3, mirror: false }, false, true),
   art('oak-sprig', 'Oak sprig', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }, true),
+  art('oak-branch-with-acorns', 'Oak branch with acorns', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }, true),
+  art('slender-oak-branch', 'Slender oak branch', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }, true),
+  art('sessile-oak-sprig', 'Sessile oak sprig', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }),
   retire(deco('skull-icon', 'Skull icon', '#e9e1cc', ['#e9e1cc', '#3a3a3a', '#76ff4a', '#c0263a'])),
   retire(deco('heart', 'Heart', '#c0263a', ['#c0263a', '#ff6fb5', '#ffffff'])),
   retire(deco('broken-heart', 'Broken heart', '#c0263a', ['#c0263a', '#5a0606', '#8a8a8a'])),
@@ -319,6 +352,12 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   retire(deco('pouch', 'Pouch', '#b5813a', ['#b5813a', '#e0b23a', '#8a5a32'])),
   retire(deco('flag', 'Flag', '#b8322a', ['#b8322a', '#2f5fa8', '#2f7a3a', '#ffffff'])),
   retire(deco('award', 'Award', '#e0b23a')),
+  // Decoration review, more options (owner's picks): new pictures for effect pictures offered as decorations.
+  pic('corner-sunburst', 'Corner sunburst', '#ffe08a', true),
+  pic('ivy-corner', 'Ivy corner', '#ffffff', false),
+  pic('west-coast-creeper', 'West coast creeper', '#ffffff', false),
+  pic('ivy-sprig', 'Ivy sprig', '#ffffff', false),
+  pic('two-glossy-hearts', 'Two glossy hearts', '#ff6fb5', true),
 ];
 
 export const pictureUrl = (id: string) => `/pictures/${id}.webp`;
