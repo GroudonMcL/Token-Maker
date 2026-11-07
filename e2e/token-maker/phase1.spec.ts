@@ -154,6 +154,34 @@ test('the panel shows one tab at a time', async ({ page, isMobile }) => {
   await expect(panel.getByRole('heading', { name: 'Frame & shape' })).toBeVisible();
 });
 
+test('zooming the view in on the frame’s edge keeps that point under the pointer, and the middle button drags the view past the centre', async ({ page, isMobile }) => {
+  test.skip(!!isMobile, 'mouse wheel');
+  await upload(page);
+  const canvas = page.getByTestId('token-canvas');
+  const box = (await canvas.boundingBox())!;
+  // A point on the frame near the token's left edge, as a fraction of the token.
+  const fx = 0.06;
+  const fy = 0.5;
+  const at = { x: box.x + box.width * fx, y: box.y + box.height * fy };
+  await page.mouse.move(at.x, at.y);
+  for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -300);
+  await expect.poll(async () => (await canvas.boundingBox())!.width).toBeGreaterThan(box.width * 3);
+  // The same point of the token is still under the pointer (it used to slide towards the middle).
+  const zoomed = (await canvas.boundingBox())!;
+  expect(Math.abs(zoomed.x + zoomed.width * fx - at.x)).toBeLessThan(4);
+  expect(Math.abs(zoomed.y + zoomed.height * fy - at.y)).toBeLessThan(4);
+
+  // Middle-drag the view: the token's centre can go off screen.
+  const stage = (await page.locator('.stage').boundingBox())!;
+  await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+  await page.mouse.down({ button: 'middle' });
+  await page.mouse.move(stage.x + stage.width / 2 + 600, stage.y + stage.height / 2, { steps: 8 });
+  await page.mouse.up({ button: 'middle' });
+  const moved = (await canvas.boundingBox())!;
+  expect(moved.x - zoomed.x).toBeGreaterThan(590);
+  expect(moved.x + moved.width / 2).toBeGreaterThan(stage.x + stage.width);
+});
+
 test('the wheel zooms the view over the token and scrolls the panel elsewhere', async ({ page, isMobile }) => {
   test.skip(!!isMobile, 'mouse wheel');
   await upload(page);

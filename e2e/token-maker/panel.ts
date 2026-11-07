@@ -28,9 +28,3 @@ export async function openSection(page: Page, name: string) {
   return panel;
 }
 
-/** Picks Simple, Advanced or Expert in the top bar's Panel settings. */
-export async function setMenuStyle(page: Page, style: 'Simple' | 'Advanced' | 'Expert') {
-  await page.getByRole('button', { name: 'Panel settings' }).click();
-  await page.getByRole('dialog', { name: 'Panel settings' }).getByRole('radio', { name: style }).click();
-  await page.keyboard.press('Escape');
-}

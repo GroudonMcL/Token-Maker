@@ -40,6 +40,8 @@ const compare = (page: Page, a: string, b: string) =>
 async function pick(page: Page, name: string | RegExp) {
   await page.getByRole('button', { name: 'New' }).click();
   const dialog = page.getByRole('dialog', { name: 'New project' });
+  // Found with the search, so it shows whichever tab it is in (Blank project is a button of its own).
+  if (typeof name === 'string') await dialog.getByRole('searchbox', { name: 'Search frames' }).fill(name);
   await dialog.getByRole('button', { name, exact: typeof name === 'string' }).click();
   await expect(dialog).toBeHidden();
 }

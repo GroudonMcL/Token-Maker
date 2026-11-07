@@ -21,6 +21,8 @@ setCanvasFactory((w, h) => createCanvas(w, h) as unknown as HTMLCanvasElement);
 async function pick(page: Page, name: string) {
   await page.getByRole('button', { name: 'New' }).click();
   const dialog = page.getByRole('dialog', { name: 'New project' });
+  // Found with the search, so it shows whichever tab it is in.
+  await dialog.getByRole('searchbox', { name: 'Search frames' }).fill(name);
   await dialog.getByRole('button', { name, exact: true }).click();
   await expect(dialog).toBeHidden();
 }
