@@ -22,6 +22,7 @@ import type {
 import { SCHEMA_VERSION } from './types';
 import { DEFAULT_FONT } from '../fonts/catalog';
 import { effectPicture } from '../render/pictureLibrary';
+import { EFFECT_STYLES } from '../render/effectStyles';
 
 /** Creature sizes (DESIGN.md §2). Tiny covers half a square and Small 0.8 of one (owner request, v8). */
 export const SIZE_PRESETS: { id: Exclude<SizePreset, 'custom'>; name: string; squares: number }[] = [
@@ -213,6 +214,8 @@ export const EFFECTS: EffectInfo[] = [
     ['gradient'],
   ),
   fx('edgeShadow', 'Edge shadow', 'Overlays', { placement: 'over', intensity: 80, color: '#000000', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, angle: 90, blend: 'multiply' }, ['#1b1020', '#0b1a2a', '#2a1a0b'], ['color', 'angle', 'spread', 'softness'], { spread: 'Reach', angle: 'Side' }),
+  fx('edgeLight', 'Edge light', 'Overlays', { placement: 'over', intensity: 80, color: '#ffe6a8', size: OVERLAY_BASE_SIZE, spread: 45, softness: 70, angle: 270, blend: 'screen' }, ['#ffffff', '#9fd4ff', '#ffb36b', '#c9a0ff'], ['color', 'angle', 'spread', 'softness'], { spread: 'Reach', angle: 'Side' }),
+  fx('spotlight', 'Spotlight', 'Overlays', { placement: 'over', intensity: 85, color: '#fff1c9', size: OVERLAY_BASE_SIZE, spread: 45, softness: 60, angle: 270, blend: 'screen' }, ['#ffffff', '#9fd4ff', '#ffb36b', '#c9a0ff'], ['color', 'angle', 'spread', 'softness'], { spread: 'Size', angle: 'Towards' }),
 
   // Picture effects use the settings of the picture picked (src/render/pictureLibrary.ts).
   fx('picture', 'Picture', 'Pictures', { placement: 'over', intensity: 90, color: '#ffffff', size: 0.3, spread: 40 }, ['#ffd76a', '#ff6a3d', '#6fc3ff', '#76ff4a', '#b06aff', '#8a0b0b'], ['picture', 'color', 'size', 'spread', 'seed'], { size: 'Picture size', spread: 'Amount' }),
@@ -242,6 +245,7 @@ export function newEffect(kind: EffectKind, id = Math.random().toString(36).slic
     flip: false,
     useGradient: false,
     clip: [],
+    style: EFFECT_STYLES[kind]?.[0]?.id ?? '',
     ...d,
     gradient: copyGradient(d.gradient ?? DEFAULT_GRADIENT),
   };
@@ -253,13 +257,14 @@ export function newPictureEffect(image: PictureSource, id?: string): EffectLayer
   const lib = image.type === 'library' ? effectPicture(image.id) : undefined;
   // The user's own picture keeps its colours and fills the opening until they choose otherwise.
   if (!lib) return { ...e, image, tint: false, layout: 'fill', spread: 100, intensity: 100 };
-  return { ...e, image, ...lib.defaults, layout: lib.defaults.layout ?? 'scatter', tint: lib.defaults.tint ?? true, blur: lib.defaults.blur ?? 0 };
+  return { ...e, image, ...lib.defaults, layout: lib.defaults.layout ?? 'scatter', tint: lib.defaults.tint ?? true, blur: lib.defaults.blur ?? 0, clip: [...(lib.defaults.clip ?? e.clip)] };
 }
 
 // ---- Phase 7: decorations ----
 
 export type DecorationGroup = 'Treasure' | 'Creatures' | 'Trims' | 'Class icons' | 'Pictures';
-export const DECORATION_GROUPS: DecorationGroup[] = ['Treasure', 'Creatures', 'Trims', 'Class icons', 'Pictures'];
+/** The groups the picker offers. Class icons are all retired (decoration art round), so the group is no longer shown. */
+export const DECORATION_GROUPS: DecorationGroup[] = ['Treasure', 'Creatures', 'Trims', 'Pictures'];
 
 export interface DecorationInfo {
   kind: DecorationKind;
@@ -324,6 +329,12 @@ export const DECORATIONS: DecorationInfo[] = [
 ];
 
 export const decorationInfo = (kind: DecorationKind): DecorationInfo => DECORATIONS.find((d) => d.kind === kind)!;
+
+/**
+ * Code-drawn decorations the owner removed (decoration art round): no longer
+ * offered in the picker, but still drawn on tokens that already have them.
+ */
+export const RETIRED_DECORATIONS: ReadonlySet<DecorationKind> = new Set<DecorationKind>(['sword', 'dagger', 'shield', 'staff', 'bow', 'holySymbol', 'lute']);
 
 /** Most decorations one token can have. */
 export const MAX_DECORATIONS = 16;

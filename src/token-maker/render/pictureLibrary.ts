@@ -4,7 +4,7 @@
 // (src/state/pictureLibrary.ts). Either way the picture is held in the asset
 // store under pictureAssetId(), so the renderer only ever reads the assets.
 
-import type { BlendMode, EffectPlacement, PictureSource, SnapPoint } from '../document/types';
+import type { BlendMode, ClipTarget, EffectPlacement, PictureSource, SnapPoint } from '../document/types';
 
 /** The effect picker's groups (document/defaults.ts lists them in order). */
 export type EffectPictureGroup = 'Elemental' | 'Conditions' | 'Atmosphere' | 'Overlays' | 'Pictures';
@@ -29,9 +29,24 @@ export interface LibraryEffectPicture {
     layout?: 'scatter' | 'fill';
     tint?: boolean;
     blur?: number;
+    /** Where it is kept inside to start (Keep inside), e.g. fire only outside the token and on the frame. */
+    clip?: ClipTarget[];
   };
   swatches: string[];
+  /**
+   * Which pickers offer it (effect pictures review, owner's picks): the
+   * effect picker, the decoration picker's Effect pictures, both (the
+   * default) or neither. One offered nowhere is kept, with its file, so
+   * tokens that already use it still draw it.
+   */
+  offer?: PictureOffer;
 }
+
+export type PictureOffer = 'both' | 'effect' | 'decoration' | 'none';
+/** Whether the effect picker offers this picture. */
+export const offeredAsEffect = (p: LibraryEffectPicture) => (p.offer ?? 'both') === 'both' || p.offer === 'effect';
+/** Whether the decoration picker's Effect pictures offers this picture. */
+export const offeredAsDecoration = (p: LibraryEffectPicture) => (p.offer ?? 'both') === 'both' || p.offer === 'decoration';
 
 export interface LibraryDecorationPicture {
   id: string;
@@ -43,6 +58,11 @@ export interface LibraryDecorationPicture {
   group: 'Ornaments' | 'Treasure' | 'Creatures' | 'Trims' | 'Pictures';
   /** Where it starts (else the picture decoration's own defaults). */
   start?: { place: SnapPoint; size: number; mirror: boolean };
+  /**
+   * Replaced by the owner's later picks: no longer offered in the picker,
+   * but kept (with its file) so tokens that already use it still draw it.
+   */
+  retired?: boolean;
 }
 
 const fx = (
@@ -54,6 +74,10 @@ const fx = (
   group: EffectPictureGroup = 'Pictures',
 ): LibraryEffectPicture => ({ id: `fx-${id}`, name, group, orient, defaults, swatches: [defaults.color, ...swatches.filter((c) => c !== defaults.color)] });
 
+/** The same picture, offered only where `offer` says. */
+const only = (offer: PictureOffer, p: LibraryEffectPicture): LibraryEffectPicture => ({ ...p, offer });
+
+
 /**
  * Picture effects: mostly white pictures, coloured by the effect's colour and
  * scattered round the token or stretched over it. Since v12 they include the
@@ -61,34 +85,36 @@ const fx = (
  * drawn by code (owner request: real pictures look better). Sources and
  * licences are in ASSETS-CREDITS.md.
  */
-export const EFFECT_PICTURES: readonly LibraryEffectPicture[] = [
+const FIRST_PICTURES: readonly LibraryEffectPicture[] = [
   // Elemental (v12: real pictures instead of the code-drawn fire, frost, lightning…).
-  fx('fire', 'Fire', 'outward', { placement: 'border', color: '#ff7a1f', blend: 'screen', size: 0.32, spread: 70, intensity: 95 }, ['#ff3b1a', '#ffb347', '#4aa8ff', '#76ff4a', '#c05aff'], 'Elemental'),
+  only('none', fx('fire', 'Fire', 'outward', { placement: 'border', color: '#ff7a1f', blend: 'screen', size: 0.32, spread: 70, intensity: 95 }, ['#ff3b1a', '#ffb347', '#4aa8ff', '#76ff4a', '#c05aff'], 'Elemental')),
   fx('flame-licks', 'Flame licks', 'outward', { placement: 'border', color: '#ff8a2a', blend: 'screen', size: 0.22, spread: 60, intensity: 95 }, ['#ff3b1a', '#4aa8ff', '#76ff4a', '#c05aff'], 'Elemental'),
-  fx('frost-edge', 'Frost', 'outward', { placement: 'border', color: '#bfe6ff', blend: 'screen', size: 0.22, spread: 60, intensity: 90 }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental'),
-  fx('frost', 'Frost ring', 'upright', { placement: 'over', color: '#bfe6ff', blend: 'screen', size: 0.3, spread: 50, intensity: 85, layout: 'fill' }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental'),
+  fx('frost-edge', 'Frost', 'outward', { placement: 'border', color: '#bfe6ff', blend: 'screen', size: 0.22, spread: 60, intensity: 90, clip: ['outside', 'frame'] }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental'),
+  only('none', fx('frost', 'Frost ring', 'upright', { placement: 'over', color: '#bfe6ff', blend: 'screen', size: 0.3, spread: 50, intensity: 85, layout: 'fill' }, ['#ffffff', '#7fd0ff', '#9be7e0'], 'Elemental')),
   fx('frost-fern', 'Ice ferns', 'random', { placement: 'over', color: '#d6f0ff', blend: 'screen', size: 0.32, spread: 20, intensity: 85 }, ['#ffffff', '#7fd0ff'], 'Elemental'),
-  fx('snowflakes', 'Snowflakes', 'random', { placement: 'over', color: '#e8f6ff', blend: 'screen', size: 0.14, spread: 40, intensity: 90 }, ['#ffffff', '#9fd8ff'], 'Elemental'),
-  fx('lightning', 'Lightning', 'random', { placement: 'border', color: '#b8ccff', blend: 'screen', size: 0.5, spread: 20, intensity: 95 }, ['#ffffff', '#ffe36a', '#c08aff', '#76ff4a'], 'Elemental'),
+  fx('snowflakes', 'Snowflakes', 'random', { placement: 'over', color: '#e8f6ff', blend: 'screen', size: 0.1, spread: 40, intensity: 90 }, ['#ffffff', '#9fd8ff'], 'Elemental'),
+  fx('lightning', 'Lightning', 'random', { placement: 'border', color: '#b8ccff', blend: 'screen', size: 0.5, spread: 20, intensity: 95, clip: ['token'] }, ['#ffffff', '#ffe36a', '#c08aff', '#76ff4a'], 'Elemental'),
   fx('crackles', 'Crackles', 'random', { placement: 'border', color: '#8fd0ff', blend: 'screen', size: 0.3, spread: 40, intensity: 95 }, ['#ffffff', '#ffe36a', '#c08aff'], 'Elemental'),
-  fx('poison', 'Poison gas', 'random', { placement: 'over', color: '#7dff4a', blend: 'screen', size: 0.45, spread: 30, intensity: 80 }, ['#a8e23a', '#3ad27b', '#b05ad2'], 'Elemental'),
-  fx('necrotic', 'Necrotic', 'random', { placement: 'over', color: '#3a1d4a', blend: 'multiply', size: 0.5, spread: 25, intensity: 85 }, ['#2a1a3a', '#1a3a22', '#1a1a1a'], 'Elemental'),
-  fx('light-rays', 'Radiant', 'upright', { placement: 'over', color: '#ffe08a', blend: 'screen', size: 0.3, spread: 50, intensity: 60, layout: 'fill' }, ['#fff4c4', '#ffffff', '#ffb347', '#9fd8ff'], 'Elemental'),
+  only('decoration', fx('poison', 'Poison gas', 'random', { placement: 'over', color: '#7dff4a', blend: 'screen', size: 0.45, spread: 30, intensity: 80 }, ['#a8e23a', '#3ad27b', '#b05ad2'], 'Elemental')),
+  only('none', fx('necrotic', 'Necrotic', 'random', { placement: 'over', color: '#3a1d4a', blend: 'multiply', size: 0.5, spread: 25, intensity: 85 }, ['#2a1a3a', '#1a3a22', '#1a1a1a'], 'Elemental')),
+  only('decoration', fx('light-rays', 'Radiant', 'upright', { placement: 'over', color: '#ffe08a', blend: 'screen', size: 0.3, spread: 50, intensity: 60, layout: 'fill' }, ['#fff4c4', '#ffffff', '#ffb347', '#9fd8ff'], 'Elemental')),
+  // Radiant (effect pictures review): a ring of soft beams round the frame, pointing out; over the art they shine in from the edge.
+  fx('light-ring', 'Radiant', 'outward', { placement: 'border', color: '#ffe08a', blend: 'screen', size: 0.35, spread: 70, intensity: 85 }, ['#fff4c4', '#ffffff', '#ffb347', '#9fd8ff'], 'Elemental'),
   fx('scorch', 'Scorch marks', 'random', { placement: 'over', color: '#1c1410', blend: 'multiply', size: 0.35, spread: 25, intensity: 80 }, ['#000000', '#3a1a0a'], 'Elemental'),
 
   // Conditions.
-  fx('blood-splatter', 'Blood spatter', 'random', { placement: 'over', color: '#7a0a0a', blend: 'normal', size: 0.42, spread: 15, intensity: 85 }, ['#5a0606', '#3a6a1a', '#2a2a6a'], 'Conditions'),
+  only('decoration', fx('blood-splatter', 'Blood spatter', 'random', { placement: 'over', color: '#7a0a0a', blend: 'normal', size: 0.42, spread: 15, intensity: 85 }, ['#5a0606', '#3a6a1a', '#2a2a6a'], 'Conditions')),
   fx('blood-drips', 'Blood drips', 'upright', { placement: 'over', color: '#7a0a0a', blend: 'normal', size: 0.5, spread: 8, intensity: 85 }, ['#5a0606', '#3a6a1a', '#2a2a6a'], 'Conditions'),
-  fx('claw-marks', 'Claw marks', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.5, spread: 10, intensity: 85 }, ['#5a0606', '#1c1c1c', '#ffffff'], 'Conditions'),
-  fx('splatter', 'Splatter', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.35, spread: 25, intensity: 85 }, ['#3a6a1a', '#1c1c1c', '#5b2a86'], 'Conditions'),
-  fx('stone', 'Petrified', 'upright', { placement: 'over', color: '#c8c4bc', blend: 'overlay', size: 0.3, spread: 50, intensity: 100, layout: 'fill' }, ['#ffffff', '#a59a86', '#8d8a84'], 'Conditions'),
+  only('none', fx('claw-marks', 'Claw marks', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.5, spread: 10, intensity: 85 }, ['#5a0606', '#1c1c1c', '#ffffff'], 'Conditions')),
+  only('decoration', fx('splatter', 'Splatter', 'random', { placement: 'over', color: '#8a0b0b', blend: 'normal', size: 0.35, spread: 25, intensity: 85 }, ['#3a6a1a', '#1c1c1c', '#5b2a86'], 'Conditions')),
+  only('none', fx('stone', 'Petrified', 'upright', { placement: 'over', color: '#c8c4bc', blend: 'overlay', size: 0.3, spread: 50, intensity: 100, layout: 'fill' }, ['#ffffff', '#a59a86', '#8d8a84'], 'Conditions')),
   fx('cracks', 'Cracks', 'upright', { placement: 'over', color: '#ffffff', blend: 'multiply', size: 0.3, spread: 50, intensity: 85, layout: 'fill', tint: false }, ['#ffffff'], 'Conditions'),
-  fx('ghost-wisps', 'Ghostly wisps', 'outward', { placement: 'over', color: '#cfe8ff', blend: 'screen', size: 0.45, spread: 20, intensity: 80 }, ['#ffffff', '#b8f0e0', '#e0c8ff'], 'Conditions'),
+  only('decoration', fx('ghost-wisps', 'Ghostly wisps', 'outward', { placement: 'over', color: '#cfe8ff', blend: 'screen', size: 0.45, spread: 20, intensity: 80 }, ['#ffffff', '#b8f0e0', '#e0c8ff'], 'Conditions')),
   fx('wisps', 'Wisps', 'random', { placement: 'over', color: '#9fd8ff', blend: 'screen', size: 0.3, spread: 35, intensity: 80 }, ['#76ff4a', '#b06aff', '#ffffff'], 'Conditions'),
-  fx('hearts', 'Hearts', 'random', { placement: 'over', color: '#ff6fb5', blend: 'normal', size: 0.14, spread: 30, intensity: 90 }, ['#ff3b6a', '#ff9ad2', '#c08aff'], 'Conditions'),
+  only('none', fx('hearts', 'Hearts', 'random', { placement: 'over', color: '#ff6fb5', blend: 'normal', size: 0.14, spread: 30, intensity: 90 }, ['#ff3b6a', '#ff9ad2', '#c08aff'], 'Conditions')),
 
   // Atmosphere (beside the drawn mist and smoke).
-  fx('embers', 'Embers', 'upright', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.3, spread: 50, intensity: 90, layout: 'fill', tint: false }, ['#ffffff'], 'Atmosphere'),
+  only('none', fx('embers', 'Embers', 'upright', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.3, spread: 50, intensity: 90, layout: 'fill', tint: false }, ['#ffffff'], 'Atmosphere')),
   fx('sparkle', 'Sparkles', 'random', { placement: 'over', color: '#fff6d0', blend: 'screen', size: 0.16, spread: 35, intensity: 95 }, ['#ffffff', '#ffd76a', '#9fd8ff', '#ff9ad2'], 'Atmosphere'),
   fx('twinkles', 'Twinkles', 'random', { placement: 'over', color: '#fff4c4', blend: 'screen', size: 0.18, spread: 40, intensity: 95 }, ['#ffffff', '#9fd8ff', '#ff9ad2'], 'Atmosphere'),
   fx('lens-flare', 'Lens flare', 'upright', { placement: 'over', color: '#ffffff', blend: 'screen', size: 1, spread: 0, intensity: 90, tint: false }, ['#ffffff'], 'Atmosphere'),
@@ -97,14 +123,81 @@ export const EFFECT_PICTURES: readonly LibraryEffectPicture[] = [
 
   // Overlays (beside the vignette, gradient and edge shadow).
   fx('ivy-vine', 'Ivy', 'upright', { placement: 'over', color: '#ffffff', blend: 'normal', size: 0.3, spread: 50, intensity: 100, layout: 'fill', tint: false }, ['#ffffff'], 'Overlays'),
-  fx('ivy', 'Creeping vine', 'outward', { placement: 'over', color: '#ffffff', blend: 'normal', size: 0.5, spread: 16, intensity: 100, tint: false }, ['#ffffff'], 'Overlays'),
+  only('decoration', fx('ivy', 'Creeping vine', 'outward', { placement: 'over', color: '#ffffff', blend: 'normal', size: 0.5, spread: 16, intensity: 100, tint: false }, ['#ffffff'], 'Overlays')),
   fx('cobweb-corner', 'Cobwebs', 'upright', { placement: 'over', color: '#e8e8e8', blend: 'screen', size: 0.3, spread: 50, intensity: 85, layout: 'fill' }, ['#ffffff', '#c9ccd6', '#9a9aa6'], 'Overlays'),
-  fx('cobweb', 'Spider web', 'random', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.7, spread: 4, intensity: 85 }, ['#c9ccd6', '#9a9aa6'], 'Overlays'),
+  only('none', fx('cobweb', 'Spider web', 'random', { placement: 'over', color: '#ffffff', blend: 'screen', size: 0.7, spread: 4, intensity: 85 }, ['#c9ccd6', '#9a9aa6'], 'Overlays')),
 
   // Pictures.
   fx('swirls', 'Swirls', 'random', { placement: 'over', color: '#b06aff', blend: 'screen', size: 0.4, spread: 30, intensity: 80 }, ['#6fc3ff', '#76ff4a', '#ffffff']),
-  fx('arcane-circle', 'Arcane circle', 'upright', { placement: 'over', color: '#b06aff', blend: 'screen', size: 0.9, spread: 0, intensity: 85 }, ['#6fc3ff', '#ffd76a', '#ff3b3b']),
+  only('none', fx('arcane-circle', 'Arcane circle', 'upright', { placement: 'over', color: '#b06aff', blend: 'screen', size: 0.9, spread: 0, intensity: 85 }, ['#6fc3ff', '#ffd76a', '#ff3b3b'])),
 ];
+
+/**
+ * New pictures for existing effects (effect pictures review, owner's picks):
+ * [the effect it joins, id, name, settings that differ, where it's offered].
+ * Each starts with that effect's settings and is listed right after it.
+ */
+const MORE_PICTURES: [string, string, string, Partial<LibraryEffectPicture['defaults']>, PictureOffer?][] = [
+  // Elemental and light (page A).
+  ['fire', 'fire-sparks', 'Fire', { clip: ['outside', 'frame'] }],
+  ['fire', 'fire-bonfire', 'Bonfire flame', {}, 'decoration'],
+  ['fire', 'fire-row', 'Row of flames', {}, 'decoration'],
+  ['frost-edge', 'frost-thicket', 'Ice thicket', {}],
+  ['frost', 'frost-mixed', 'Frost ring', {}],
+  ['snowflakes', 'snowflakes-fern', 'Fern snowflakes', {}],
+  ['lightning', 'lightning-glow', 'Glowing bolts', {}],
+  ['crackles', 'crackles-arc', 'Arcs', {}],
+  ['light-rays', 'light-corona', 'Corona burst', {}, 'decoration'],
+  ['light-rays', 'light-sun-wheel', 'Sun wheel', {}, 'decoration'],
+  ['light-rays', 'light-burst', 'Light burst', {}, 'decoration'],
+  ['light-rays', 'light-from-above', 'Light from above', {}, 'decoration'],
+  ['lens-flare', 'lens-flare-streak', 'Flare streak', {}],
+  ['lens-flare', 'lens-flare-blue', 'Blue flare', {}],
+  ['embers', 'embers-rising', 'Rising sparks', {}],
+  ['embers', 'embers-spray', 'Bonfire spray', {}],
+  ['hearts', 'hearts-classic', 'Hearts', {}],
+  ['hearts', 'hearts-shine', 'Shiny hearts', {}],
+  // Conditions, magic and atmosphere (pages B and C).
+  ['necrotic', 'necrotic-ink', 'Ink plume', {}],
+  ['necrotic', 'necrotic-tendrils', 'Necrotic tendrils', { intensity: 95 }],
+  ['scorch', 'scorch-charred', 'Charred patch', {}],
+  ['blood-splatter', 'blood-burst', 'Blood burst', {}, 'decoration'],
+  ['blood-splatter', 'blood-splat', 'Blood splat', {}],
+  ['blood-drips', 'blood-drips-runs', 'Blood runs', {}],
+  ['claw-marks', 'claw-rakes', 'Claw rakes', {}, 'decoration'],
+  ['splatter', 'splatter-specks', 'Scattered specks', {}, 'decoration'],
+  ['splatter', 'splatter-heavy', 'Heavy splat', {}, 'decoration'],
+  ['stone', 'stone-marble', 'Petrified marble', { intensity: 85 }],
+  ['stone', 'stone-weathered', 'Petrified stone', {}],
+  ['cracks', 'cracks-impact', 'Impact cracks', {}],
+  ['cracks', 'cracks-glass', 'Shattered glass', { intensity: 70 }],
+  ['ghost-wisps', 'ghost-twin-wisps', 'Ghostly twin wisps', { size: 0.35 }],
+  ['wisps', 'wisps-incense', 'Incense wisps', {}, 'decoration'],
+  ['wisps', 'wisps-ribbon', 'Smoke ribbon', { size: 0.35 }, 'decoration'],
+  ['sparkle', 'sparkle-starburst', 'Starburst', {}, 'decoration'],
+  ['sparkle', 'sparkle-glow', 'Star glow', {}, 'decoration'],
+  ['orbs', 'orbs-sphere', 'Glowing spheres', {}],
+  ['cobweb', 'web-intricate', 'Intricate web', {}, 'decoration'],
+  ['cobweb', 'web-bold', 'Bold web', {}, 'decoration'],
+  ['cobweb', 'web-strung', 'Strung web', {}, 'decoration'],
+  ['swirls', 'swirls-twirl', 'Twirl rings', {}],
+  ['swirls', 'swirls-smoke', 'Smoke curls', {}],
+  ['arcane-circle', 'arcane-seal', 'Geometric seal', {}],
+  ['arcane-circle', 'arcane-triangle', 'Triangle seal', {}],
+  ['arcane-circle', 'arcane-spiral', 'Spiral rune ring', {}],
+];
+
+export const EFFECT_PICTURES: readonly LibraryEffectPicture[] = FIRST_PICTURES.flatMap((base) => [
+  base,
+  ...MORE_PICTURES.filter(([joins]) => `fx-${joins}` === base.id).map(([, id, name, change, offer]): LibraryEffectPicture => ({
+    ...base,
+    id: `fx-${id}`,
+    name,
+    defaults: { ...base.defaults, ...change },
+    offer: offer ?? 'both',
+  })),
+]);
+
 
 const METAL = ['#e0b23a', '#c9d2de', '#b5813a', '#1c1c1c', '#ffffff'];
 const deco = (id: string, name: string, color: string, swatches: string[] = METAL): LibraryDecorationPicture => ({
@@ -143,7 +236,11 @@ const art = (
   color: string,
   start: LibraryDecorationPicture['start'],
   tint = false,
-): LibraryDecorationPicture => ({ id: `deco-art-${id}`, name, color, swatches: [color, ...METAL.filter((c) => c !== color)], tint, group, start });
+  retired = false,
+): LibraryDecorationPicture => ({ id: `deco-art-${id}`, name, color, swatches: [color, ...METAL.filter((c) => c !== color)], tint, group, start, ...(retired ? { retired } : {}) });
+
+/** Light silver: tinted pictures drawn in grey start this colour, so they look like silver until recoloured. */
+const SILVER = '#e8ecf2';
 
 /** Picture decorations: ornaments, treasure, creatures and trims, then flat icons with a dark outline (coloured by the decoration's colour). */
 export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
@@ -171,17 +268,39 @@ export const DECORATION_PICTURES: readonly LibraryDecorationPicture[] = [
   orn('knotwork-divider', 'Knotwork divider', false),
   orn('antique-corner', 'Antique corner', false),
   orn('dragon-head', 'Dragon head', false),
-  art('gem', 'Gem', 'Treasure', '#d0202a', { place: 'top', size: 0.34, mirror: false }),
-  art('round-gem', 'Round gem', 'Treasure', '#2e8b57', { place: 'bottom', size: 0.3, mirror: false }),
-  art('crown', 'Crown', 'Treasure', '#e0b84a', { place: 'top', size: 0.4, mirror: false }),
-  art('star', 'Star', 'Treasure', '#e8c35a', { place: 'topRight', size: 0.3, mirror: true }),
-  art('skull', 'Skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }),
+  // Decoration art round, part 1 (owner's picks): new gems, crowns, stars, skulls and a horn replace the first set.
+  art('gem', 'Gem', 'Treasure', '#d0202a', { place: 'top', size: 0.34, mirror: false }, false, true),
+  art('diamond', 'Diamond', 'Treasure', '#d0202a', { place: 'top', size: 0.3, mirror: false }, true),
+  art('cut-stone', 'Cut stone', 'Treasure', '#2f7fd8', { place: 'top', size: 0.32, mirror: false }, true),
+  art('round-gem', 'Round gem', 'Treasure', '#2e8b57', { place: 'bottom', size: 0.3, mirror: false }, false, true),
+  art('round-brilliant', 'Round brilliant', 'Treasure', '#2e8b57', { place: 'bottom', size: 0.3, mirror: false }, true),
+  art('pearl', 'Pearl', 'Treasure', '#f4efe6', { place: 'bottom', size: 0.26, mirror: false }, true),
+  art('crown', 'Crown', 'Treasure', '#e0b84a', { place: 'top', size: 0.4, mirror: false }, false, true),
+  art('circlet', 'Circlet', 'Treasure', '#e0b84a', { place: 'top', size: 0.2, mirror: false }),
+  art('crown-gold', 'Gold crown', 'Treasure', '#e0b84a', { place: 'top', size: 0.3, mirror: false }),
+  art('coronet', 'Coronet', 'Treasure', '#e0b84a', { place: 'top', size: 0.28, mirror: false }, true),
+  art('star', 'Star', 'Treasure', '#e8c35a', { place: 'topRight', size: 0.3, mirror: true }, false, true),
+  art('star-gold', 'Gold star', 'Treasure', '#e8c35a', { place: 'topRight', size: 0.3, mirror: true }),
+  art('star-ornate', 'Ornate star', 'Treasure', '#e8c35a', { place: 'topRight', size: 0.3, mirror: true }, true),
+  art('skull', 'Skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }, false, true),
+  art('skull-painted', 'Painted skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }),
+  art('skull-engraved', 'Engraved skull', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.42, mirror: false }, true),
+  art('skull-crossbones', 'Skull and crossbones', 'Creatures', '#e8e2cc', { place: 'bottom', size: 0.4, mirror: false }, true),
   art('horn', 'Horn', 'Creatures', '#b89a86', { place: 'topRight', size: 0.3, mirror: true }),
+  art('horn-smooth', 'Smooth horn', 'Creatures', '#d8c9a8', { place: 'topRight', size: 0.32, mirror: true }, true),
   art('wing', 'Wing', 'Creatures', '#f2f2f2', { place: 'right', size: 0.4, mirror: true }),
+  // Decoration art round, part 2 (owner's picks): more wings, ribbons, laurels and a leaf; chain retired.
+  art('wing-gold', 'Gold wing', 'Creatures', '#e0b84a', { place: 'right', size: 0.4, mirror: true }),
+  art('wing-silver', 'Silver wing', 'Creatures', SILVER, { place: 'right', size: 0.4, mirror: true }, true),
   art('ribbon', 'Ribbon', 'Trims', '#b3202c', { place: 'bottom', size: 0.24, mirror: false }),
-  art('laurel', 'Laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }),
-  art('chain', 'Chain', 'Trims', '#b8bcc4', { place: 'bottom', size: 0.2, mirror: false }),
-  art('leaf', 'Leaf', 'Trims', '#3f9a3a', { place: 'topLeft', size: 0.3, mirror: false }),
+  art('scroll', 'Parchment scroll', 'Trims', '#d9c27a', { place: 'bottom', size: 0.18, mirror: false }),
+  art('sash', 'Red sash', 'Trims', '#d42a2a', { place: 'bottom', size: 0.28, mirror: false }),
+  art('laurel', 'Laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }, false, true),
+  art('laurel-gold', 'Gold laurel', 'Trims', '#d9a520', { place: 'bottomLeft', size: 0.6, mirror: true }),
+  art('laurel-silver', 'Silver laurel', 'Trims', SILVER, { place: 'bottomLeft', size: 0.6, mirror: true }, true),
+  art('chain', 'Chain', 'Trims', '#b8bcc4', { place: 'bottom', size: 0.2, mirror: false }, false, true),
+  art('leaf', 'Leaf', 'Trims', '#3f9a3a', { place: 'topLeft', size: 0.3, mirror: false }, false, true),
+  art('oak-sprig', 'Oak sprig', 'Trims', '#5e9a3a', { place: 'topLeft', size: 0.3, mirror: false }, true),
   deco('skull-icon', 'Skull icon', '#e9e1cc', ['#e9e1cc', '#3a3a3a', '#76ff4a', '#c0263a']),
   deco('heart', 'Heart', '#c0263a', ['#c0263a', '#ff6fb5', '#ffffff']),
   deco('broken-heart', 'Broken heart', '#c0263a', ['#c0263a', '#5a0606', '#8a8a8a']),

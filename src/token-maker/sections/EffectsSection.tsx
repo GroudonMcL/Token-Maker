@@ -4,7 +4,8 @@ import { Advanced, ColorSwatches, ControlLabel, DirectionDial, GradientEditor, S
 import { EFFECT_GROUPS, EFFECTS, effectInfo, MAX_EFFECTS, newEffect, newPictureEffect, type EffectControl } from '../document/defaults';
 import type { BlendMode, EffectKind, EffectLayer, EffectPlacement, Gradient } from '../document/types';
 import { addPictureEffect, uploadPictureEffect } from '../editor/pictureActions';
-import { EFFECT_PICTURES, effectPicture, pictureThumbUrl } from '../render/pictureLibrary';
+import { EFFECT_PICTURES, effectPicture, offeredAsEffect, pictureThumbUrl } from '../render/pictureLibrary';
+import { EFFECT_STYLES } from '../render/effectStyles';
 import { refreshUploadedPictures, useUploadedPictures } from '../state/pictureLibrary';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
 import { effectThumbnails } from './effectThumbs';
@@ -122,7 +123,7 @@ export function EffectsSection() {
                     <span className="tile__label">{x.name}</span>
                   </button>
                 ))}
-                {EFFECT_PICTURES.filter((p) => p.group === group).map((p) => (
+                {EFFECT_PICTURES.filter((p) => p.group === group && offeredAsEffect(p)).map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -223,6 +224,7 @@ function EffectCard({
   const where = PLACEMENTS.find((p) => p.value === e.placement)!.label.toLowerCase();
   const swatches = e.kind === 'picture' && e.image?.type === 'library' ? (effectPicture(e.image.id)?.swatches ?? info.swatches) : info.swatches;
   const glow = e.kind === 'outerGlow' || e.kind === 'innerGlow';
+  const styles = EFFECT_STYLES[e.kind];
   // Colour only matters for a picture when it's coloured in, and for a glow when it isn't a gradient.
   const showColor = uses('color') && (e.kind !== 'picture' || e.tint) && !(glow && e.useGradient);
   return (
@@ -249,6 +251,9 @@ function EffectCard({
       </div>
       <div className="overlay-card__body" id={bodyId} hidden={!open}>
         <SegmentedButtons label="Placement" value={e.placement} options={PLACEMENTS} onChange={(placement) => update(e.id, { placement })} />
+        {styles && (
+          <SegmentedButtons label="Style" value={e.style} options={styles.map((x) => ({ value: x.id, label: x.name }))} onChange={(style) => update(e.id, { style })} />
+        )}
         <Slider
           label="Opacity"
           unit="%"

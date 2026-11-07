@@ -4,7 +4,7 @@
 import type { FrameProject } from '../frameMaker/share/frameDesign';
 import type { FrameStyle, ShapeId } from '../render/catalog';
 
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 export type SizePreset = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'custom';
 
@@ -343,6 +343,9 @@ export type EffectKind =
   | 'vignette'
   | 'gradient'
   | 'edgeShadow'
+  // Light (v15): the opposites of Edge shadow
+  | 'edgeLight'
+  | 'spotlight'
   // A picture: a built-in one or the user's own (v8). Since v12 the built-in pictures
   // are also the elemental effects, conditions and more (render/pictureLibrary.ts).
   | 'picture';
@@ -406,6 +409,12 @@ export interface EffectLayer {
   useGradient: boolean;
   /** Where it is kept inside (v14: several at once; empty = anywhere). */
   clip: ClipTarget[];
+  /**
+   * Its look, for effects that have several (v15, render/effectStyles.ts):
+   * e.g. an outer glow's Soft, Radiant, Rays or Aura. The first is the
+   * classic look; '' for effects with only one.
+   */
+  style: string;
 }
 
 // ---- Layers built in later phases. Kept minimal so the shape is settled now. ----
