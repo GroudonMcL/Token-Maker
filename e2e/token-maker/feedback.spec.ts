@@ -84,8 +84,8 @@ test('picture effects and decorations, and a plain label turned round its anchor
   await expect(card.getByRole('textbox', { name: 'Rotation value' })).toBeVisible();
 
   panel = await openSection(page, 'Decorations');
-  await panel.locator('[data-decoration-picture="deco-heart"]').click();
-  await expect(panel.getByRole('list', { name: 'Decorations, top first' }).getByRole('listitem')).toContainText('Heart');
+  await panel.locator('[data-decoration-picture="deco-orn-laurel-wreath"]').click();
+  await expect(panel.getByRole('list', { name: 'Decorations, top first' }).getByRole('listitem')).toContainText('Laurel wreath');
 
   panel = await openSection(page, 'Label');
   await panel.getByRole('button', { name: 'Add a label' }).click();

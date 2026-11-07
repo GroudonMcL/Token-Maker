@@ -44,15 +44,36 @@ describe('Decorations section', () => {
     render(<DecorationsSection />);
     for (const [group, names] of [
       // Decoration art part 1: the first gem, round gem, crown, star and skull are retired.
-      ['Treasure', ['Diamond', 'Cut stone', 'Round brilliant', 'Pearl', 'Circlet', 'Gold crown', 'Coronet', 'Gold star', 'Ornate star']],
-      ['Creatures', ['Painted skull', 'Engraved skull', 'Skull and crossbones', 'Horn', 'Smooth horn', 'Wing', 'Gold wing', 'Silver wing']],
+      // Decoration review: cut stone is retired and three new gems follow it.
+      ['Treasure', ['Diamond', 'Faceted gem', 'Emerald-cut gem', 'Diamond-cut gem', 'Round brilliant', 'Pearl', 'Circlet', 'Gold crown', 'Coronet', 'Gold star', 'Ornate star']],
+      ['Creatures', ['Painted skull', 'Realistic skull', 'Engraved skull', 'Skull and crossbones', 'Horn', 'Antelope horn', 'Curved horn', 'Smooth horn', 'Wing', 'Gold wing', 'Silver wing']],
       // Decoration art part 2: the old laurel, chain and leaf are retired.
-      ['Trims', ['Ribbon', 'Parchment scroll', 'Red sash', 'Gold laurel', 'Silver laurel', 'Oak sprig']],
+      ['Trims', ['Ribbon', 'Parchment scroll', 'Red sash', 'Gold laurel', 'Silver laurel', 'Oak sprig', 'Oak branch with acorns', 'Slender oak branch', 'Sessile oak sprig']],
     ] as const) {
       const tiles = within(screen.getByRole('group', { name: group })).getAllByRole('button');
       expect(tiles.map((t) => t.textContent)).toEqual(names);
       for (const t of tiles) expect(t.getAttribute('data-decoration-picture')).toMatch(/^deco-art-/);
     }
+  });
+
+  it('offers only the ornaments and pictures the owner kept (decoration review)', () => {
+    render(<DecorationsSection />);
+    const ornaments = within(screen.getByRole('group', { name: 'Ornaments' })).getAllByRole('button');
+    expect(ornaments.map((t) => t.textContent)).toEqual([
+      'Celtic vine corner', 'Leafy vine corner', 'Corner decoration', 'Bright gold laurel wreath',
+      'Gold victorian ring', 'Gold floral flourish ring', 'Gold scroll ring', 'Gold lace ring',
+      'Filigree circle', 'Fine filigree ring', 'Scalloped scroll ring', 'Baroque scroll ring', 'Four-point filigree ring',
+      'Corner flourish', 'Acanthus corner', 'Fine scroll corner', 'Baroque scroll corner',
+      'Scroll divider', 'Ivy divider', 'Bold scroll divider', 'Laurel wreath', 'Pale gold imperial crown',
+      'Knotwork divider', 'Celtic knot crest', 'Copper Celtic plait', 'Dragon head', 'Dragon head silhouette', 'Tribal dragon head',
+    ]);
+    // Every flat icon is retired; the group keeps the new pictures and the user's own.
+    const pictures = within(screen.getByRole('group', { name: 'Pictures' }));
+    expect(pictures.queryAllByRole('button', { name: /Heart$|Potion|Flag/ })).toEqual([]);
+    expect(pictures.getAllByRole('button').map((t) => t.textContent).slice(0, 5)).toEqual(['Corner sunburst', 'Ivy corner', 'West coast creeper', 'Ivy sprig', 'Two glossy hearts']);
+    expect(pictures.getByRole('button', { name: 'Use your own picture' })).toBeTruthy();
+    const effects = within(screen.getByRole('group', { name: 'Effect pictures' })).getAllByRole('button');
+    expect(effects.some((t) => t.getAttribute('data-decoration-picture') === 'fx-hearts-shine')).toBe(false);
   });
 
   it('moves it to another snap point or frees it, mirrors, removes, and undoes', () => {
