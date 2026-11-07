@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 // Renders every Essentials frame (drawn frames and built-in designs) as a
 // picture frame: a round PNG ring with a see-through middle, saved to
 // public/frames/ for Frame → Picture (owner request). Uses the site's own
@@ -21,7 +22,7 @@ const make = (w: number, h: number) => createCanvas(w, h) as unknown as HTMLCanv
 setCanvasFactory(make);
 setFrameMakerCanvas(make);
 (globalThis as { Path2D?: unknown }).Path2D ??= Path2D;
-setPictureDecoder(async (url) => loadImage(Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')));
+setPictureDecoder(async (url) => loadImage(url.startsWith('data:') ? Buffer.from(url.slice(url.indexOf(',') + 1), 'base64') : readFileSync(`public${url}`)));
 
 const SIZE = 1024;
 const THUMB = 96;

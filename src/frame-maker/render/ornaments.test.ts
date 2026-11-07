@@ -11,6 +11,11 @@ import { GLYPHS } from './glyphs';
 import { lineOutline, repeatPlacements } from './layers';
 import { lineWaves } from './track';
 import { renderProject } from './renderProject';
+import { loadPictures } from './pictures';
+import { DEFAULT_LIBRARY_PICTURE } from '../project/libraryPictures';
+
+// Element 'picture' draws a library picture, which loads first (version 13).
+beforeAll(() => loadPictures({ element: 'picture', picture: DEFAULT_LIBRARY_PICTURE }));
 
 setCanvasFactory((w, h) => createCanvas(w, h) as unknown as HTMLCanvasElement);
 

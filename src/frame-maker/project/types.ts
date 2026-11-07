@@ -15,7 +15,7 @@ import type { FrameStyle, ShapeId } from '../engine/legacy/catalog';
 import type { PictureId } from './pictures';
 
 export const PROJECT_FORMAT = 'frame-studio-project';
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 export interface FrameProject {
   format: typeof PROJECT_FORMAT;
@@ -348,9 +348,10 @@ export type Paint =
    * tile and turned `angle` degrees. With `bend` its tiles follow the band
    * round the token (on band fills); `tint` recolours it keeping its light
    * and dark; `lighting` (0–1) lightens the side facing the stage's light
-   * and darkens the other. Version 10.
+   * and darkens the other. Version 10. Since version 13 `picture` can also
+   * be a library picture that covers an area (project/libraryPictures.ts).
    */
-  | { kind: 'picture'; picture: PictureId; scale: number; angle: number; bend: boolean; tint: string | null; lighting: number };
+  | { kind: 'picture'; picture: PictureId | LibraryPictureRef; scale: number; angle: number; bend: boolean; tint: string | null; lighting: number };
 
 /** Fills part of the band, between two "across" positions. */
 export interface BandFillLayer extends LayerBase {
@@ -436,13 +437,25 @@ export const DRAWN_ELEMENT_KINDS = [
   'knot',
   'skull',
   'arrow',
+  // Version 13: a library picture (a rose, an ornament, an effect…), see `picture`.
+  'picture',
 ] as const;
 /** Every ornament. All are drawn by Frame Maker's own code; the icon ornaments of versions 10 and 11 were taken out (see LEGACY_ICON_ELEMENTS in migrate.ts). */
 export const ELEMENT_KINDS: readonly ElementKind[] = DRAWN_ELEMENT_KINDS;
 export type ElementKind = (typeof DRAWN_ELEMENT_KINDS)[number];
 
+/** A library picture's id (project/libraryPictures.ts). */
+export type LibraryPictureRef = string;
+
+/** Which library picture element 'picture' draws (version 13). */
+export interface PictureElement {
+  picture: LibraryPictureRef;
+  /** Coloured by the fill colour (keeping its light and dark), or in its own colours. */
+  pictureTint: boolean;
+}
+
 /** One shape repeated evenly round the band: beads, studs, runes, gems… */
-export interface RepeatLayer extends LayerBase {
+export interface RepeatLayer extends LayerBase, PictureElement {
   type: 'repeat';
   element: ElementKind;
   /** 'count': exactly `count`; 'spacing': as many as fit with `spacing` (band widths) between centres. */
@@ -537,7 +550,7 @@ export const REPEAT_ORIENTS = ['along', 'upright', 'edge'] as const;
 /** Ornaments with an obvious top, which 'along' points out from the centre on the band. */
 export const EMBLEM_ELEMENTS: ReadonlySet<string> = new Set([
   'star', 'cross', 'eye', 'note', 'claw', 'bardNote', 'watchEye', 'heart', 'crescent', 'flame', 'fleur', 'shield', 'sun',
-  'snowflake', 'crown', 'jewel', 'drop', 'shell', 'paw', 'feather', 'skull',
+  'snowflake', 'crown', 'jewel', 'drop', 'shell', 'paw', 'feather', 'skull', 'picture',
 ]);
 /** Old files' icon ornaments (`icon-…`, taken out since) count too, so files read as they drew. */
 export const pointsOutward = (element: string) => element.startsWith('icon-') || EMBLEM_ELEMENTS.has(element);
@@ -634,7 +647,7 @@ export type ShapeKind = (typeof SHAPE_KINDS)[number];
  * cross or chevron, a trapezoid's top and a flower's petal depth; `corner`
  * rounds a rectangle, squircle or arch.
  */
-export interface ShapeLayer extends LayerBase, Placement, PlacedStyle {
+export interface ShapeLayer extends LayerBase, Placement, PlacedStyle, PictureElement {
   type: 'shape';
   shape: ShapeKind;
   /** Polygon sides or star points. */

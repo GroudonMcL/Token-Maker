@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
@@ -36,4 +37,4 @@ if (typeof HTMLCanvasElement !== 'undefined') {
 // Photo textures are decoded with @napi-rs/canvas in tests (the browser's Image elsewhere).
 import { loadImage } from '@napi-rs/canvas';
 import { setPictureDecoder } from '../render/pictures';
-setPictureDecoder(async (url) => loadImage(Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')));
+setPictureDecoder(async (url) => loadImage(url.startsWith('data:') ? Buffer.from(url.slice(url.indexOf(',') + 1), 'base64') : readFileSync(`public${url}`)));

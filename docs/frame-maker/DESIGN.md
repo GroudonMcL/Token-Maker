@@ -48,7 +48,7 @@ Same as Token Maker, so code and habits carry over: TypeScript, React 19 + Vite,
 
 ## 4. The project format
 
-### 4.1 FrameProject (schema version 11)
+### 4.1 FrameProject (schema version 13)
 
 Defined in `src/project/types.ts`; defaults in `src/project/defaults.ts`; reading and checking in `src/project/migrate.ts`; finding layers anywhere in the tree in `src/project/tree.ts`.
 
@@ -342,6 +342,17 @@ The owner sent six hand-painted ring frames (gilded filigree over red enamel; a 
 - **Crafted borders** (`project/craftedTemplates.ts`, a section of New): Gilded filigree, Guild ring (gold and silver), Raven plume, Emberforged, Storm wisps, Riveted plates. Each carries the band thickness (and spacing) it was made for. `npm run fm:compare-pictures -- out.png id=picture.png[@x,y,w,h][#background] …` draws templates beside reference pictures.
 - **A "Pale gold" material** (§6.4).
 - **Token Maker** draws all of it: `npm run fm:share-copy -- [new files]` copies the reader and renderer into `src/token-maker/frameMaker/` (rewriting only the engine's import path) and updates `SOURCE.json`.
+
+### 4.13 Library pictures (version 13)
+
+The owner asked for Token Maker's effect and decoration pictures (`public/pictures/`) to be usable in Frame Maker, and for better roses in the rose frames.
+
+- **`project/libraryPictures.ts`** lists them: Token Maker's pictures that its pickers offer (ornaments, treasure, creatures, trims, icons, effects) plus Frame Maker's own **roses** (six CC0 Openclipart roses: red rose, shaded rose, rose bud, heraldic rose, a tintable silhouette and a rose spray). The list itself (`libraryPictureList.ts`, with each picture's average colour and shape) is made by `npm run fm:library-pictures` from Token Maker's `render/pictureLibrary.ts`; run it again when that changes. Pictures that cover an area (stone, marble, cracks, embers) are in a **Textures** group.
+- **Element `picture`**: a repeat or an ornament shape can draw a library picture (`picture`, its id; `pictureTint`, coloured by the layer's colour keeping its light and dark, or its own colours). It is `h` tall and as wide as the picture's own shape (times `stretch`), its top pointing out of the band like the other emblems. Effects work on it as on any layer (a material colour turns a shaded red rose into gold). The Properties panel shows the pictures as tiles, a group at a time.
+- **Texture pictures as photo textures**: a picture paint can also use a Textures picture (e.g. the veined marble), tiled like the photos.
+- **Loading**: like photo textures (§4.11), loaded when first used, from `/pictures/<id>.webp`; nothing is drawn for a picture until it has arrived, then the preview draws again (`pictureEpoch`). Exports and Token Maker load a design's pictures first. Node scripts and tests read them from `public/` (`setPictureDecoder`).
+- **Colour slots** turn pictures shown in their own colours by hue, as they do photo textures.
+- Older files read as before (no layer uses the new element); an unknown picture id reads as the default rose.
 
 ## 5. The renderer
 

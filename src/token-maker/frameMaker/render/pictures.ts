@@ -5,6 +5,7 @@
 // (pictureEpoch). Exports and Token Maker load what a design uses first
 // (loadPictures), so they never get the stand-in colour.
 
+import { isLibraryPicture, libraryPictureUrl } from '../project/libraryPictures';
 import type { Paint } from '../project/types';
 
 export interface PictureImage {
@@ -12,9 +13,10 @@ export interface PictureImage {
   height: number;
 }
 
-type Decode = (dataUrl: string) => Promise<PictureImage>;
+/** Decodes a photo texture's data URL, or fetches and decodes a library picture's address (`/pictures/….webp`). */
+type Decode = (url: string) => Promise<PictureImage>;
 
-/** The browser's decoder; tests and scripts set @napi-rs/canvas's (setPictureDecoder). */
+/** The browser's decoder; tests and scripts set @napi-rs/canvas's (setPictureDecoder), reading library pictures from public/. */
 let decode: Decode = async (url) => {
   const img = new Image();
   img.src = url;
@@ -43,9 +45,10 @@ export function onPictureLoaded(fn: () => void): () => void {
 function load(id: string): Promise<void> {
   let p = loading.get(id);
   if (!p) {
-    p = import('./pictureData')
-      .then(async ({ PICTURE_DATA }) => {
-        const url = PICTURE_DATA[id];
+    // Library pictures (version 13) are the site's own files; photo textures are bundled data.
+    const address = isLibraryPicture(id) ? Promise.resolve(libraryPictureUrl(id)) : import('./pictureData').then(({ PICTURE_DATA }) => PICTURE_DATA[id]);
+    p = address
+      .then(async (url) => {
         if (!url) return;
         loaded.set(id, await decode(url));
         epoch++;
@@ -76,6 +79,8 @@ export function picturesIn(value: unknown): string[] {
     else if (v && typeof v === 'object') {
       const o = v as Record<string, unknown>;
       if (o.kind === 'picture' && typeof o.picture === 'string') found.add(o.picture);
+      // A repeat's or shape's library picture (version 13).
+      if (o.element === 'picture' && typeof o.picture === 'string') found.add(o.picture);
       Object.values(o).forEach(walk);
     }
   };

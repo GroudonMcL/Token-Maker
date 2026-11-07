@@ -1,6 +1,7 @@
 // Settings for the selected layer. Each layer type has its own controls; the
 // ones most people need come first and the technical ones sit in Advanced.
 
+import { useState } from 'react';
 import { PenTool, Plus, RotateCcw, RotateCw, Shuffle, Trash2 } from 'lucide-react';
 import { FRAME_PRESETS } from '../engine/legacy/catalog';
 import { mix, shade } from '../engine/legacy/color';
@@ -51,6 +52,7 @@ import {
   type PathLayer,
   type PlacedLayer,
   type RepeatLayer,
+  type ShapeLayer,
   type RingStop,
   type ShapeKind,
   type TextureLayer,
@@ -62,6 +64,7 @@ import { litFor } from '../render/paint';
 import { TEXTURE_NAMES } from '../render/textures';
 import { DETAIL_NAMES, ELEMENT_NAMES, LINE_ELEMENTS } from '../render/elements';
 import { PICTURES, pictureById } from '../project/pictures';
+import { LIBRARY_PICTURE_GROUPS, LIBRARY_PICTURES, TEXTURE_PICTURES, libraryPictureById, libraryPictureThumbUrl, type LibraryPictureGroup } from '../project/libraryPictures';
 import { switchPlace, toggleSeparate, toggleSmooth } from '../render/hitTest';
 import { commit, convertToLayers, finishDrawing, setPathEdit, setPathPoints, shapeToPath, turnGroup, ungroup, updateLayer, useProject, useUi } from '../state/projectStore';
 import { ColorField, ColorList, Fold, OptionalColor, PatternField, PercentList, Select, Slider, TextField, Toggle } from './controls';
@@ -479,6 +482,7 @@ function LayerControls({ layer, light }: { layer: Layer; light: number }) {
       return (
         <>
           <Select label="Shape" value={layer.element} disabled={disabled} options={ELEMENT_KINDS.map((k) => ({ value: k, label: ELEMENT_NAMES[k] }))} onChange={(element) => set({ element })} />
+          {layer.element === 'picture' && <PicturePicker layer={layer} disabled={disabled} set={set as never} />}
           <ColorField label="Colour" value={layer.fill} disabled={disabled} defaultValue={defaultsFor(layer).fill as string} onChange={(fill, t) => set({ fill }, t)} />
           <FillPaintControls layer={layer} set={set as never} />
           {DETAIL_NAMES[layer.element] && <OptionalColor label={DETAIL_NAMES[layer.element]!} hint={DETAIL_HINT} value={layer.detail} fallback="#f2ead8" disabled={disabled} onChange={(detail, t) => set({ detail }, t)} />}
@@ -614,7 +618,7 @@ const PAINT_KINDS: { value: Paint['kind']; label: string }[] = [
 ];
 
 function colorOf(paint: Paint): string {
-  if (paint.kind === 'picture') return paint.tint ?? pictureById(paint.picture)?.average ?? '#808080';
+  if (paint.kind === 'picture') return paint.tint ?? (pictureById(paint.picture) ?? libraryPictureById(paint.picture))?.average ?? '#808080';
   return 'color' in paint ? paint.color : paint.stops[0].color;
 }
 
@@ -642,6 +646,38 @@ function convert(paint: Paint, kind: Paint['kind']): Paint {
     case 'picture':
       return { kind, picture: 'gold', scale: 3, angle: 0, bend: true, tint: null, lighting: 0.5 };
   }
+}
+
+/**
+ * Element 'picture''s picture (version 13): the site's library pictures as
+ * tiles, a group at a time. Picking one starts it in its own colours, or (a
+ * single-colour picture) tinted with its usual colour.
+ */
+function PicturePicker({ layer, disabled, set }: { layer: RepeatLayer | ShapeLayer; disabled: boolean; set: (patch: { picture?: string; pictureTint?: boolean; fill?: string }) => void }) {
+  const current = libraryPictureById(layer.picture);
+  const [group, setGroup] = useState<LibraryPictureGroup>(current?.group ?? 'Roses');
+  return (
+    <>
+      <Select label="Pictures" value={group} disabled={disabled} options={LIBRARY_PICTURE_GROUPS.map((g) => ({ value: g, label: g }))} onChange={setGroup} />
+      <div className="picture-tiles" role="group" aria-label={`${group} pictures`}>
+        {LIBRARY_PICTURES.filter((p) => p.group === group).map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className="picture-tile"
+            aria-pressed={p.id === layer.picture}
+            title={p.name}
+            aria-label={p.name}
+            disabled={disabled}
+            onClick={() => set({ picture: p.id, pictureTint: p.tint, ...(p.tint ? { fill: p.color } : {}) })}
+          >
+            <img src={libraryPictureThumbUrl(p.id)} alt="" loading="lazy" />
+          </button>
+        ))}
+      </div>
+      <Toggle label="Colour it in" checked={layer.pictureTint} disabled={disabled} hint="Colours the picture with the layer's colour, keeping its light and dark." onChange={(pictureTint) => set({ pictureTint })} />
+    </>
+  );
 }
 
 /** A repeat's, shape's or path's fill: its colour, or a paint (Version 6). */
@@ -677,11 +713,11 @@ export function PaintEditor({ paint, disabled, onChange, ornament = false }: { p
       <Select label="Paint" value={paint.kind} disabled={disabled} options={PAINT_KINDS} onChange={(k) => onChange(convert(paint, k))} />
       {paint.kind === 'picture' && (
         <>
-          <Select label="Photo" value={paint.picture} disabled={disabled} options={PICTURES.map((p) => ({ value: p.id, label: p.name }))} onChange={(picture) => onChange({ ...paint, picture })} />
+          <Select label="Photo" value={paint.picture} disabled={disabled} options={[...PICTURES.map((p) => ({ value: p.id as string, label: p.name })), ...TEXTURE_PICTURES.map((p) => ({ value: p.id, label: `${p.name} (library)` }))]} onChange={(picture) => onChange({ ...paint, picture })} />
           <Slider label="Tile size" value={paint.scale} min={0.5} max={15} step={0.05} scale={100} unit="%" disabled={disabled} defaultValue={3} onChange={(scale, t) => onChange({ ...paint, scale }, t)} onCommit={commit} />
           <Slider label="Turn the photo" value={paint.angle} min={-180} max={180} step={1} unit="°" disabled={disabled} defaultValue={0} onChange={(angle, t) => onChange({ ...paint, angle }, t)} onCommit={commit} />
           {!ornament && <Toggle label="Bend round the band" checked={paint.bend} disabled={disabled} onChange={(bend) => onChange({ ...paint, bend })} />}
-          <OptionalColor label="Tint" value={paint.tint} fallback={pictureById(paint.picture)?.average ?? '#c9a24a'} disabled={disabled} onChange={(tint, t) => onChange({ ...paint, tint }, t)} />
+          <OptionalColor label="Tint" value={paint.tint} fallback={(pictureById(paint.picture) ?? libraryPictureById(paint.picture))?.average ?? '#c9a24a'} disabled={disabled} onChange={(tint, t) => onChange({ ...paint, tint }, t)} />
           <Slider label="Light and shade" value={paint.lighting} min={0} max={1} disabled={disabled} {...pct} defaultValue={0.5} onChange={(lighting, t) => onChange({ ...paint, lighting }, t)} onCommit={commit} />
         </>
       )}
@@ -927,6 +963,7 @@ function PlacedControls({ layer }: { layer: PlacedLayer }) {
           {layer.shape === 'ornament' && (
             <Select label="Ornament" value={layer.element} disabled={disabled} options={ELEMENT_KINDS.map((k) => ({ value: k, label: ELEMENT_NAMES[k] }))} onChange={(element) => set({ element })} />
           )}
+          {layer.shape === 'ornament' && layer.element === 'picture' && <PicturePicker layer={layer} disabled={disabled} set={set as never} />}
           {layer.shape === 'ornament' && DETAIL_NAMES[layer.element] && (
             <OptionalColor label={DETAIL_NAMES[layer.element]!} hint={DETAIL_HINT} value={layer.detail} fallback="#f2ead8" disabled={disabled} onChange={(detail, t) => set({ detail }, t)} />
           )}

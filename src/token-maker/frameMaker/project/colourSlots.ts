@@ -4,7 +4,8 @@
 // the same step round the colour wheel, in vividness and in lightness, so
 // the design keeps its shading: black stays black, white stays white, and
 // the lit and shaded ends of a gradient stay lit and shaded. Photo textures
-// in those layers are turned by the same hue. Shadows are left alone.
+// in those layers (and library pictures in their own colours) are turned by
+// the same hue. Shadows are left alone.
 
 import type { Effect, FrameProject, Layer } from './types';
 
@@ -82,7 +83,9 @@ function photoTurn(from: string, to: string): Effect | null {
 
 function recolourLayer(layer: Layer, from: string, to: string): Layer {
   const shifted = shiftValue(layer, from, to) as Layer;
-  const usesPhoto = JSON.stringify(layer).includes('"kind":"picture"');
+  // Photo textures, and library pictures in their own colours (version 13), are turned by the hue.
+  const json = JSON.stringify(layer);
+  const usesPhoto = json.includes('"kind":"picture"') || (json.includes('"element":"picture"') && json.includes('"pictureTint":false'));
   const turn = usesPhoto ? photoTurn(from, to) : null;
   return turn ? { ...shifted, effects: [turn, ...shifted.effects] } : shifted;
 }

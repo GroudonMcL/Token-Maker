@@ -9,6 +9,9 @@ import type { CanvasLike, Ctx } from './canvas';
 import { drawFacets } from './facets';
 import { GLYPHS, STROKED, traceGlyph, type Glyph } from './glyphs';
 import { turn } from './light';
+import { context2d, newCanvas } from './canvas';
+import { libraryPictureById } from '../project/libraryPictures';
+import { pictureImage } from './pictures';
 
 export const ELEMENT_NAMES: Record<ElementKind, string> = {
   bead: 'Bead (shaded)',
@@ -54,6 +57,7 @@ export const ELEMENT_NAMES: Record<ElementKind, string> = {
   knot: 'Celtic knot',
   skull: 'Skull',
   arrow: 'Arrow',
+  picture: 'Picture (from the library)',
 };
 
 /** Elements with a second colour (`detail`), and what it is called in the editor. */
@@ -538,6 +542,8 @@ export interface ElementStyle {
   paint?: PaintSource | null;
   /** Set by drawElement: the paint's pattern, made for the transform at the moment of filling. */
   ink?: () => CanvasPattern;
+  /** Element 'picture''s library picture, and whether `fill` colours it (version 13). */
+  picture?: { id: string; tint: boolean };
 }
 
 /** What an element's main part is filled or drawn with: its paint, or its colour. */
@@ -758,6 +764,7 @@ export function drawElement(ctx: Ctx, kind: ElementKind, h: number, stretch: num
     const paint = style.paint;
     style = { ...style, ink: () => paintPattern(ctx, paint, frame, w, h) };
   }
+  if (kind === 'picture') return drawLibraryPicture(ctx, h, stretch, style);
   const glyph = GLYPHS[kind];
   if (glyph) return drawGlyph(ctx, glyph, w, h, style);
   switch (kind) {
@@ -881,4 +888,47 @@ export function drawElement(ctx: Ctx, kind: ElementKind, h: number, stretch: num
     ctx.lineJoin = 'round';
     ctx.stroke();
   }
+}
+
+// ---- Library pictures (version 13) ----
+
+/** Tinted copies of library pictures, by picture and colour. */
+const tinted = new Map<string, CanvasImageSource>();
+
+/**
+ * A library picture coloured by `color`, keeping its light and dark (and its
+ * own see-through parts): the picture times the colour.
+ */
+function tintedPicture(id: string, img: CanvasImageSource, color: string): CanvasImageSource {
+  const key = `${id}|${color}`;
+  let out = tinted.get(key);
+  if (out) return out;
+  const { width, height } = img as unknown as { width: number; height: number };
+  const c = newCanvas(width, height);
+  const x = context2d(c);
+  x.drawImage(img, 0, 0);
+  x.globalCompositeOperation = 'multiply';
+  x.fillStyle = color;
+  x.fillRect(0, 0, width, height);
+  x.globalCompositeOperation = 'destination-in';
+  x.drawImage(img, 0, 0);
+  out = c as unknown as CanvasImageSource;
+  if (tinted.size > 64) tinted.clear();
+  tinted.set(key, out);
+  return out;
+}
+
+/**
+ * A library picture, `h` tall and as wide as its own shape (times
+ * `stretch`), its top pointing out of the band. Until it has loaded nothing
+ * is drawn (loading starts; the preview draws again when it arrives).
+ */
+function drawLibraryPicture(ctx: Ctx, h: number, stretch: number, style: ElementStyle): void {
+  const id = style.picture?.id;
+  if (!id) return;
+  const img = pictureImage(id);
+  if (!img) return;
+  const aspect = libraryPictureById(id)?.aspect ?? 1;
+  const w = h * aspect * stretch;
+  ctx.drawImage(style.picture!.tint ? tintedPicture(id, img, style.fill) : img, -w / 2, -h / 2, w, h);
 }

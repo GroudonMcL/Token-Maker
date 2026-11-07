@@ -27,7 +27,7 @@ setCanvasFactory(make);
 setFrameMakerCanvas(make);
 // Frame Maker's icon ornaments are SVG paths and its photo textures JPEGs: node has neither Path2D nor a decoder.
 (globalThis as { Path2D?: unknown }).Path2D ??= Path2D;
-setPictureDecoder(async (url) => loadImage(Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')));
+setPictureDecoder(async (url) => loadImage(url.startsWith('data:') ? Buffer.from(url.slice(url.indexOf(',') + 1), 'base64') : readFileSync(`public${url}`)));
 
 const fixture = (name: string): FrameProject => {
   const r = readFrameDesign(readFileSync(`e2e/token-maker/fixtures/designs/${name}.framemaker.json`, 'utf8'));
@@ -163,5 +163,37 @@ describe('Frame Maker designs as frames', () => {
     const a = inTokenMaker(back, 128);
     const b = inTokenMaker(doc, 128);
     expect(a.every((v, i) => v === b[i])).toBe(true);
+  });
+
+  it('with a fixed frame size (as in the editor view) the frame looks the same at every zoom', () => {
+    const doc = frameOnly(fixture('jewelled'));
+    const shrink = (size: number, frameSize?: number) => {
+      const c = createCanvas(size, size);
+      renderToken(c.getContext('2d') as unknown as Ctx, doc, new Map(), size, frameSize ? { frameSize } : {});
+      const s = createCanvas(64, 64);
+      const x = s.getContext('2d');
+      x.drawImage(c, 0, 0, 64, 64);
+      return x.getImageData(0, 0, 64, 64).data;
+    };
+    const diff = (a: Uint8ClampedArray, b: Uint8ClampedArray) => a.reduce((sum, v, i) => sum + Math.abs(v - b[i]), 0) / a.length;
+    // At every zoom the frame is the one drawn at 1024 px, scaled: drawn small, then big, it matches that picture.
+    for (const size of [200, 700]) {
+      const big = createCanvas(1024, 1024);
+      renderToken(big.getContext('2d') as unknown as Ctx, doc, new Map(), 1024);
+      const scaled = createCanvas(size, size);
+      const sx = scaled.getContext('2d');
+      sx.imageSmoothingQuality = 'high';
+      sx.drawImage(big, 0, 0, size, size);
+      const viaScale = createCanvas(64, 64);
+      viaScale.getContext('2d').drawImage(scaled, 0, 0, 64, 64);
+      const fixed = shrink(size, 1024);
+      const own = shrink(size);
+      const target = viaScale.getContext('2d').getImageData(0, 0, 64, 64).data;
+      expect(diff(fixed, target)).toBeLessThan(diff(own, target));
+    }
+    // Asking for the token's own size draws exactly as without.
+    const same = (o: { frameSize?: number }) => pixels((ctx) => renderToken(ctx, doc, new Map(), 256, o), 256);
+    const plain = same({});
+    expect(same({ frameSize: 256 }).every((v, i) => v === plain[i])).toBe(true);
   });
 });

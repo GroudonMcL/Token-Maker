@@ -244,6 +244,7 @@ export function drawPlaced(ctx: Ctx, layer: PlacedLayer, g: FrameGeometry, light
         shaded: layer.shaded,
         detail: layer.detail,
         paint,
+        picture: { id: layer.picture, tint: layer.pictureTint },
       });
       ctx.restore();
       continue;
