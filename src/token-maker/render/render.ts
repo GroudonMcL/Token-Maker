@@ -49,6 +49,20 @@ export interface RenderOptions {
    * cut off at its edge can be found (src/render/overflow.ts). Never in exports.
    */
   bleed?: number;
+  /**
+   * Draw a drawn frame or Frame Maker design at this many pixels across and
+   * scale it to the token, instead of at the token's own size. The editor's
+   * view passes one fixed size, so zooming doesn't change how the frame
+   * looks (Frame Maker's bevels and blurs work in whole pixels, so a frame
+   * drawn at another size differs a little) and doesn't redraw it.
+   */
+  frameSize?: number;
+  /**
+   * With `frameSize`: while something is being dragged, a frame not yet
+   * drawn at that size (a Thickness drag makes a new one every step) is
+   * drawn quickly at the token's own size instead. Editor only.
+   */
+  frameDraft?: boolean;
 }
 
 // Drawn frames, kept so that changing anything else (a slider, the art)
@@ -63,9 +77,12 @@ const MAX_CACHED_SIDE = 2048;
  * frame of `style`, or a Frame Maker design (keyed by the design object
  * itself, which only changes when the design does).
  */
+// A design is drawn again once a photo texture it uses has arrived (pictureEpoch).
+const frameKey = (style: FrameStyle | DesignFrame, g: FrameGeometry, size: number) =>
+  `${typeof style === 'string' ? style : `design:${objectId(style.project)}:${pictureEpoch()}`}|${size}|${JSON.stringify(g)}`;
+
 function frameLayer(style: FrameStyle | DesignFrame, g: FrameGeometry, size: number): CanvasImageSource {
-  // A design is drawn again once a photo texture it uses has arrived (pictureEpoch).
-  const key = `${typeof style === 'string' ? style : `design:${objectId(style.project)}:${pictureEpoch()}`}|${size}|${JSON.stringify(g)}`;
+  const key = frameKey(style, g, size);
   const hit = frameLayers.get(key);
   if (hit) {
     // Most recently used goes last.
@@ -197,7 +214,22 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     color: doc.frame.color,
     accent: doc.frame.highlightColor ?? undefined,
   };
-  const drawnFrame = () => frameLayer(design ?? doc.frame.style, frameGeometry, size);
+  const frameStyle = design ?? doc.frame.style;
+  const fk = options.frameSize && options.frameSize > 0 ? options.frameSize / size : 1;
+  const bigGeometry: FrameGeometry = { ...frameGeometry, R: R * fk, outer: frameGeometry.outer * fk, inner: frameGeometry.inner * fk };
+  const wanted = Math.round(size * fk);
+  // Dragging and not drawn at the wanted size yet: drawn at the token's size for now.
+  const frameSize = fk === 1 || (options.frameDraft && !frameLayers.has(frameKey(frameStyle, bigGeometry, wanted))) ? size : wanted;
+  const drawnFrame = () => (frameSize === size ? frameLayer(frameStyle, frameGeometry, size) : frameLayer(frameStyle, bigGeometry, frameSize));
+  /** The drawn frame, scaled to the token. */
+  const putFrame = (c: Ctx, frame: CanvasImageSource) => {
+    if (frameSize === size) return c.drawImage(frame, -R, -R);
+    c.save();
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(frame, -R, -R, size, size);
+    c.restore();
+  };
 
   // Where an effect or decoration's Keep inside lets it show (v14: several at once), each part drawn once when first asked for.
   // The background and the art stop at the frame's inner edge, and the frame's own pixels are cut out of them,
@@ -207,7 +239,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     c.save();
     c.globalCompositeOperation = 'destination-out';
     if (frameImage) drawImageFrame(c, frameImage, frameR);
-    else if (hasFrame) c.drawImage(drawnFrame(), -R, -R);
+    else if (hasFrame) putFrame(c, drawnFrame());
     c.restore();
   };
   const parts = new Map<ClipTarget, CanvasImageSource | null>();
@@ -238,7 +270,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
       } else ok = false;
     } else if (target === 'frame') {
       if (frameImage) drawImageFrame(mctx, frameImage, frameR);
-      else if (hasFrame) mctx.drawImage(drawnFrame(), -R, -R);
+      else if (hasFrame) putFrame(mctx, drawnFrame());
       else ok = false;
     } else if (target === 'art') {
       // The art where it shows in the opening, with its see-through parts left out.
@@ -407,7 +439,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     });
   } else if (hasFrame && !imageFrame) {
     const drawn = drawnFrame();
-    drawFrameLayer((c) => c.drawImage(drawn, -R, -R));
+    drawFrameLayer((c) => putFrame(c, drawn));
   }
 
   if (layer) {

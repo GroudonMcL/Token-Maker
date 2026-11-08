@@ -7,7 +7,7 @@
 // still drawn in the browser.
 //   npm run tm:frame-thumbs
 import { createCanvas, loadImage, Path2D } from '@napi-rs/canvas';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createDocument } from '../../src/token-maker/document/defaults';
 import { setCanvasFactory as setFrameMakerCanvas } from '../../src/token-maker/frameMaker/render/canvas';
 import { setPictureDecoder } from '../../src/token-maker/frameMaker/render/pictures';
@@ -25,7 +25,7 @@ const make = (w: number, h: number) => createCanvas(w, h) as unknown as HTMLCanv
 setCanvasFactory(make);
 setFrameMakerCanvas(make);
 (globalThis as { Path2D?: unknown }).Path2D ??= Path2D;
-setPictureDecoder(async (url) => loadImage(Buffer.from(url.slice(url.indexOf(',') + 1), 'base64')));
+setPictureDecoder(async (url) => loadImage(url.startsWith('data:') ? Buffer.from(url.slice(url.indexOf(',') + 1), 'base64') : readFileSync(`public${url}`)));
 registerBundledFonts();
 
 const ids = TILES.map((t) => t.id);

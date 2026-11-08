@@ -4,6 +4,7 @@
 import { FRAME_PRESETS, framePresetById } from '../engine/legacy/catalog';
 import { frameAccent } from '../engine/legacy/frames';
 import { pictureById, type PictureId } from './pictures';
+import { DEFAULT_LIBRARY_PICTURE } from './libraryPictures';
 import { bevel, glow, material, shadow, styleEffects } from './styles';
 
 export { EFFECT_NAMES, NEW_EFFECT } from './effectDefaults';
@@ -113,8 +114,12 @@ export function repeatLayer(): RepeatLayer {
     show: [],
     ...REPEAT_PHASE7,
     ...REPEAT_V10,
+    ...NO_PICTURE,
   };
 }
+
+/** Element 'picture''s picture (version 13): a rose in its own colours until one is picked. */
+export const NO_PICTURE = { picture: DEFAULT_LIBRARY_PICTURE, pictureTint: false } satisfies Partial<RepeatLayer>;
 
 /** What a repeat gets from version 10 on, all off: one colour, any count, no wandering, no paint. */
 export const REPEAT_V10 = { detail: null, multipleOf: 1, wander: 0, fillPaint: null, paintEach: false } satisfies Partial<RepeatLayer>;
@@ -223,7 +228,7 @@ export const DEFAULT_PLACEMENT: Placement = { place: 'band', along: 0, across: 0
 const DEFAULT_STYLE: PlacedStyle = { fill: '#5fa8d3', shaded: true, outline: '#1a1008', outlineWidth: 0.06, raised: true, glow: null, faceted: false, facetTable: 0.5, facetDepth: 1, fillPaint: null, paintEach: false };
 
 export function shapeLayer(): ShapeLayer {
-  return { ...base('Shape'), type: 'shape', ...DEFAULT_PLACEMENT, ...DEFAULT_STYLE, shape: 'polygon', sides: 6, innerRatio: 0.45, corner: 0, element: 'heart', detail: null, seed: 1 };
+  return { ...base('Shape'), type: 'shape', ...DEFAULT_PLACEMENT, ...DEFAULT_STYLE, shape: 'polygon', sides: 6, innerRatio: 0.45, corner: 0, element: 'heart', detail: null, seed: 1, ...NO_PICTURE };
 }
 
 /** A new path has no points: it is drawn by clicking on the canvas. */

@@ -32,7 +32,8 @@
     "fm:make-fixtures": "tsx scripts/frame-maker/make-fixtures.ts",
     "fm:look": "tsx scripts/frame-maker/look.ts",
     "fm:compare-pictures": "tsx scripts/frame-maker/compare-pictures.ts",
-    "fm:share-copy": "tsx scripts/frame-maker/share-copy.ts"
+    "fm:share-copy": "tsx scripts/frame-maker/share-copy.ts",
+    "fm:library-pictures": "tsx scripts/frame-maker/library-pictures.ts"
   },
   "dependencies": {
     "@fontsource/alegreya-sc": "^5.3.0",

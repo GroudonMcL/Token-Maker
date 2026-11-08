@@ -213,6 +213,7 @@ function drawRepeat(ctx: Ctx, layer: RepeatLayer, env: RenderEnv, part: 'element
         detail: layer.detail,
         variant,
         paint,
+        picture: { id: layer.picture, tint: layer.pictureTint },
       });
     });
   }

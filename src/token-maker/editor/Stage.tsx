@@ -42,6 +42,12 @@ const VIEW_MAX = 8;
 const MAX_CANVAS = 2560;
 /** …and while something is being dragged or painted, at most this many. */
 const MAX_DRAG_CANVAS = 1536;
+/**
+ * The frame is always drawn this many pixels across in the view and scaled
+ * to the token, so zooming doesn't change how it looks (Frame Maker's bevels
+ * and blurs work in whole pixels) or redraw it. The frame cache's largest size.
+ */
+const VIEW_FRAME_SIZE = 2048;
 /** After the view stops zooming, wait this long before redrawing the token sharp for the new size. */
 const ZOOM_SETTLE_MS = 160;
 /** However far the view is moved, at least this much of the token stays on screen. */
@@ -240,10 +246,10 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
         token.height = tokenPx;
       }
       const tctx = token.getContext('2d');
-      if (tctx) renderToken(tctx, doc, assets, tokenPx, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined });
+      if (tctx) renderToken(tctx, doc, assets, tokenPx, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined, frameSize: VIEW_FRAME_SIZE, frameDraft: settling });
     });
     return () => cancelAnimationFrame(frame);
-  }, [box.width, box.height, tokenPx, doc, assets, display, painting, fontVersion]);
+  }, [box.width, box.height, tokenPx, doc, assets, display, painting, fontVersion, settling]);
 
   // The art behind the token, and the brush overlays: cheap, so drawn for every view change.
   useEffect(() => {

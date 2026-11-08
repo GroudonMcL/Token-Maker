@@ -48,7 +48,7 @@ Same as Token Maker, so code and habits carry over: TypeScript, React 19 + Vite,
 
 ## 4. The project format
 
-### 4.1 FrameProject (schema version 11)
+### 4.1 FrameProject (schema version 13)
 
 Defined in `src/project/types.ts`; defaults in `src/project/defaults.ts`; reading and checking in `src/project/migrate.ts`; finding layers anywhere in the tree in `src/project/tree.ts`.
 
@@ -343,6 +343,17 @@ The owner sent six hand-painted ring frames (gilded filigree over red enamel; a 
 - **A "Pale gold" material** (§6.4).
 - **Token Maker** draws all of it: `npm run fm:share-copy -- [new files]` copies the reader and renderer into `src/token-maker/frameMaker/` (rewriting only the engine's import path) and updates `SOURCE.json`.
 
+### 4.13 Library pictures (version 13)
+
+The owner asked for Token Maker's effect and decoration pictures (`public/pictures/`) to be usable in Frame Maker, and for better roses in the rose frames.
+
+- **`project/libraryPictures.ts`** lists them: Token Maker's pictures that its pickers offer (ornaments, treasure, creatures, trims, icons, effects) plus Frame Maker's own **roses** (six CC0 Openclipart roses: red rose, shaded rose, rose bud, heraldic rose, a tintable silhouette and a rose spray). The list itself (`libraryPictureList.ts`, with each picture's average colour and shape) is made by `npm run fm:library-pictures` from Token Maker's `render/pictureLibrary.ts`; run it again when that changes. Pictures that cover an area (stone, marble, cracks, embers) are in a **Textures** group.
+- **Element `picture`**: a repeat or an ornament shape can draw a library picture (`picture`, its id; `pictureTint`, coloured by the layer's colour keeping its light and dark, or its own colours). It is `h` tall and as wide as the picture's own shape (times `stretch`), its top pointing out of the band like the other emblems. Effects work on it as on any layer (a material colour turns a shaded red rose into gold). The Properties panel shows the pictures as tiles, a group at a time.
+- **Texture pictures as photo textures**: a picture paint can also use a Textures picture (e.g. the veined marble), tiled like the photos.
+- **Loading**: like photo textures (§4.11), loaded when first used, from `/pictures/<id>.webp`; nothing is drawn for a picture until it has arrived, then the preview draws again (`pictureEpoch`). Exports and Token Maker load a design's pictures first. Node scripts and tests read them from `public/` (`setPictureDecoder`).
+- **Colour slots** turn pictures shown in their own colours by hue, as they do photo textures.
+- Older files read as before (no layer uses the new element); an unknown picture id reads as the default rose.
+
 ## 5. The renderer
 
 `renderProject(ctx, project, size, { art })` in `src/render/renderProject.ts` draws the preview, the template thumbnails, the PNG export and the test images. One renderer, so the export always matches the preview.
@@ -358,6 +369,8 @@ Painters per type are in `src/render/layers.ts` (shapes and paths in `src/render
 Editor-only drawing (selection outlines, handles, path points) is on a separate overlay canvas and never reaches the export.
 
 The stage bar keeps a fixed layout (the light's caption has a fixed width and its reset button's room is kept), so moving the light never resizes the canvas.
+
+*(Frame reviews with the library pictures, owner's picks: `project/reviewFrames.ts` lists the chosen frames, and their projects are saved as made in `project/reviewFramesData.ts`. A remake keeps the id of the frame it replaces (its entry leaves `frameVersions.ts`; a kept original with that id, such as Guild ring (gold) or Celestial halo, draws the remake), so tokens made with it get the new look. New frames get new ids. Remakes take the place of the old entry in its list (`remadeFrame`), keeping its group and `after`; their own names, descriptions and colour slots are in `reviewFrames.ts`. Token Maker's code-drawn Cobblestone, Druid, Paladin, Warlock, Fighter and Artificer were replaced by Frame Maker designs (Stone cobbles, Druid’s oak and Druid’s vine, Paladin’s oath, Warlock’s watchers, Fighter’s plate, Artificer’s brass): they are no longer offered in the picker (`sections/frameTiles.ts`), but tokens made with them still draw them. Owner's rule: every built-in frame's band is 7% of a square thick (`BUILT_IN_THICKNESS` = 0.14 in `builtInFrames.ts`, applied to every built-in project), so picking any frame gives the same thickness.)*
 
 ### 5.1 The light direction
 

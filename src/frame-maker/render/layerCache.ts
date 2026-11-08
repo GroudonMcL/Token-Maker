@@ -33,7 +33,7 @@ export function layerKey(layer: Layer, g: Pick<FrameGeometry, 'shape' | 'outer' 
   const { clip, ...look } = lookOf(layer);
   const json = JSON.stringify(look);
   // A layer with a photo texture is drawn again once its picture has loaded.
-  const pictures = json.includes('"kind":"picture"') ? `|p${pictureEpoch()}` : '';
+  const pictures = json.includes('"kind":"picture"') || json.includes('"element":"picture"') ? `|p${pictureEpoch()}` : '';
   return `${size}|${g.shape}|${g.outer}|${g.inner}|${light}|${clip === 'band' ? 'band' : ''}|${json}${pictures}${deps ? `|${deps}` : ''}`;
 }
 

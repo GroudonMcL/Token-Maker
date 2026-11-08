@@ -4,6 +4,7 @@ import { angularFill, clipToBand, litTables, type FrameGeometry, type LitTables 
 import { mix, rgba } from '../engine/legacy/color';
 import { shapePolygon } from '../engine/legacy/shapes';
 import { pictureById } from '../project/pictures';
+import { libraryPictureById } from '../project/libraryPictures';
 import { DEFAULT_LIGHT, type GradientStop, type Paint, type RingStop } from '../project/types';
 import { bandWidthPx, insetAt, spacedAlong } from './band';
 import { context2d, newCanvas, type CanvasLike, type Ctx } from './canvas';
@@ -179,7 +180,7 @@ export function fillBand(ctx: Ctx, g: FrameGeometry, from: number, to: number, p
 const tileSize = (g: FrameGeometry, paint: PicturePaint) => Math.max(2, paint.scale * bandWidthPx(g));
 
 /** What is drawn until the picture has loaded: its average colour (or its tint). */
-const standIn = (paint: PicturePaint) => paint.tint ?? pictureById(paint.picture)?.average ?? '#808080';
+const standIn = (paint: PicturePaint) => paint.tint ?? (pictureById(paint.picture) ?? libraryPictureById(paint.picture))?.average ?? '#808080';
 
 /** The picture as a repeating pattern, `tile` pixels to a tile, turned by the paint's angle. */
 function picturePattern(ctx: Ctx, img: CanvasImageSource, paint: PicturePaint, tile: number): CanvasPattern {

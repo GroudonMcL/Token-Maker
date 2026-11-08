@@ -7,6 +7,7 @@ import { FRAME_STYLES, SHAPES } from '../../render/catalog';
 import { isValidHex } from '../../render/color';
 import { cellsLayer, chainLayer, LAYER_PHASE9, DEFAULT_STAGE, fractureLayer, gearsLayer, growthLayer, knotworkLayer, NEW_EFFECT, NEW_LAYER, NO_RADIAL, REPEAT_PHASE7, REPEAT_V10, newId, textureLayer } from './defaults';
 import { PICTURE_IDS } from './pictures';
+import { DEFAULT_LIBRARY_PICTURE, isLibraryPicture, TEXTURE_PICTURES } from './libraryPictures';
 import {
   BEVEL_PROFILES,
   BLUR_MODES,
@@ -176,6 +177,8 @@ const MIGRATIONS: Record<number, (p: Obj) => Obj> = {
   // Version 11 → 12: on the band, 'along' now points emblems (icons, moons, crowns…) out from the centre;
   // older files keep them square to the edge, so they draw as they did.
   11: (p) => ({ ...p, schemaVersion: 12, layers: Array.isArray(p.layers) ? p.layers.map(keepEmblemsSquare) : p.layers }),
+  // Version 12 → 13: library pictures (element 'picture', and as photo textures) are new choices, so nothing changes.
+  12: (p) => ({ ...p, schemaVersion: 13 }),
 };
 
 function keepEmblemsSquare(layer: unknown): unknown {
@@ -357,7 +360,7 @@ function checkPaint(v: unknown, fallback: Paint): Paint {
     case 'picture':
       return {
         kind: 'picture',
-        picture: oneOf(o.picture, PICTURE_IDS, PICTURE_IDS[0]),
+        picture: typeof o.picture === 'string' && TEXTURE_PICTURES.some((t) => t.id === o.picture) ? o.picture : oneOf(o.picture, PICTURE_IDS, PICTURE_IDS[0]),
         scale: num(o.scale, 3, 0.2, 40),
         angle: num(o.angle, 0, -360, 360),
         bend: bool(o.bend, true),
@@ -396,6 +399,11 @@ function checkPlacement(o: Obj, d: Placement): Placement {
     radialStart: num(o.radialStart, d.radialStart, -360, 360),
     radialMirror: bool(o.radialMirror, d.radialMirror),
   };
+}
+
+/** Element 'picture''s picture: one of the library's, else the default. */
+function checkPictureElement(o: Obj, d: { picture: string; pictureTint: boolean }): { picture: string; pictureTint: boolean } {
+  return { picture: typeof o.picture === 'string' && isLibraryPicture(o.picture) ? o.picture : DEFAULT_LIBRARY_PICTURE, pictureTint: bool(o.pictureTint, d.pictureTint) };
 }
 
 const idOrNull = (v: unknown) => (typeof v === 'string' && v ? v : null);
@@ -598,6 +606,7 @@ function checkLayer(l: unknown, index: number, warnings: string[], ids: Set<stri
         element: elementKind(o.element, d.element),
         detail: hexOrNull(o.detail, d.detail),
         seed: Math.round(num(o.seed, d.seed, 0, 99999)),
+        ...checkPictureElement(o, d),
       };
     }
     case 'path': {
@@ -842,6 +851,7 @@ function checkLayer(l: unknown, index: number, warnings: string[], ids: Set<stri
         wander: num(o.wander, d.wander, 0, 2),
         fillPaint: checkFillPaint(o.fillPaint),
         paintEach: bool(o.paintEach, d.paintEach),
+        ...checkPictureElement(o, d),
       };
     }
   }

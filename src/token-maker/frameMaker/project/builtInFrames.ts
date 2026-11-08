@@ -11,6 +11,8 @@ import { LAYERED_TEMPLATES } from './defaults';
 import { THEMED_TEMPLATES } from './themedTemplates';
 import { ESSENTIALS_DATA } from './essentialsData';
 import { FRAME_VERSIONS } from './frameVersions';
+import { LIBRARY_FRAMES } from './libraryFrames';
+import { isRemade, remadeFrame, reviewFramesBesides } from './reviewFrames';
 import { fromLayers, slot, type BuiltInFrame } from './houseStyle';
 import { parseProject } from './migrate';
 import { categoryOf, categoryRank, FRAME_CATEGORIES, type FrameCategory } from './frameCategories';
@@ -76,8 +78,21 @@ const fromTemplate = (t: { id: string; name: string; description: string; make: 
 });
 const ORIGINALS: BuiltInFrame[] = [...PICTURE_FRAME_TEMPLATES, ...CRAFTED_TEMPLATES, ...LAYERED_TEMPLATES, ...THEMED_TEMPLATES].map(fromTemplate);
 
-/** Every built-in frame: the Essentials, the versions of the drawn frames and the other designs, and the kept originals. */
-export const BUILT_IN_FRAMES: readonly BuiltInFrame[] = [...ESSENTIALS, ...FRAME_VERSIONS, ...ORIGINALS];
+/** Every built-in frame's band thickness, per square: 7% of a square, the same for all of them (owner's request). */
+export const BUILT_IN_THICKNESS = 0.14;
+const standardBand = (f: BuiltInFrame): BuiltInFrame => ({
+  ...f,
+  project: () => {
+    const p = f.project();
+    return { ...p, stage: { ...p.stage, thickness: BUILT_IN_THICKNESS } };
+  },
+});
+
+/** Every built-in frame: the Essentials, the versions of the drawn frames and the other designs, and the kept originals, each on a band 7% of a square thick. */
+// Frames remade in the frame reviews (version 13, reviewFrames.ts) are drawn from the chosen projects, in their old places; new ones go after.
+const LISTED = [...ESSENTIALS, ...FRAME_VERSIONS, ...LIBRARY_FRAMES, ...ORIGINALS].map((f) => (isRemade(f.id) ? remadeFrame(f) : f));
+const REVIEWED = reviewFramesBesides(new Set(LISTED.map((f) => f.id)));
+export const BUILT_IN_FRAMES: readonly BuiltInFrame[] = [...LISTED, ...REVIEWED].map(standardBand);
 export type { BuiltInFrame, BuiltInGroup } from './houseStyle';
 export const builtInFrameById = (id: string) => BUILT_IN_FRAMES.find((f) => f.id === id);
 
