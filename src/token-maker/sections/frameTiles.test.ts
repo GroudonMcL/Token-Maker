@@ -16,7 +16,7 @@ describe("the owner's frame order and tags", () => {
     }
   });
 
-  it('lists each group in the ranking, best first', () => {
+  it('lists each group in the owner\'s order', () => {
     for (const group of new Set(TILES.map((t) => t.group))) {
       const ranks = TILES.filter((t) => t.group === group).map((t) => rankOf(t.id));
       expect(ranks, group).toEqual([...ranks].sort((a, b) => a - b));

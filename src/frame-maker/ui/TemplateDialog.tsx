@@ -218,7 +218,7 @@ export function TemplateDialog({ mode, onClose }: { mode: Mode; onClose: () => v
           {!q && tab === ALL && (
             <p className="note">
               {mode === 'new'
-                ? 'Every frame Token Maker lists, best first. Open one to change it, save it, and open the file in Token Maker.'
+                ? 'Every frame Token Maker lists, with similar frames together. Open one to change it, save it, and open the file in Token Maker.'
                 : 'Token Maker’s drawn frames, each added as one layer. The Editable layers tab has them rebuilt from layers.'}
             </p>
           )}

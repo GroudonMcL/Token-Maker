@@ -54,7 +54,7 @@ const ESSENTIAL_INFO: Record<string, { description: string; colours: ColourSlot[
 const ESSENTIALS: BuiltInFrame[] = ESSENTIALS_DATA.map((d) => ({
   id: d.id,
   name: d.name,
-  group: 'Essentials',
+  group: categoryOf(d.id),
   ...ESSENTIAL_INFO[d.id],
   project: () => {
     const read = parseProject(d.project);
