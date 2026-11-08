@@ -398,6 +398,17 @@ const INFO: Record<string, Info> = {
     description: 'Ice-blue stone split all round by glowing white ice cracks.',
     colours: [slot('glow', 'Glow colour', '#3a9aff', ['Default', 'Contours'])],
   },
+  // ── Batch 7 (owner's picks) ──
+  'desert-tomb-sandstone': {
+    name: 'Desert tomb',
+    description: 'Chiselled sandstone blocks with carved runes, lapis inlay lines and a pair of lapis jewels at every joint.',
+    colours: [slot('stone', 'Stone colour', '#d09a50', ['Sandstone']), slot('gems', 'Jewel colour', '#1a50c0', ['Lapis inlay', 'Lapis before joints', 'Lapis after joints'])],
+  },
+  'frost-ring-silver': {
+    name: 'Ice crystal',
+    description: 'Ice-blue between silver rails, with ice ferns, frost and snow crystals scattered round it and six silver snowflakes.',
+    colours: [slot('band', 'Ice colour', '#6ab0e8', ['Band', 'Pressed-in step'])],
+  },
 };
 
 /** A remade frame's own name, description and colour slots, over the frame it remakes (which keeps its place, group and `after`). */
