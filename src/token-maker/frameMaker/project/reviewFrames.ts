@@ -352,6 +352,52 @@ const INFO: Record<string, Info> = {
     after: 'amethyst-geode',
     colours: [slot('gem', 'Agate colour', '#6a30b0', ['Agate', 'Crystal lining'])],
   },
+  // ── Batch 6 (owner's picks) ──
+  'royal-blue': {
+    description: 'Royal blue between gold edges, with gold fleurs-de-lis, faceted rubies in gold bezels and a gold imperial crown.',
+    colours: [slot('band', 'Band colour', '#2a5ac0', ['Band']), slot('gems', 'Gem colour', '#e01830', ['Gems'])],
+  },
+  'artificer-pipes': {
+    name: 'Artificer conduit',
+    description: 'Two polished copper pipes either side of a glowing blue energy line, clamped with brass collars and steel bolts.',
+    colours: [slot('glow', 'Energy colour', '#30b0ff', ['Energy']), slot('copper', 'Pipe colour', '#b8643a', ['Pipe'])],
+  },
+  'storm-wisps': {
+    name: 'Blue storm',
+    description: 'A clean deep-blue storm band with drifting clouds and real glowing lightning.',
+    colours: [slot('band', 'Band colour', '#2a64b8', ['Band', 'Pressed-in step']), slot('glow', 'Lightning colour', '#a0c8ff', ['Lightning'])],
+  },
+  'thorns-bark-bramble': {
+    name: 'Bramble',
+    description: 'Warm bark with one thick glossy bramble stem winding round it, pale thorns and blackberries.',
+    colours: [slot('wood', 'Bark colour', '#9a6a3e', ['Band', 'Pressed-in step']), slot('berries', 'Berry colour', '#3a0a40', ['Berries'])],
+  },
+  'celtic-knot-silver': {
+    name: 'Celtic silver',
+    description: 'A polished silver knot on deep emerald enamel.',
+    colours: [slot('band', 'Enamel colour', '#1a8a5a', ['Band', 'Pressed-in step'])],
+  },
+  'druid-circle-runes': {
+    name: 'Druid standing stones',
+    description: 'Twelve chiselled, weathered standing stones on moss, each carved with a glowing green rune.',
+    colours: [slot('glow', 'Rune colour', '#60e060', ['Runes'])],
+  },
+  'glowing-runes-runic': {
+    name: 'Runic steel',
+    description: 'Hammered blackened steel between steel rails, with big ice-blue runes glowing in a carved channel.',
+    colours: [slot('glow', 'Rune colour', '#60b0ff', ['Runes', 'Channel light'])],
+  },
+  'gilded-laurel-sapphire': {
+    name: 'Sapphire laurel',
+    description: 'Sapphire-blue enamel between gold rails, with gold laurel sprigs and sapphires in gold bezels.',
+    after: 'gilded-laurel',
+    colours: [slot('band', 'Enamel colour', '#2a50c0', ['Band', 'Pressed-in step']), slot('gems', 'Gem colour', '#2050e0', ['Sapphires'])],
+  },
+  'frost-fracture': {
+    name: 'Frost fracture',
+    description: 'Ice-blue stone split all round by glowing white ice cracks.',
+    colours: [slot('glow', 'Glow colour', '#3a9aff', ['Default', 'Contours'])],
+  },
 };
 
 /** A remade frame's own name, description and colour slots, over the frame it remakes (which keeps its place, group and `after`). */

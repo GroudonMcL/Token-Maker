@@ -477,6 +477,8 @@ const VERSIONS: Record<string, FrameCategory> = {
   'storm-ring-blood-clouds': 'Elements',
   'warlock-void-onyx': 'Dark & Grim',
   'amethyst-geode-violet': 'Stone & Earth',
+  'gilded-laurel-sapphire': 'Metal & Gems',
+  'frost-fracture': 'Elements',
 };
 
 const FILED: Record<string, FrameCategory> = { ...ORIGINALS, ...VERSIONS };
