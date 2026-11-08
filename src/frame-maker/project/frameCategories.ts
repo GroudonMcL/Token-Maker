@@ -468,6 +468,15 @@ const VERSIONS: Record<string, FrameCategory> = {
   ossuary: 'Dark & Grim',
   'rose-cameo': 'Wood & Nature',
   'tudor-rose': 'Wood & Nature',
+  'thorns-silverwork-bare': 'Wood & Nature',
+  'cleric-dawn-pearls': 'Metal & Gems',
+  'artificer-brass': 'Metal & Gems',
+  'barbarian-club-oak': 'Hide, Cloth & Rope',
+  'sorcerer-scales': 'Magic',
+  'storm-ring-arcane-clouds': 'Elements',
+  'storm-ring-blood-clouds': 'Elements',
+  'warlock-void-onyx': 'Dark & Grim',
+  'amethyst-geode-violet': 'Stone & Earth',
 };
 
 const FILED: Record<string, FrameCategory> = { ...ORIGINALS, ...VERSIONS };

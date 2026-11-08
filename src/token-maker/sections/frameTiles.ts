@@ -27,7 +27,7 @@ export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrde
  * pick, version 13): no longer offered, though tokens made with them still
  * draw them.
  */
-const REPLACED = new Set(['cobblestone', 'druid', 'paladin', 'warlock', 'fighter']);
+const REPLACED = new Set(['cobblestone', 'druid', 'paladin', 'warlock', 'fighter', 'artificer']);
 
 /**
  * Every frame in the picker, by category (frameCategories.ts): the drawn

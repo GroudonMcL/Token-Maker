@@ -263,6 +263,95 @@ const INFO: Record<string, Info> = {
     description: 'Deep green with heraldic Tudor roses and small gold stars.',
     colours: [slot('band', 'Band colour', '#3f9a4c', ['Band', 'Pressed-in step']), slot('gold', 'Star colour', '#e0c070', ['Stars'])],
   },
+  // ── Batch 5 (owner's picks) ──
+  'thorns-silverwork-bare': {
+    name: 'Silver briar, bare',
+    description: 'The polished silver briar with claw-set amethysts on its own, with no band behind it.',
+    after: 'thorns-silverwork',
+    colours: [slot('gems', 'Gem colour', '#8a2ad0', ['Amethysts', 'Small amethysts'])],
+  },
+  'cleric-dawn-pearls': {
+    name: 'Dawn pearls',
+    description: 'The dawn band with four lustrous pearls in gold bezels, each with a soft sunburst behind it.',
+    after: 'cleric-dawn',
+    colours: [slot('band', 'Band colour', '#d0607a', ['Band', 'Pressed-in step'])],
+  },
+  'tidal-ring': {
+    description: 'Deep water with a swell and foam crests that stay offset all the way round.',
+    colours: [slot('sea', 'Sea colour', '#1f8ab0', ['Deep water', 'Swell'])],
+  },
+  'gilded-laurel-enamel': {
+    description: 'Green enamel between two rows of polished gold laurel sprigs.',
+    colours: [slot('band', 'Enamel colour', '#2e8a58', ['Band', 'Pressed-in step']), slot('gold', 'Laurel colour', '#e0c070', ['Outer laurel', 'Inner laurel'])],
+  },
+  'royal-inscription-gold': {
+    description: 'A gold band with an inscription and faceted rubies in gold bezels.',
+    colours: [slot('gems', 'Gem colour', '#e01830', ['Gems'])],
+  },
+  'royal-purple-silver': {
+    description: 'Royal purple between silver edges, with silver fleurs-de-lis, faceted amethysts in silver bezels and a silver imperial crown.',
+    colours: [slot('band', 'Band colour', '#6a2a9a', ['Band']), slot('gems', 'Gem colour', '#b040f0', ['Gems'])],
+  },
+  'bard-moon-verse': {
+    name: 'Moonlit verse',
+    description: 'Midnight blue between gold rails, with twinkling stars, gold notes and a glowing crescent moon in a gold medallion.',
+    colours: [slot('band', 'Band colour', '#2a3a7a', ['Band', 'Pressed-in step']), slot('gold', 'Gold colour', '#e0b050', ['Gold rail', 'Notes', 'Moon bezel'])],
+  },
+  'artificer-brass': {
+    name: 'Artificer’s brass',
+    description: 'Polished brass with a gear-toothed inner edge and brass cogs with ruby hubs (remakes the drawn Artificer).',
+    colours: [slot('brass', 'Brass colour', '#c8902e', ['Band', 'Pressed-in step', 'Gear teeth', 'Gears', 'Rivets']), slot('gems', 'Hub colour', '#c0101a', ['Hubs'])],
+  },
+  'riveted-plates-forge-seams-curved': {
+    name: 'Burning seams',
+    description: 'Hammered iron plates over a white-hot core, with fire glowing out of every seam.',
+    colours: [slot('glow', 'Fire colour', '#ff8a1a', ['Core', 'Seam fire'])],
+  },
+  'riveted-plates-ordered': {
+    name: 'Blued steel plates',
+    description: 'Twelve curved, polished blued-steel plates over dark iron, each with four brass rivets.',
+    colours: [slot('steel', 'Steel colour', '#4a6080', ['Plates']), slot('rivets', 'Rivet colour', '#d0a050', ['Rivets'])],
+  },
+  rope: {
+    description: 'A warm twisted rope with brass whippings.',
+    colours: [slot('rope', 'Rope colour', '#b08850', ['Rope', 'Twist']), slot('brass', 'Whipping colour', '#c89040', ['Whippings'])],
+  },
+  'barbarian-club-oak': {
+    name: 'Iron-bound oak',
+    description: 'Warm grained oak with hammered iron bands and bright domed steel studs.',
+    after: 'barbarian-club',
+    colours: [slot('wood', 'Wood colour', '#9a6a3a', ['Band', 'Pressed-in step'])],
+  },
+  'sorcerer-scales': {
+    name: 'Dragon-blooded',
+    description: 'Crimson with glossy dragon scales between gold rails and fiery red jewels.',
+    after: 'sorcerer',
+    colours: [slot('band', 'Scale colour', '#c83020', ['Band', 'Pressed-in step', 'Dragon scales']), slot('gems', 'Jewel colour', '#ff3010', ['Orbs'])],
+  },
+  'storm-ring-arcane-clouds': {
+    name: 'Arcane thunder',
+    description: 'A violet storm band with soft clouds and real glowing lightning.',
+    after: 'storm-ring',
+    colours: [slot('band', 'Band colour', '#7a4ab0', ['Band', 'Pressed-in step']), slot('glow', 'Lightning colour', '#d0a0ff', ['Lightning'])],
+  },
+  'storm-ring-blood-clouds': {
+    name: 'Blood thunder',
+    description: 'A crimson storm band with dark clouds and real red-glowing lightning.',
+    after: 'storm-ring',
+    colours: [slot('band', 'Band colour', '#b02a24', ['Band', 'Pressed-in step']), slot('glow', 'Lightning colour', '#ff8070', ['Lightning'])],
+  },
+  'warlock-void-onyx': {
+    name: 'Void onyx',
+    description: 'Black onyx with violet light breaking through glowing cracks, a glowing seam and faint stars.',
+    after: 'warlock-void',
+    colours: [slot('glow', 'Glow colour', '#e0a8ff', ['Glowing cracks', 'Void seam', 'Stars'])],
+  },
+  'amethyst-geode-violet': {
+    name: 'Amethyst agate',
+    description: 'Deep violet to lilac agate banding with a gold outer rim and a crystal lining.',
+    after: 'amethyst-geode',
+    colours: [slot('gem', 'Agate colour', '#6a30b0', ['Agate', 'Crystal lining'])],
+  },
 };
 
 /** A remade frame's own name, description and colour slots, over the frame it remakes (which keeps its place, group and `after`). */
