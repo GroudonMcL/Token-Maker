@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from '../components/Link';
 import { BrandMark } from '../layout/BrandMark';
-import { Footer } from '../layout/Footer';
+import { SiteLinks } from '../layout/SiteLinks';
 
 /** Simple reading layout for the About and Privacy pages. */
 export function PageLayout({ title, children }: { title: string; children: ReactNode }) {
@@ -22,7 +22,9 @@ export function PageLayout({ title, children }: { title: string; children: React
         <h1>{title}</h1>
         {children}
       </main>
-      <Footer />
+      <footer className="site-footer">
+        <SiteLinks />
+      </footer>
     </div>
   );
 }

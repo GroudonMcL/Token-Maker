@@ -1008,7 +1008,7 @@ button:disabled {
   overscroll-behavior: contain;
 }
 
-/* Ad slot and footer (below the editor) */
+/* Ad slot (below the editor) and site links */
 .ad-slot {
   display: grid;
   gap: var(--space-2);
@@ -1033,26 +1033,32 @@ button:disabled {
 .site-footer {
   display: grid;
   justify-items: center;
-  gap: var(--space-2);
   padding: var(--space-6) max(var(--space-4), env(safe-area-inset-right)) calc(var(--space-6) + env(safe-area-inset-bottom)) max(var(--space-4), env(safe-area-inset-left));
-  color: var(--text-muted);
   font-size: var(--text-sm);
-  text-align: center;
 }
 
-.site-footer nav {
+.site-links {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-5);
 }
 
-.site-footer a {
+.site-links a {
   color: var(--text);
 }
 
-.site-footer p {
-  margin: 0;
+/* In the bottom bar: centred between the token summary and the Export button. */
+.site-links--bar {
+  flex: none;
+  margin-left: auto;
+  font-size: var(--text-sm);
+}
+
+/* At the end of the phone sheet's scrolling content. */
+.site-links--sheet {
+  padding: var(--space-5) var(--space-4);
+  font-size: var(--text-sm);
 }
 
 /* ---------- Components ---------- */

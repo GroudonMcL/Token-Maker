@@ -56,7 +56,7 @@ test.describe('app shell', () => {
     await expect(page.getByTestId('ad-slot')).toHaveCount(0);
   });
 
-  test('About and Privacy pages open from the footer', async ({ page }) => {
+  test('About and Privacy pages open from the site links', async ({ page }) => {
     await page.goto('/token-maker/');
     const footer = page.getByRole('navigation', { name: 'Site' });
     await footer.getByRole('link', { name: 'About' }).click();
