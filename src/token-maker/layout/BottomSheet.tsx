@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { SiteLinks } from './SiteLinks';
 import { toolStore } from '../editor/tools';
 import { usePanelNav } from './panelNav';
 import { PANEL_TABS } from './sections';
@@ -171,6 +172,7 @@ export function BottomSheet() {
       </div>
       <div className="bottom-sheet__content" id={panelId} role="tabpanel" aria-label={active.label} hidden={snap === 'peek' && dragHeight === null}>
         <TabSections tab={active} openSection={nav.openSection} setOpenSection={nav.setOpenSection} onNext={chooseTab} />
+        <SiteLinks className="site-links site-links--sheet" />
       </div>
     </div>
   );

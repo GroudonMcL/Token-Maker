@@ -17,7 +17,6 @@ import { BottomBar } from './BottomBar';
 import { BottomSheet } from './BottomSheet';
 import { CanvasArea } from './CanvasArea';
 import { ExportProgress } from './ExportProgress';
-import { Footer } from './Footer';
 import { PanelResizer } from './PanelResizer';
 import { readPanelWidth } from './panelWidth';
 import { SidePanel } from './SidePanel';
@@ -47,7 +46,7 @@ function boot() {
  * - Desktop (≥ 1024px) and tablet (768–1023px, narrower panel): tool rail + canvas + right panel
  *   showing the chosen tab + bottom bar (layout A, the owner's choice).
  * - Phone (< 768px): canvas on top, draggable bottom sheet with the same tabs.
- * The editor fills the screen; the ad slot and footer sit below it.
+ * The editor fills the screen; the About/Privacy links sit in the bottom bar (or sheet).
  */
 export function AppShell() {
   const wide = useMediaQuery('(min-width: 768px)');
@@ -75,7 +74,6 @@ export function AppShell() {
       <ExportProgress />
       <Toasts />
       <AdSlot />
-      <Footer />
     </>
   );
 }

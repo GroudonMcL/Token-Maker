@@ -4,6 +4,7 @@ import { exportMain, useExportProgress } from '../editor/useExport';
 import { FORMATS } from '../export/formats';
 import { useExportSettings } from '../export/exportSettings';
 import { useDoc } from '../state/tokenStore';
+import { SiteLinks } from './SiteLinks';
 import { TokenSummary } from './TokenSummary';
 
 /** The main Export button: the token on screen, or every token of a batch as a ZIP. */
@@ -22,11 +23,12 @@ export function ExportButton({ short = false }: { short?: boolean }) {
   );
 }
 
-/** Desktop/tablet bottom bar: token summary and the Export button. */
+/** Desktop/tablet bottom bar: token summary, About/Privacy links and the Export button. */
 export function BottomBar() {
   return (
     <footer className="bottom-bar">
       <TokenSummary />
+      <SiteLinks className="site-links site-links--bar" />
       <ExportButton />
     </footer>
   );
