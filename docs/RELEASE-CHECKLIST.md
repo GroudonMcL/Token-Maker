@@ -26,9 +26,10 @@ What to do before Token Maker goes public, from a review on 27 October 2026. Whe
 
 ## 3. Security and abuse
 
-- [ ] Add a Cloudflare **rate-limiting rule** on `/api/*` (Security → WAF). The limiter in the code (90 picture requests and 20 page requests a minute per IP) only counts within one Cloudflare server. Its own comment and the design document both say to add a dashboard rule on top.
+- [x] Rate-limit `/api/*` properly (8 November 2026): deployed as a Worker, the proxy now uses Cloudflare's rate-limiting binding (`ratelimits` in `wrangler.jsonc`: 90 picture and 20 page requests a minute per IP), shared by every copy of the Worker in a Cloudflare location, not counted separately by each one. A **WAF rate-limiting rule** (Security → WAF) is still worth adding for a single global limit, but no longer urgent. A Pages deploy still has only the in-memory limiter.
 - [ ] Set up **usage alerts or a spending cap** on the Cloudflare account. The free Workers plan allows 100,000 requests a day.
-- [ ] Consider making `/api/*` answer only requests from your own site (check the `Origin`/`Referer` header), so nobody else can use it as a free image proxy.
+- [x] `/api/*` answers only requests from the site's own pages (8 November 2026): `Sec-Fetch-Site`, or `Referer`/`Origin` for older browsers. Requests without them (curl, scripts) get 403. Those headers can be faked, so the rate limit still matters.
+- [x] The page scanner can no longer be made to run for seconds by broken HTML (8 November 2026): it was regular expressions that slowed down with the square of the page size (60 KB took 6 s); it is now a single pass.
 - [ ] The proxy already blocks fetches to private addresses, size-limits responses and checks file types (`server/safeFetch.ts`, `ipRanges.ts`, `sniff.ts`). Leave that as it is.
 - [ ] Add a full **Content-Security-Policy** and **HSTS** to `public/_headers`. At the moment there is only `frame-ancestors`. The policy has to allow:
   - Hugging Face (for the model)

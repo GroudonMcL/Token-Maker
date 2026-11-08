@@ -20,8 +20,16 @@ import { createProject, legacyFrameLayer, projectFromFrame } from '../project/de
 import { BUILT_IN_FRAMES } from '../project/builtInFrames';
 import { categoryOf, categoryRank } from '../project/frameCategories';
 import type { FrameProject } from '../project/types';
-import { addLayer, loadProject } from '../state/projectStore';
+import { showMessage } from '../state/messages';
+import { loadPrevious, type PreviousProject } from '../state/previousProject';
+import { addLayer, replaceProject } from '../state/projectStore';
 import { Tile } from './Thumbnail';
+
+/** Puts a project in place of the open one (one undo step) and says how to get the old one back. */
+function startFrom(project: FrameProject, what = `“${project.name}”`) {
+  const old = replaceProject(project);
+  showMessage(`Started from ${what}. Undo brings back “${old}”; New lists it too.`);
+}
 
 /** One frame in the gallery. */
 interface Item {
@@ -57,7 +65,7 @@ const designs: Item[] = BUILT_IN_FRAMES.map((t) => ({
   tmId: `builtin:${t.id}`,
   editable: false,
   make: t.project,
-  pick: () => loadProject(t.project()),
+  pick: () => startFrom(t.project()),
 }));
 
 const originals: Item[] = FRAME_PRESETS.map((p) => ({
@@ -68,7 +76,7 @@ const originals: Item[] = FRAME_PRESETS.map((p) => ({
   tmId: p.id,
   editable: false,
   make: () => projectFromFrame(p.id),
-  pick: (mode) => (mode === 'new' ? loadProject(projectFromFrame(p.id)) : addLayer(legacyFrameLayer(p.id))),
+  pick: (mode) => (mode === 'new' ? startFrom(projectFromFrame(p.id)) : addLayer(legacyFrameLayer(p.id))),
 }));
 
 const editables: Item[] = FRAME_PRESETS.filter((p) => canConvert(p.style)).map((p) => ({
@@ -80,7 +88,7 @@ const editables: Item[] = FRAME_PRESETS.filter((p) => canConvert(p.style)).map((
   tmId: p.id,
   editable: true,
   make: () => editableProject(p.id)!,
-  pick: (mode) => (mode === 'new' ? loadProject(editableProject(p.id)!) : addLayer(editableGroup(p.id)!)),
+  pick: (mode) => (mode === 'new' ? startFrom(editableProject(p.id)!) : addLayer(editableGroup(p.id)!)),
 }));
 
 /** Best first (Token Maker's ranking), keeping the listed order between equals. */
@@ -105,6 +113,17 @@ export function TemplateDialog({ mode, onClose }: { mode: Mode; onClose: () => v
     const d = ref.current;
     if (d && !d.open) d.showModal?.();
   }, []);
+
+  // The design the last New or Open replaced, offered first so a mistake can be undone after a reload.
+  const [previous, setPrevious] = useState<PreviousProject | null>(null);
+  useEffect(() => {
+    if (mode !== 'new') return;
+    let live = true;
+    void loadPrevious().then((p) => live && setPrevious(p));
+    return () => {
+      live = false;
+    };
+  }, [mode]);
 
   const all = ITEMS[mode];
   // "All frames", the categories in their usual order, then the editable layers.
@@ -157,7 +176,7 @@ export function TemplateDialog({ mode, onClose }: { mode: Mode; onClose: () => v
             className="btn small"
             title="Start from nothing and add your own layers"
             onClick={() => {
-              loadProject(createProject());
+              startFrom(createProject(), 'a blank project');
               onClose();
             }}
           >
@@ -221,6 +240,27 @@ export function TemplateDialog({ mode, onClose }: { mode: Mode; onClose: () => v
                 ? 'Every frame Token Maker lists, with similar frames together. Open one to change it, save it, and open the file in Token Maker.'
                 : 'Token Maker’s drawn frames, each added as one layer. The Editable layers tab has them rebuilt from layers.'}
             </p>
+          )}
+          {previous && !q && tab === ALL && (
+            <section className="frame-gallery__previous" aria-label="Your previous design">
+              <p className="note">
+                Your previous design, replaced {new Date(previous.replacedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}. Open it to
+                swap it back.
+              </p>
+              <div className="tiles">
+                <Tile
+                  id={`previous:${previous.replacedAt}`}
+                  name={previous.project.name}
+                  badge="Previous"
+                  description="The design you had before the last New or Open."
+                  make={() => previous.project}
+                  onPick={() => {
+                    startFrom(previous.project, `your previous design, “${previous.project.name}”`);
+                    onClose();
+                  }}
+                />
+              </div>
+            </section>
           )}
           <div className="tiles">
             {shown.map((t) => (

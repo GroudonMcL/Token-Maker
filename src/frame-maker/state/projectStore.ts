@@ -14,6 +14,7 @@ import { finder, recentrePath, turnLayer } from '../render/hitTest';
 import { repeatPlacements } from '../render/layers';
 import { shapeAsPath } from '../render/placed';
 import { createHistoryStore } from './history';
+import { keepPrevious } from './previousProject';
 
 export const history = createHistoryStore<FrameProject>(createProject());
 
@@ -90,14 +91,29 @@ export function selectedLayer(): Layer | undefined {
   return findLayer(get().layers, ui.getState().selectedId);
 }
 
-/** Replaces the open project (new, open, template): a fresh undo history. */
+/** Opens a project with a fresh undo history: the one the last visit left, and in tests. */
 export function loadProject(project: FrameProject): void {
   history.getState().reset(project);
   select(project.layers.at(-1)?.id ?? null);
 }
 
-export function newProject(): void {
-  loadProject(createProject());
+/**
+ * Puts another project in place of the open one (New, Open, a template) as
+ * one undo step, so Undo brings the old design back. The old design is also
+ * kept in this browser (state/previousProject.ts) for after the page closes.
+ * Returns the replaced design's name.
+ */
+export function replaceProject(project: FrameProject): string {
+  commit();
+  const old = get();
+  history.getState().set(project);
+  select(project.layers.at(-1)?.id ?? null);
+  void keepPrevious(old);
+  return old.name;
+}
+
+export function newProject(): string {
+  return replaceProject(createProject());
 }
 
 /** Adds a layer just above the selected one, in the same group (or on top), and selects it. */

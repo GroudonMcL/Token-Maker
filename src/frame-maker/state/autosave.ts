@@ -9,16 +9,33 @@ import { history } from './projectStore';
 export const AUTOSAVE_KEY = 'frame-studio:project';
 const DELAY_MS = 400;
 
-/** The autosaved project, or null if there is none or it can't be read. */
-export async function loadAutosave(): Promise<FrameProject | null> {
+/** A saved project that couldn't be read, set aside so autosave doesn't overwrite it. */
+export const UNREADABLE_KEY = 'frame-studio:unreadable-project';
+
+/**
+ * The autosaved project, or null if there is none. One that can't be read
+ * is first copied to UNREADABLE_KEY (`unreadable: true`), because autosave
+ * overwrites the saved project as soon as the editor starts; a later version
+ * of the site may be able to open it.
+ */
+export async function loadAutosave(): Promise<{ project: FrameProject | null; unreadable?: true }> {
+  let text: unknown;
   try {
-    const text = await get<string>(AUTOSAVE_KEY);
-    if (!text) return null;
-    const result = parseProject(text);
-    return result.ok ? result.project : null;
+    text = await get(AUTOSAVE_KEY);
   } catch {
-    return null;
+    // Storage is blocked (private windows): there is nothing to lose.
+    return { project: null };
   }
+  if (!text) return { project: null };
+  try {
+    if (typeof text !== 'string') throw new Error('Not a saved project');
+    const result = parseProject(text);
+    if (result.ok) return { project: result.project };
+  } catch {
+    // Kept below, like a project the reader refuses.
+  }
+  await set(UNREADABLE_KEY, { text, savedAt: Date.now() }).catch(() => {});
+  return { project: null, unreadable: true };
 }
 
 export async function saveNow(project: FrameProject): Promise<void> {

@@ -23,7 +23,7 @@ import {
 import { inSite, sendToTokenMaker } from '../io/sendToTokenMaker';
 import { AppSwitch } from '../../shell/AppSwitch';
 import { PalettePicker } from '../../shell/PalettePicker';
-import { loadProject, redo, renameProject, setMode, undo, useCanRedo, useCanUndo, useProject, useUi, history } from '../state/projectStore';
+import { redo, renameProject, replaceProject, setMode, undo, useCanRedo, useCanUndo, useProject, useUi, history } from '../state/projectStore';
 import { Field, Select, Segmented, Toggle } from './controls';
 import { helpFor, hintId } from './help';
 import { stageArt } from './stageArt';
@@ -97,8 +97,9 @@ export function TopBar({ onNew, onHelp, onMessage, onVary, onTheme, narrow = fal
             if (!file) return;
             const result = await readProjectFile(file);
             if (!result.ok) return onMessage(result.error, true);
-            loadProject(result.project);
-            onMessage(result.warnings.length ? `Opened "${result.project.name}". ${result.warnings.join(' ')}` : `Opened "${result.project.name}".`);
+            const old = replaceProject(result.project);
+            const undoNote = `Undo brings back "${old}"; New lists it too.`;
+            onMessage([`Opened "${result.project.name}".`, ...result.warnings, undoNote].join(' '));
           }}
         />
         <button type="button" className="btn" onClick={() => saveProjectFile(history.getState().present)} title={`Download the project as a ${PROJECT_EXTENSION} file you can open again`}>

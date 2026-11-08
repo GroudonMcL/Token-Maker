@@ -1545,6 +1545,15 @@ select {
 .frame-gallery__none {
   color: var(--text-muted);
 }
+/* The design the last New or Open replaced, above the frames. */
+.frame-gallery__previous {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+.frame-gallery__previous > .note {
+  margin: var(--space-1) 0 0;
+}
 @media (max-width: 640px) {
   .dialog.frame-gallery[open] {
     width: 100vw;

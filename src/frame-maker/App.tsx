@@ -54,7 +54,8 @@ export function App() {
   useEffect(() => {
     let stop = () => {};
     void loadAutosave().then((saved) => {
-      loadProject(saved ?? projectFromFrame('stamped'));
+      loadProject(saved.project ?? projectFromFrame('stamped'));
+      if (saved.unreadable) showMessage("The design from your last visit couldn't be opened, so this is a new one. The old one is still kept in this browser.", true);
       stop = startAutosave();
       setReady(true);
     });
