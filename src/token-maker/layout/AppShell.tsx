@@ -4,13 +4,14 @@ import { listenForSentFrames } from '../editor/shellBridge';
 import { useGlobalImport } from '../editor/useGlobalImport';
 import { useShortcuts } from '../editor/useShortcuts';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { restore, startAutosave } from '../state/autosave';
+import { restore, startAutosave, type RestoreResult } from '../state/autosave';
 import { watchFrameImages } from '../state/frameLibrary';
 import { watchLabelFonts } from '../fonts/fontLoader';
 import { watchLibraryImages } from '../state/libraryAssets';
 import { watchPictures } from '../state/pictureLibrary';
 import { watchAiRemoval } from '../image/aiRemoval';
 import { preloadSections } from '../sections';
+import { toast } from '../ui/toast';
 import { Toasts } from '../ui/Toasts';
 import { AdSlot } from './AdSlot';
 import { BottomBar } from './BottomBar';
@@ -29,7 +30,9 @@ let booted = false;
 function boot() {
   if (booted) return;
   booted = true;
-  void restore().finally(() => {
+  // restore() never throws: a token it can't reopen is kept, not overwritten.
+  void restore().then((result) => {
+    reportRestore(result);
     startAutosave();
     watchLibraryImages();
     watchFrameImages();
@@ -39,6 +42,22 @@ function boot() {
     preloadSections();
     listenForSentFrames();
   });
+}
+
+/** Tells the user when the last token didn't come back as it was. */
+function reportRestore(result: RestoreResult) {
+  if (result.status === 'restored' && result.missingPictures) {
+    const n = result.missingPictures;
+    toast(`${n === 1 ? 'A picture' : `${n} pictures`} from your last token couldn't be reopened, so ${n === 1 ? 'it was' : 'they were'} left out.`, 'error', 10_000);
+  } else if (result.status === 'unreadable') {
+    toast(
+      result.kept
+        ? "Your last token couldn't be reopened, so this is a new one. The old one is still kept in this browser."
+        : "Your last token couldn't be reopened. Autosave is off until you click New, so it isn't overwritten.",
+      'error',
+      12_000,
+    );
+  }
 }
 
 /**

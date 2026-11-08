@@ -1,14 +1,41 @@
 import 'fake-indexeddb/auto';
+import { createStore, get, keys } from 'idb-keyval';
 import { createDocument } from '../document/defaults';
 import { addAsset, clearAssets } from './assets';
 import { clearAutosave, restore, saveNow } from './autosave';
 import { getDoc, resetDoc, updateDoc } from './tokenStore';
 import { addBatchItem, batchStore, selectItem, setBatchMode } from '../batch/batch';
 
-// Decoding needs a real browser; pretend every blob is a 10×10 image.
+// Decoding needs a real browser; pretend every blob is a 10×10 image. The
+// next `failures.decode` decodes fail instead (the art is always restored first).
+const failures = vi.hoisted(() => ({ decode: 0 }));
 vi.mock('../import/decode', () => ({
-  decodeImage: async () => ({ image: document.createElement('canvas'), width: 10, height: 10 }),
+  decodeImage: async () => {
+    if (failures.decode > 0) {
+      failures.decode--;
+      throw new Error('Not an image');
+    }
+    return { image: document.createElement('canvas'), width: 10, height: 10 };
+  },
 }));
+
+// A token named "Unreadable" can't be migrated, like one saved by a version with a bug.
+vi.mock('../document/migrate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../document/migrate')>();
+  return {
+    ...actual,
+    migrateDocument: (raw: unknown) => {
+      if ((raw as { name?: string })?.name === 'Unreadable') throw new Error('Unknown field');
+      return actual.migrateDocument(raw);
+    },
+  };
+});
+
+const db = createStore('token-maker', 'autosave');
+const savedKeys = async () => (await keys(db)).map(String).sort();
+const picture = (id: string) =>
+  addAsset({ id, blob: new Blob([id], { type: 'image/png' }), image: document.createElement('canvas'), width: 10, height: 10 });
+const RESTORED = { status: 'restored', missingPictures: 0 };
 
 beforeEach(async () => {
   await clearAutosave();
@@ -24,7 +51,7 @@ describe('autosave (DESIGN.md §4.4)', () => {
     await saveNow(doc);
     clearAssets();
     resetDoc();
-    expect(await restore()).toBe(true);
+    expect(await restore()).toEqual(RESTORED);
     expect(getDoc().name).toBe('Lich');
     expect(getDoc().art.assetId).toBe('asset:1');
   });
@@ -33,7 +60,7 @@ describe('autosave (DESIGN.md §4.4)', () => {
     const doc = createDocument('Ghost');
     doc.art.assetId = 'asset:gone';
     await saveNow(doc);
-    expect(await restore()).toBe(true);
+    expect(await restore()).toEqual(RESTORED);
     expect(getDoc().art.assetId).toBeNull();
   });
 
@@ -51,7 +78,7 @@ describe('autosave (DESIGN.md §4.4)', () => {
     clearAssets();
     resetDoc();
     setBatchMode(false);
-    expect(await restore()).toBe(true);
+    expect(await restore()).toEqual(RESTORED);
     const b = batchStore.getState();
     expect(b.on).toBe(true);
     expect(b.items.map((it) => it.name)).toEqual(['Goblin A', 'Goblin B']);
@@ -64,6 +91,57 @@ describe('autosave (DESIGN.md §4.4)', () => {
   it('has nothing to restore after "New"', async () => {
     await saveNow(createDocument('Temp'));
     await clearAutosave();
-    expect(await restore()).toBe(false);
+    expect(await restore()).toEqual({ status: 'none' });
+  });
+
+  it("leaves out a picture that can't be reopened, and keeps it saved", async () => {
+    picture('asset:ok');
+    picture('asset:broken');
+    const doc = createDocument('Ogre');
+    doc.art.assetId = 'asset:broken';
+    doc.background.image = { type: 'asset', assetId: 'asset:ok' };
+    await saveNow(doc);
+    clearAssets();
+    resetDoc();
+
+    failures.decode = 1;
+    expect(await restore()).toEqual({ status: 'restored', missingPictures: 1 });
+    expect(getDoc().name).toBe('Ogre');
+    expect(getDoc().art.assetId).toBeNull();
+    expect(getDoc().background.image).toEqual({ type: 'asset', assetId: 'asset:ok' });
+    // Autosave goes on, but doesn't delete the picture it couldn't open.
+    await saveNow(getDoc());
+    expect(await savedKeys()).toContain('asset:broken');
+  });
+
+  it("keeps a token that can't be reopened, with its pictures, instead of overwriting it", async () => {
+    picture('asset:old');
+    const old = createDocument('Unreadable');
+    old.art.assetId = 'asset:old';
+    await saveNow(old);
+    clearAssets();
+    resetDoc();
+
+    expect(await restore()).toEqual({ status: 'unreadable', kept: true });
+    // The user carries on with a new token; autosave saves it without losing the old one.
+    picture('asset:new');
+    updateDoc((d) => ({ ...d, name: 'Fresh', art: { ...d.art, assetId: 'asset:new' } }));
+    await saveNow(getDoc());
+    const kept = await get<{ doc: { name: string; art: { assetId: string } } }>('unreadable-doc', db);
+    expect(kept?.doc.name).toBe('Unreadable');
+    expect(kept?.doc.art.assetId).toBe('asset:old');
+    expect(await savedKeys()).toEqual(['asset:new', 'asset:old', 'batch', 'current-doc', 'unreadable-doc']);
+
+    // Next visit: the new token comes back, and the old one's pictures are still kept.
+    clearAssets();
+    resetDoc();
+    expect(await restore()).toEqual(RESTORED);
+    expect(getDoc().name).toBe('Fresh');
+    await saveNow(getDoc());
+    expect(await savedKeys()).toContain('asset:old');
+
+    // "New" clears everything, the kept token included.
+    await clearAutosave();
+    expect(await savedKeys()).toEqual([]);
   });
 });
