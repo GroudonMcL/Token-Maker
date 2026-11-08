@@ -457,6 +457,17 @@ const VERSIONS: Record<string, FrameCategory> = {
   starlit: 'Sky & Stars',
   'celtic-knotwork': 'Metal & Gems',
   'victors-laurel': 'Metal & Gems',
+  'storm-ring-storm-clouds': 'Elements',
+  'paladin-oath': 'Metal & Gems',
+  'warlock-watchers': 'Dark & Grim',
+  'fighter-plates': 'Metal & Gems',
+  'druid-oak': 'Wood & Nature',
+  'druid-vine': 'Wood & Nature',
+  'mossy-ruin': 'Stone & Earth',
+  'dragon-crest': 'Hide, Cloth & Rope',
+  ossuary: 'Dark & Grim',
+  'rose-cameo': 'Wood & Nature',
+  'tudor-rose': 'Wood & Nature',
 };
 
 const FILED: Record<string, FrameCategory> = { ...ORIGINALS, ...VERSIONS };

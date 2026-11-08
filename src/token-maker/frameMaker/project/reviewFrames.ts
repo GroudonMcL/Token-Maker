@@ -22,10 +22,11 @@ export function reviewProject(id: string): FrameProject {
 export const isRemade = (id: string) => DATA.has(id);
 
 interface Info {
-  name: string;
+  /** Required for new frames; a remake keeps the name of the frame it remakes unless given. */
+  name?: string;
   description: string;
   after?: string;
-  colours: ColourSlot[];
+  colours?: ColourSlot[];
 }
 
 /** Remakes of frame versions (frameVersions.ts no longer has these ids) and new frames. Kept originals that were remade (guild-gold, celestial-halo) keep their own names in their template lists. */
@@ -113,11 +114,166 @@ const INFO: Record<string, Info> = {
     description: 'A royal blue band wrapped in a garland of gold laurel sprigs.',
     colours: [slot('band', 'Band colour', '#3a6ad8', ['Band', 'Pressed-in step']), slot('gold', 'Laurel colour', '#e0c070', ['Laurel'])],
   },
+  // ── Batch 4 (owner's picks) ──
+  'grim-iron-crowned-skulls': {
+    description: 'Dark chainmail iron with crowned bone skulls, slightly embossed.',
+    colours: [slot('gold', 'Crown colour', '#e0c070', ['Crowns'])],
+  },
+  'frostbound-snowfall': {
+    description: 'A starry midnight-blue band with crystal snowflakes glowing faintly.',
+    colours: [slot('band', 'Band colour', '#2a5a9a', ['Band']), slot('glow', 'Snowflake colour', '#cfe8ff', ['Snowflakes', 'Snow'])],
+  },
+  'gilded-filigree': {
+    name: 'Gilded scrollwork',
+    description: 'A polished gold band carrying twelve raised gold scrollwork ornaments.',
+    colours: [slot('gold', 'Gold colour', '#f0d080', ['Scrollwork', 'Outer bead line', 'Inner bead line'])],
+  },
+  'royal-crimson': {
+    description: 'Crimson between gold edges, with gold fleurs-de-lis, faceted sapphires in gold bezels and a jewelled gold crown.',
+    colours: [slot('band', 'Band colour', '#c02a3a', ['Band']), slot('gems', 'Gem colour', '#3a6ae8', ['Gems'])],
+  },
+  'royal-ermine': {
+    description: 'White ermine with black tails between gold edges, under a jewelled imperial crown.',
+    colours: [slot('gold', 'Gold colour', '#d8a838', ['Edges'])],
+  },
+  'riveted-plates-ordered-curved': {
+    name: 'Riveted steel',
+    description: 'Two staggered rows of curved blued-steel plates over a dark ring, with a brass rivet inside each plate.',
+    colours: [slot('steel', 'Steel colour', '#6a7c96', ['Outer plates', 'Inner plates']), slot('rivets', 'Rivet colour', '#d8a838', ['Rivets'])],
+  },
+  'grim-iron-bone-ring': {
+    name: 'Grim iron',
+    description: 'Hammered iron with two rows of steel rivets and six embossed bone skulls.',
+    colours: [slot('iron', 'Iron colour', '#6a707c', ['Band', 'Pressed-in step'])],
+  },
+  'nautical-pirate': {
+    name: 'Pirate treasure',
+    description: 'Oak planks between gold bands, a ring of gold doubloons, gems set in gold studs and a skull and crossbones.',
+    colours: [slot('gold', 'Gold colour', '#d8a838', ['Doubloons', 'Gem studs'])],
+  },
+  'warlock-sigils': {
+    name: 'Warlock seals',
+    description: 'Purple with violet smoke, and six glowing rune sigils in dark sunken seals.',
+    colours: [slot('band', 'Band colour', '#6a2a9a', ['Band', 'Pressed-in step']), slot('glow', 'Sigil colour', '#c070ff', ['Smoke', 'Sigils', 'Seal rings'])],
+  },
+  'storm-ring-thunderhead': {
+    description: 'A clean storm-blue band with drifting clouds and real glowing lightning.',
+    colours: [slot('band', 'Band colour', '#5a6c94', ['Band', 'Pressed-in step']), slot('glow', 'Lightning colour', '#9ac0ff', ['Lightning'])],
+  },
+  'storm-ring-storm-clouds': {
+    name: 'Storm clouds',
+    description: 'Thunderhead with its swirling storm-cloud texture over the whole band, and real glowing lightning.',
+    after: 'storm-ring',
+    colours: [slot('band', 'Band colour', '#56688c', ['Band', 'Pressed-in step']), slot('glow', 'Lightning colour', '#9ac0ff', ['Lightning'])],
+  },
+  clockwork: {
+    description: 'A polished brass band with a sunken well of meshing brass and steel gears, each with a ruby bearing.',
+    colours: [slot('brass', 'Brass colour', '#e0a840', ['Band', 'Pressed-in step', 'Brass gears']), slot('gems', 'Bearing colour', '#d01828', ['Ruby bearings'])],
+  },
+  'warlock-tendrils': {
+    name: 'Eldritch tendrils',
+    description: 'Purple with violet smoke and dark tendrils, and four glowing eldritch eyes set in iron wells.',
+    colours: [slot('band', 'Band colour', '#5a2088', ['Band', 'Pressed-in step']), slot('glow', 'Glow colour', '#c080ff', ['Smoke', 'Eyes'])],
+  },
+  'filigree-border': {
+    name: 'Filigree enamel',
+    description: 'Ruby enamel between polished gold rails, with gold scrollwork filigree and pearls in gold bezels.',
+    colours: [slot('enamel', 'Enamel colour', '#d0283a', ['Band', 'Pressed-in step']), slot('gold', 'Gold colour', '#e0b050', ['Outer gold', 'Inner gold', 'Filigree'])],
+  },
+  'gothic-thorns': {
+    description: 'Black stone with glowing blood cracks, a black briar, steel spikes and red jewels at the corners.',
+    colours: [slot('glow', 'Glow colour', '#ff3040', ['Bleeding cracks', 'Blood drops', 'Blood glow'])],
+  },
+  'clockwork-watchwork': {
+    name: 'Watchwork dial',
+    description: 'A watch dial: deep blue enamel between polished silver bezels, with gold Roman numerals and minute ticks.',
+    colours: [slot('enamel', 'Dial colour', '#2a4a8a', ['Band', 'Pressed-in step']), slot('gold', 'Numeral colour', '#f4e2a8', ['Numerals', 'Minute ticks'])],
+  },
+  'thorns-silverwork': {
+    name: 'Silver briar',
+    description: 'A polished silver briar with claw-set amethysts on a dark plum band.',
+    colours: [slot('band', 'Band colour', '#3a3048', ['Band', 'Pressed-in step']), slot('gems', 'Gem colour', '#8a2ad0', ['Amethysts', 'Small amethysts'])],
+  },
+  'guild-silver-sapphire': {
+    name: 'Guild silver',
+    description: 'A bright silver band with claw-set sapphires between silver scrollwork.',
+    colours: [slot('gems', 'Gem colour', '#1840d0', ['Sapphires'])],
+  },
+  'necropolis-bone': {
+    name: 'Necropolis',
+    description: 'Ivory bone with a sunken blood-red vein, embossed skulls in dark niches and bone-set garnets.',
+    colours: [slot('glow', 'Vein colour', '#c01010', ['Blood vein', 'Garnets'])],
+  },
+  'starship-gunmetal': {
+    description: 'Teal gunmetal hull plates with cyan light glowing from every seam, running lights and bolts.',
+    colours: [slot('glow', 'Light colour', '#20d0f0', ['Core', 'Seam glow', 'Inner light', 'Running lights'])],
+  },
+  'shield-rim-viking': {
+    description: 'Red-painted planks inside a hammered iron rim full of rivets, with gold Celtic knot crests.',
+    colours: [slot('paint', 'Paint colour', '#d83a26', ['Paint']), slot('gold', 'Crest colour', '#e8c060', ['Knotwork'])],
+  },
+  'paladin-oath': {
+    name: 'Paladin’s oath',
+    description: 'Bright silver with a royal-blue enamel channel, glowing gold crosses and pearls (remakes the drawn Paladin).',
+    colours: [slot('enamel', 'Enamel colour', '#1a3490', ['Enamel']), slot('gold', 'Cross colour', '#e8b840', ['Crosses', 'Gold edge'])],
+  },
+  'warlock-watchers': {
+    name: 'Warlock’s watchers',
+    description: 'Saturated purple with necrotic smoke, a violet seam and six watching eyes in sunken sockets (remakes the drawn Warlock).',
+    colours: [slot('band', 'Band colour', '#7a3aa8', ['Band', 'Pressed-in step']), slot('glow', 'Eye colour', '#c8e020', ['Eyes'])],
+  },
+  'fighter-plates': {
+    name: 'Fighter’s plate',
+    description: 'Curved polished steel plates over dark iron, each with rivets and a domed boss (remakes the drawn Fighter).',
+    colours: [slot('steel', 'Steel colour', '#7a8698', ['Plates'])],
+  },
+  'druid-oak': {
+    name: 'Druid’s oak',
+    description: 'A lit wooden band with bark texture and eight oak sprigs with acorns (remakes the drawn Druid).',
+    colours: [slot('wood', 'Wood colour', '#9a6a3a', ['Band', 'Pressed-in step'])],
+  },
+  'druid-vine': {
+    name: 'Druid’s vine',
+    description: 'Olive wood with a leafy green vine winding round the middle, as in the drawn Druid.',
+    after: 'druid-oak',
+    colours: [slot('leaves', 'Leaf colour', '#3a5a1c', ['Vine', 'Stem'])],
+  },
+  'mossy-ruin': {
+    name: 'Mossy ruin',
+    description: 'Grey-green granite with ivy creeping round its edges.',
+    colours: [slot('stone', 'Stone colour', '#8a9478', ['Default'])],
+  },
+  'dragon-crest': {
+    name: 'Dragon crest',
+    description: 'A dark red band with gold dragon masks and gold scrollwork between them.',
+    colours: [slot('band', 'Band colour', '#c0242e', ['Band', 'Pressed-in step']), slot('gold', 'Gold colour', '#f0c860', ['Gold scrolls', 'Dragon masks'])],
+  },
+  ossuary: {
+    name: 'Ossuary',
+    description: 'Dark violet with embossed skulls and bone beads, each set in a gold bezel round a sunken well.',
+    colours: [slot('band', 'Band colour', '#5e4c74', ['Band', 'Pressed-in step']), slot('gold', 'Bezel colour', '#d8a838', ['Bead rings', 'Skull bezels'])],
+  },
+  'rose-cameo': {
+    name: 'Rose cameo',
+    description: 'Crimson with pale rose cameos, each set in a gold bezel.',
+    colours: [slot('band', 'Band colour', '#e2384a', ['Band', 'Pressed-in step']), slot('gold', 'Bezel colour', '#d8a838', ['Cameo bezels'])],
+  },
+  'tudor-rose': {
+    name: 'Tudor rose',
+    description: 'Deep green with heraldic Tudor roses and small gold stars.',
+    colours: [slot('band', 'Band colour', '#3f9a4c', ['Band', 'Pressed-in step']), slot('gold', 'Star colour', '#e0c070', ['Stars'])],
+  },
 };
 
-export const REVIEW_FRAMES: BuiltInFrame[] = Object.entries(INFO).map(([id, info]) => ({
-  id,
-  ...info,
-  group: categoryOf(id),
-  project: () => ({ ...reviewProject(id), name: info.name }),
-}));
+/** A remade frame's own name, description and colour slots, over the frame it remakes (which keeps its place, group and `after`). */
+export function remadeFrame(f: BuiltInFrame): BuiltInFrame {
+  const info = INFO[f.id] ?? {};
+  const name = info.name ?? f.name;
+  return { ...f, ...info, name, colours: info.colours ?? [], project: () => ({ ...reviewProject(f.id), name }) };
+}
+
+/** The chosen frames that are not remakes of a frame still in the lists (new frames, and remakes whose old entry was removed). */
+export const reviewFramesBesides = (existing: ReadonlySet<string>): BuiltInFrame[] =>
+  Object.entries(INFO)
+    .filter(([id]) => !existing.has(id))
+    .map(([id, info]) => ({ id, name: info.name!, description: info.description, after: info.after, colours: info.colours ?? [], group: categoryOf(id), project: () => ({ ...reviewProject(id), name: info.name! }) }));
