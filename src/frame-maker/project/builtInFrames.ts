@@ -12,6 +12,7 @@ import { THEMED_TEMPLATES } from './themedTemplates';
 import { ESSENTIALS_DATA } from './essentialsData';
 import { FRAME_VERSIONS } from './frameVersions';
 import { LIBRARY_FRAMES } from './libraryFrames';
+import { isRemade, REVIEW_FRAMES, reviewProject } from './reviewFrames';
 import { fromLayers, slot, type BuiltInFrame } from './houseStyle';
 import { parseProject } from './migrate';
 import { categoryOf, categoryRank, FRAME_CATEGORIES, type FrameCategory } from './frameCategories';
@@ -73,12 +74,13 @@ const fromTemplate = (t: { id: string; name: string; description: string; make: 
   description: t.description,
   group: categoryOf(t.id),
   colours: [],
-  project: fromLayers(t.name, t.make, t.stage ?? {}),
+  // Remade in a frame review (version 13): drawn from the chosen project.
+  project: isRemade(t.id) ? () => ({ ...reviewProject(t.id), name: t.name }) : fromLayers(t.name, t.make, t.stage ?? {}),
 });
 const ORIGINALS: BuiltInFrame[] = [...PICTURE_FRAME_TEMPLATES, ...CRAFTED_TEMPLATES, ...LAYERED_TEMPLATES, ...THEMED_TEMPLATES].map(fromTemplate);
 
 /** Every built-in frame: the Essentials, the versions of the drawn frames and the other designs, and the kept originals. */
-export const BUILT_IN_FRAMES: readonly BuiltInFrame[] = [...ESSENTIALS, ...FRAME_VERSIONS, ...LIBRARY_FRAMES, ...ORIGINALS];
+export const BUILT_IN_FRAMES: readonly BuiltInFrame[] = [...ESSENTIALS, ...FRAME_VERSIONS, ...LIBRARY_FRAMES, ...REVIEW_FRAMES, ...ORIGINALS];
 export type { BuiltInFrame, BuiltInGroup } from './houseStyle';
 export const builtInFrameById = (id: string) => BUILT_IN_FRAMES.find((f) => f.id === id);
 

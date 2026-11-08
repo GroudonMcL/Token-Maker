@@ -459,7 +459,6 @@ const runePlates = (fill: string, effects: Layer['effects'], gap = 0.14): Layer 
 });
 /** One rune word in the middle of each plate, small enough to stay off the plate's bevelled edges. */
 const plateRunes = (fill: string, effects: Layer['effects'], font: 'babelstone' | 'yugurian' = 'babelstone') => panelWords(font, fill, { size: 0.34, spacing: 0.08, start: 3, effects });
-const carvedRune = () => bevel({ direction: 'sunken', size: 0.6, gloss: 0.4 });
 
 // ── Layered designs, round 3 ──
 // layered-moon
@@ -1763,20 +1762,6 @@ const VERSIONS: Version[] = [
     ],
   },
   {
-    id: 'paladin-crowns',
-    shading: {},
-    name: 'Royal crowns',
-    description: 'Royal blue enamel between gold rims, with gold crowns at the quarters.',
-    after: 'paladin',
-    colours: [slot('enamel', 'Enamel colour', '#1e3a8a', ['Enamel']), slot('gold', 'Gold colour', '#c8952e', ['Outer gold', 'Inner gold', 'Crowns'])],
-    layers: () => [
-      { ...bandFillLayer(), name: 'Enamel', paint: lin(['#4a6ad0', '#1e3a8a', '#040a24']), effects: [bevel({ direction: 'sunken', size: 0.12, gloss: 0.9, highlightOpacity: 0.5 }), DROP] },
-      { ...bandFillLayer(), name: 'Outer gold', to: 0.16, paint: goldPaint(1.4), effects: goldFx(0.5, WARM_GOLD) },
-      { ...bandFillLayer(), name: 'Inner gold', from: 0.84, paint: goldPaint(1.4), effects: goldFx(0.5, WARM_GOLD) },
-      { ...repeatLayer(), name: 'Crowns', element: 'crown', count: 4, at: 0.5, size: 0.8, fill: '#c8952e', raised: true, effects: [recolour(WARM_GOLD), bevel({ size: 0.4, gloss: 0.8 }), contact(0.5)] },
-    ],
-  },
-  {
     id: 'paladin-dawnsteel',
     name: 'Dawnsteel',
     description: 'Steel in the warm light of dawn, with a Sith AF vow etched in pale gold.',
@@ -2630,34 +2615,6 @@ const VERSIONS: Version[] = [
     ],
   },
   {
-    id: 'riveted-plates-forge-seams',
-    name: 'Forge seams',
-    description: 'Blackened steel plates with a red-hot glow showing in the seams between them.',
-    after: 'riveted-plates',
-    stage: { ...PLATES_STAGE, bloom: 0.2 },
-    colours: [slot('steel', 'Steel colour', '#3a3e46', ['Plates']), slot('glow', 'Glow colour', '#ff5a1a', ['Seam glow'])],
-    layers: () => [
-      { ...bandFillLayer(), name: 'Under', paint: lin(['#1a0604', '#040101']), effects: [DROP] },
-      { ...lineLayer(), name: 'Seam glow', at: 0.5, width: 0.9, paint: { kind: 'solid', color: '#ff5a1a' }, opacity: 0.6, effects: [glow({ color: '#ff3a0a', opacity: 0.6, size: 0.1 })] },
-      loosePlates('Plates', 0.5, 12, 0.86, '#3a3e46', ['#020203', '#0e1014', '#3a3e46', '#7a808a', '#c0c8d0']),
-      plateRivets('Rivets', 0.5, 12, '#8a929c', STEEL_STOPS, 0.5),
-    ],
-  },
-  {
-    id: 'riveted-plates-bulwark',
-    name: 'Dwarven bulwark',
-    description: 'Bronze plates that bend with the ring, with gaps between them and gold rivets evenly spaced over the plate centres and the gaps, on dark iron.',
-    after: 'riveted-plates',
-    stage: PLATES_STAGE,
-    colours: [slot('iron', 'Iron colour', '#3a3e46', ['Iron ring']), slot('bronze', 'Plate colour', '#a87a3a', ['Plates']), slot('gold', 'Rivet colour', '#d8a838', ['Rivets'])],
-    layers: () => [
-      ...plateRing(['#020203', '#0e1014', '#3a3e46', '#6a707a', '#a8b0b8'], 'metal-plate'),
-      curvedPlates('Plates', 12, '#a87a3a', BRONZE_STOPS, { gap: 0.16 }),
-      plateRivets('Rivets', 0.22, 24, '#d8a838', WARM_GOLD),
-      plateRivets('Rivets', 0.78, 24, '#d8a838', WARM_GOLD),
-    ],
-  },
-  {
     id: 'riveted-plates-ordered-curved',
     name: 'Curved ordered plates',
     description: 'Two rows of iron plates that bend with the ring, a rivet at the centre of each.',
@@ -2671,8 +2628,7 @@ const VERSIONS: Version[] = [
       plateRivets('Rivets', 0.27, 14, '#c8c8c0', PLATE_IRON, 0.5),
       plateRivets('Rivets', 0.73, 14, '#c8c8c0', PLATE_IRON, 0),
     ],
-  },
-  {
+  },  {
     id: 'riveted-plates-forge-seams-curved',
     name: 'Curved forge seams',
     description: 'Blackened steel plates that bend with the ring, with red-hot seams running straight across the band.',
@@ -3030,29 +2986,6 @@ const VERSIONS: Version[] = [
     ],
   },
   // ── layered-plates ──
-  {
-    id: 'rune-plates-bronze',
-    name: 'Carved bronze plates',
-    description: 'Eight thick bronze plates that bend with the ring, BabelStone runes carved deep into them, on dark iron.',
-    after: 'rune-plates',
-    stage: { thickness: 0.2 },
-    colours: [slot('iron', 'Iron colour', '#2a2c32', ['Band']), slot('bronze', 'Plate colour', '#a87a3a', ['Plates'])],
-    layers: () => [...runeRing(), runePlates('#a87a3a', [...metalFx(BRONZE_STOPS, 0.15, 0.7), contact(0.8)]), plateRunes('#3a2208', [carvedRune()])],
-  },
-  {
-    id: 'rune-plates-stone',
-    name: 'Standing stones',
-    description: 'Granite slabs round a dark ring, with runes chiselled into each.',
-    after: 'rune-plates',
-    stage: { thickness: 0.2 },
-    colours: [slot('stone', 'Stone colour', '#8a8680', ['Plates'])],
-    layers: () => [
-      ...runeRing(['#020202', '#0e0e0c', '#2a2824', '#4a4842', '#6a6862']),
-      runePlates('#8a8680', [bevel({ profile: 'chisel', size: 0.12, gloss: 0.2 }), contact(0.8)]),
-      { ...bandFillLayer(), name: 'Granite', from: 0.1, to: 0.9, paint: photo('granite', 1.4), opacity: 0.8, blend: 'multiply', clip: 'below' },
-      plateRunes('#3a3830', [carvedRune()]),
-    ],
-  },
   {
     id: 'rune-plates-runelit',
     name: 'Runelit plates',
@@ -3527,14 +3460,6 @@ const VERSIONS: Version[] = [
     colours: [slot('bone', 'Bone colour', '#c8bca0', ['Bone plates']), slot('glow', 'Mist colour', '#8aff6a', ['Mist'])],
     layers: () => [...base({ light: '#2a2a20', dark: '#040402', step: null }), bonePlates(), deadRoots(), necroChain('#8a3a14', RUST_STOPS), graveMist('#8aff6a')],
   },
-  {
-    id: 'necropolis-gilded', name: 'Gilded tomb',
-    description: 'Black stone with gold skulls and a gold chain, for a lich’s sepulchre.',
-    after: 'necropolis',
-    stage: NECRO_STAGE,
-    colours: [slot('stone', 'Stone colour', '#1a1a1e', ['Band', 'Pressed-in step']), slot('gold', 'Gold colour', '#d8a838', ['Skulls', 'Chain'])],
-    layers: () => [...base({ light: '#3a3a40', dark: '#020203', step: null }), necroChain('#d8a838', WARM_GOLD), ringOf('Skulls', 'skull', 6, '#d8a838', [...goldFx(0.4, WARM_GOLD), contact(0.7)], { size: 0.75 } as never)],
-  },
   // ── themed-clockwork ──
   {
     id: 'clockwork-brass', name: 'Brass clockwork',
@@ -3664,14 +3589,6 @@ const VERSIONS: Version[] = [
     stage: AUTUMN_STAGE,
     colours: [slot('bark', 'Bark colour', '#d8d4c8', ['Bark']), slot('leaves', 'Leaf colour', '#c0501a', ['Leaves'])],
     layers: () => [...photoRing('Bark', 'plane-bark', ['#2a2a26', '#8a8a82', '#d8d4c8', '#f0ece4', '#ffffff'], { angle: 90 }), autumnLeaves('leaf', '#c83a14', AUTUMN_COLOURS)],
-  },
-  {
-    id: 'autumn-leaves-maple', name: 'Maple red',
-    description: 'A thick tumble of scarlet, crimson and orange leaves on a dark wooden hoop.',
-    after: 'autumn-leaves',
-    stage: AUTUMN_STAGE,
-    colours: [slot('leaves', 'Leaf colour', '#c01a14', ['Leaves'])],
-    layers: () => [...photoRing('Bark', 'wood-planks', ['#140a04', '#3a2210', '#6a4220', '#9a7050', '#c8a080'], { angle: 90 }), autumnLeaves('leaf', '#c01a14', ['#e0401a', '#8a0a0a', '#d02a2a', '#f06a2a', '#6a0a0a'])],
   },
   {
     id: 'autumn-leaves-gilded', name: 'Gilded leaves',

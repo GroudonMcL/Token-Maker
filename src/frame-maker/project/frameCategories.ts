@@ -448,6 +448,15 @@ const VERSIONS: Record<string, FrameCategory> = {
   'veined-stone': 'Stone & Earth',
   'weathered-stone': 'Stone & Earth',
   'grey-stone': 'Stone & Earth',
+  // Frame review, version 13: new frames with the library pictures.
+  'cobblestone-stone': 'Stone & Earth',
+  'glowing-ice-snowflake': 'Elements',
+  'cracked-earth': 'Stone & Earth',
+  'ember-stone': 'Elements',
+  'flame-wreath': 'Elements',
+  starlit: 'Sky & Stars',
+  'celtic-knotwork': 'Metal & Gems',
+  'victors-laurel': 'Metal & Gems',
 };
 
 const FILED: Record<string, FrameCategory> = { ...ORIGINALS, ...VERSIONS };

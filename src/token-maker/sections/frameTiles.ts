@@ -23,6 +23,13 @@ export const rankOf = (id: string) => RANK.get(id) ?? Infinity;
 export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrder.tags;
 
 /**
+ * Drawn frames the frame review replaced with a Frame Maker remake (owner's
+ * pick, version 13): no longer offered, though tokens made with them still
+ * draw them.
+ */
+const REPLACED = new Set(['cobblestone']);
+
+/**
  * Every frame in the picker, by category (frameCategories.ts): the drawn
  * frames and built-in designs, each a frame of its own in its own category
  * (no versions stacked behind another frame). Within a category, frames are
@@ -31,7 +38,7 @@ export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrde
  */
 function frameTiles(): FrameTile[] {
   const tiles: (FrameTile & { from: string })[] = [
-    ...FRAME_PRESETS.map((p) => ({ id: p.id, label: p.name, group: categoryOf(p.id), from: p.id })),
+    ...FRAME_PRESETS.filter((p) => !REPLACED.has(p.id)).map((p) => ({ id: p.id, label: p.name, group: categoryOf(p.id), from: p.id })),
     ...BUILT_IN_DESIGNS.map((b) => ({ id: b.id, label: b.name, group: b.group, from: b.after ?? b.id.replace(/^builtin:/, '') })),
   ];
   const essentials = (t: FrameTile) => Number(t.group !== 'Essentials' || !t.id.startsWith('builtin:'));

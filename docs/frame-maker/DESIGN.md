@@ -370,6 +370,8 @@ Editor-only drawing (selection outlines, handles, path points) is on a separate 
 
 The stage bar keeps a fixed layout (the light's caption has a fixed width and its reset button's room is kept), so moving the light never resizes the canvas.
 
+*(Frame reviews with the library pictures, owner's picks: `project/reviewFrames.ts` lists the chosen frames, and their projects are saved as made in `project/reviewFramesData.ts`. A remake keeps the id of the frame it replaces (its entry leaves `frameVersions.ts`; a kept original with that id, such as Guild ring (gold) or Celestial halo, draws the remake), so tokens made with it get the new look. New frames get new ids. Token Maker's code-drawn Cobblestone was replaced by the Frame Maker design Stone cobbles: it is no longer offered in the picker (`sections/frameTiles.ts`), but tokens made with it still draw it.)*
+
 ### 5.1 The light direction
 
 `stage.light` is where the light comes from, in degrees (0 right, 90 below, 225 top left). `src/render/light.ts` turns everything Frame Maker lights itself:
