@@ -15,6 +15,14 @@
     "run_worker_first": ["/api/*", "/token-maker/*"]
   },
   "observability": { "enabled": true },
+  // Rate limits for the image proxy, per visitor (IP address) per minute; keep
+  // them the same as LIMITS_PER_MINUTE in server/api.ts. Unlike the in-memory
+  // fallback, every copy of the Worker in a Cloudflare location shares these
+  // counts. The namespace ids are any numbers unique within the account.
+  "ratelimits": [
+    { "name": "IMAGE_LIMITER", "namespace_id": "4101", "simple": { "limit": 90, "period": 60 } },
+    { "name": "PAGE_LIMITER", "namespace_id": "4102", "simple": { "limit": 20, "period": 60 } }
+  ],
   // Lets `npx wrangler preview` (Cloudflare's deploy command for non-production
   // branches) upload a preview. Empty is enough: everything above applies to previews too.
   "previews": {}

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { handleFetchImage, handlePageImages, type ApiDeps } from './api.ts';
+import { handleFetchImage, handlePageImages, type ApiDeps, type Limits } from './api.ts';
 import type { ApiErrorBody, PageImagesResult } from './apiTypes.ts';
 import { RateLimiter } from './rateLimit.ts';
 import { sniffImageMime } from './sniff.ts';
@@ -9,11 +9,14 @@ import { fakeFetch, html, image, PNG_BYTES, type Route } from './testFetch.ts';
 
 const artPage = readFileSync(new URL('./fixtures/art-page.html', import.meta.url), 'utf8');
 
-function setup(routes: Record<string, Route>, limits = { image: new RateLimiter(100), page: new RateLimiter(100) }) {
+function setup(routes: Record<string, Route>, limits: Limits = { image: new RateLimiter(100), page: new RateLimiter(100) }) {
   const f = fakeFetch(routes);
   const deps: ApiDeps = { fetchImpl: f.impl, limits };
+  // Requests come from the site's own pages unless a test says otherwise.
   const call = (path: 'fetch-image' | 'page-images', url: string, headers: Record<string, string> = {}) => {
-    const req = new Request(`https://tokens.example/api/${path}?url=${encodeURIComponent(url)}`, { headers });
+    const req = new Request(`https://tokens.example/api/${path}?url=${encodeURIComponent(url)}`, {
+      headers: { 'Sec-Fetch-Site': 'same-origin', ...headers },
+    });
     return (path === 'fetch-image' ? handleFetchImage : handlePageImages)(req, deps);
   };
   return { call, calls: f.calls };
@@ -66,6 +69,33 @@ describe('GET /api/fetch-image', () => {
     const res = await call('fetch-image', 'https://img.example/a.png', { 'Sec-Fetch-Site': 'cross-site' });
     expect(res.status).toBe(403);
     expect((await call('fetch-image', 'https://img.example/a.png', { 'Sec-Fetch-Site': 'same-origin' })).status).toBe(200);
+  });
+
+  it('refuses requests that don\'t come from a page on the site', async () => {
+    const { call, calls } = setup({ 'https://img.example/a.png': image() });
+    const plain = (headers: Record<string, string>) => {
+      const req = new Request(`https://tokens.example/api/fetch-image?url=${encodeURIComponent('https://img.example/a.png')}`, { headers });
+      return handleFetchImage(req, { fetchImpl: () => Promise.reject(new Error('should not fetch')) });
+    };
+    // No browser headers at all (curl, scripts), typed into the address bar, or another site's Referer.
+    expect((await plain({})).status).toBe(403);
+    expect((await call('fetch-image', 'https://img.example/a.png', { 'Sec-Fetch-Site': 'none' })).status).toBe(403);
+    expect((await plain({ Referer: 'https://elsewhere.example/page' })).status).toBe(403);
+    expect((await plain({ Origin: 'https://elsewhere.example' })).status).toBe(403);
+    expect(calls).toEqual([]);
+    // Older browsers without Sec-Fetch-Site still send the page's own address.
+    expect((await plain({ Referer: 'https://tokens.example/token-maker/' })).status).not.toBe(403);
+    expect((await call('fetch-image', 'https://img.example/a.png', { 'Sec-Fetch-Site': 'same-site' })).status).toBe(200);
+  });
+
+  it('can use an async limiter (Cloudflare\'s rate-limiting binding)', async () => {
+    let allowed = 1;
+    const asyncLimiter = { take: async () => (allowed-- > 0 ? 0 : 60) };
+    const { call } = setup({ 'https://img.example/a.png': image() }, { image: asyncLimiter, page: asyncLimiter });
+    expect((await call('fetch-image', 'https://img.example/a.png')).status).toBe(200);
+    const limited = await call('fetch-image', 'https://img.example/a.png');
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get('retry-after')).toBe('60');
   });
 
   it('rate-limits each visitor separately', async () => {

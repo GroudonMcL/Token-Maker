@@ -5,18 +5,40 @@
 // Workers deploy answers /api/* with the editor's own page and web imports fail.
 // Settings: wrangler.jsonc. Pages ignores both files.
 
-import { handleFetchImage, handlePageImages } from '../server/api.ts';
+import { defaultLimits, handleFetchImage, handlePageImages, type ApiDeps, type Limiter } from '../server/api.ts';
 
 interface Env {
   ASSETS: Fetcher;
+  /** Cloudflare's rate limiters (`ratelimits` in wrangler.jsonc). Optional, so a deploy without them still works. */
+  IMAGE_LIMITER?: RateLimit;
+  PAGE_LIMITER?: RateLimit;
+}
+
+/**
+ * Cloudflare's rate limiter, shared by every copy of the Worker in a
+ * Cloudflare location, unlike the in-memory fallback that each copy keeps
+ * for itself. It doesn't say how long to wait, so the full minute is given.
+ */
+function bindingLimiter(binding: RateLimit | undefined, fallback: Limiter): Limiter {
+  if (!binding) return fallback;
+  return { take: async (key) => ((await binding.limit({ key })).success ? 0 : 60) };
+}
+
+function apiDeps(env: Env): ApiDeps {
+  return {
+    limits: {
+      image: bindingLimiter(env.IMAGE_LIMITER, defaultLimits.image),
+      page: bindingLimiter(env.PAGE_LIMITER, defaultLimits.page),
+    },
+  };
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
     if (pathname.startsWith('/api/')) {
-      if (request.method === 'GET' && pathname === '/api/fetch-image') return handleFetchImage(request);
-      if (request.method === 'GET' && pathname === '/api/page-images') return handlePageImages(request);
+      if (request.method === 'GET' && pathname === '/api/fetch-image') return handleFetchImage(request, apiDeps(env));
+      if (request.method === 'GET' && pathname === '/api/page-images') return handlePageImages(request, apiDeps(env));
       if (pathname === '/api/health') return Response.json({ ok: true });
       return Response.json({ error: { code: 'not_found', message: 'There is nothing at that address.' } }, { status: 404 });
     }

@@ -32,7 +32,8 @@ const ROUTES: Record<string, (request: Request, deps: ApiDeps) => Promise<Respon
 
 /** Answers /api/* from Node, like the Pages Functions; anything else goes on to Vite. */
 async function apiMiddleware(req: IncomingMessage, res: ServerResponse, next: () => void): Promise<void> {
-  const url = new URL(req.url ?? '/', 'http://localhost');
+  // The real host, so the API's own-site check can compare a Referer with it.
+  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const route = ROUTES[url.pathname];
   if (!route || req.method !== 'GET') return next();
   const headers = new Headers();
