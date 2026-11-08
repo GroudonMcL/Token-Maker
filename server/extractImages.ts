@@ -11,9 +11,6 @@ import type { FoundImage } from './apiTypes.ts';
 export const MIN_IMAGE_SIDE = 64;
 export const MAX_IMAGES = 60;
 
-const TAG = /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*\/?>/g;
-const ATTR = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 
 export function decodeEntities(text: string): string {
@@ -26,21 +23,116 @@ export function decodeEntities(text: string): string {
   });
 }
 
-export function parseAttributes(text: string): Record<string, string> {
-  const attrs: Record<string, string> = {};
-  for (const m of text.matchAll(ATTR)) {
-    const name = m[1]!.toLowerCase();
-    if (!(name in attrs)) attrs[name] = decodeEntities(m[2] ?? m[3] ?? m[4] ?? '');
+const isSpace = (c: string) => c === ' ' || c === '\n' || c === '\t' || c === '\r' || c === '\f';
+const isLetter = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+const isNameChar = (c: string) => isLetter(c) || (c >= '0' && c <= '9') || c === '_' || c === ':' || c === '-';
+/** Ends an attribute name. `<` ends the tag: the scanner restarts there. */
+const endsAttrName = (c: string) => isSpace(c) || c === '"' || c === "'" || c === '>' || c === '/' || c === '=' || c === '<';
+/** Tags whose contents are skipped. */
+const RAW_TEXT = new Set(['script', 'style', 'template']);
+
+/**
+ * Every start tag in the HTML, skipping comments, scripts and style sheets.
+ * A single pass that reads each character a bounded number of times, so a
+ * hostile or broken page can't make it slow (a regex version took 24 s on
+ * 120 KB of "<a <a <a…").
+ */
+export function* scanTags(html: string): Generator<{ name: string; attrs: Record<string, string> }> {
+  const n = html.length;
+  let lower: string | null = null;
+  // Searches that found nothing once will find nothing later either.
+  const missing = new Set<string>();
+  const find = (needle: string, from: number): number => {
+    if (missing.has(needle)) return -1;
+    const at = html.indexOf(needle, from);
+    if (at === -1) missing.add(needle);
+    return at;
+  };
+
+  let i = 0;
+  while (i < n) {
+    const lt = html.indexOf('<', i);
+    if (lt === -1) return;
+    if (html.startsWith('<!--', lt)) {
+      const close = find('-->', lt + 4);
+      i = close === -1 ? lt + 1 : close + 3;
+      continue;
+    }
+    if (lt + 1 >= n || !isLetter(html[lt + 1]!)) {
+      i = lt + 1;
+      continue;
+    }
+
+    let j = lt + 1;
+    while (j < n && isNameChar(html[j]!)) j++;
+    const name = html.slice(lt + 1, j).toLowerCase();
+    const attrs: Record<string, string> = {};
+    let end = -1; // index just past '>'
+
+    for (;;) {
+      while (j < n && (isSpace(html[j]!) || html[j] === '/')) j++;
+      if (j >= n) break;
+      const c = html[j]!;
+      if (c === '>') {
+        end = j + 1;
+        break;
+      }
+      if (c === '<') break; // not a tag; the next one may start here
+      if (c === '"' || c === "'" || c === '=') break; // malformed: not a tag
+      const nameStart = j;
+      while (j < n && !endsAttrName(html[j]!)) j++;
+      const attrName = html.slice(nameStart, j).toLowerCase();
+      let k = j;
+      while (k < n && isSpace(html[k]!)) k++;
+      let value = '';
+      if (html[k] === '=') {
+        k++;
+        while (k < n && isSpace(html[k]!)) k++;
+        const q = html[k];
+        if (q === '"' || q === "'") {
+          const close = find(q, k + 1);
+          if (close === -1) break; // unclosed quote: not a tag
+          value = html.slice(k + 1, close);
+          j = close + 1;
+        } else {
+          const valueStart = k;
+          while (k < n && !isSpace(html[k]!) && html[k] !== '>' && html[k] !== '"' && html[k] !== "'") k++;
+          value = html.slice(valueStart, k);
+          j = k;
+        }
+      }
+      if (!(attrName in attrs)) attrs[attrName] = decodeEntities(value);
+    }
+
+    if (end === -1) {
+      // Carry on from where this one stopped, so nothing is read twice.
+      i = j;
+      continue;
+    }
+    i = end;
+    if (RAW_TEXT.has(name)) {
+      lower ??= html.toLowerCase();
+      const closeTag = skipRawText(lower, name, end, missing);
+      if (closeTag !== -1) {
+        i = closeTag;
+        continue;
+      }
+    }
+    yield { name, attrs };
   }
-  return attrs;
 }
 
-/** Every start tag in the HTML, skipping comments, scripts and style sheets. */
-export function* scanTags(html: string): Generator<{ name: string; attrs: Record<string, string> }> {
-  const cleaned = html
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ');
-  for (const m of cleaned.matchAll(TAG)) yield { name: m[1]!.toLowerCase(), attrs: parseAttributes(m[2] ?? '') };
+/** Index just past `</name>` (allowing spaces before `>`), or -1 if the element is never closed. */
+function skipRawText(lower: string, name: string, from: number, missing: Set<string>): number {
+  const needle = `</${name}`;
+  if (missing.has(needle)) return -1;
+  for (let at = lower.indexOf(needle, from); at !== -1; at = lower.indexOf(needle, at + 1)) {
+    let k = at + needle.length;
+    while (k < lower.length && isSpace(lower[k]!)) k++;
+    if (lower[k] === '>') return k + 1;
+  }
+  missing.add(needle);
+  return -1;
 }
 
 export interface SrcsetCandidate {

@@ -90,4 +90,30 @@ describe('edge cases', () => {
   it('decodes numeric and named entities', () => {
     expect(decodeEntities('a&amp;b &#39;c&#x27; &lt;&gt; &bogus;')).toBe("a&b 'c' <> &bogus;");
   });
+
+  it('skips scripts, styles, templates and comments, and finds tags after broken ones', () => {
+    const page = extractImages(
+      `<script>var s = '<img src="/no1.jpg">'</script ><style>x{}</style><!-- <img src="/no2.jpg"> -->` +
+        `<TEMPLATE><img src="/no3.jpg"></template>` +
+        `<img src='/open-quote.jpg><img src=/after-quote.jpg>` +
+        `<img <img src="/after-lt.jpg">`,
+      'https://ex.example/',
+    );
+    expect(page.images.map((i) => i.url)).toEqual(['https://ex.example/after-quote.jpg', 'https://ex.example/after-lt.jpg']);
+  });
+
+  // A regex scanner took seconds on these (60 KB of "<a " took 5.8 s).
+  it.each([
+    ['unclosed tags', '<a '],
+    ['unclosed quotes', '<a b="'],
+    ['unclosed scripts', '<script>'],
+    ['unclosed comments', '<!-- '],
+    ['nested quotes', `<a b='<a c="`],
+    ['stray equals', '<a = '],
+  ])('stays fast on hostile markup: %s', (_name, unit) => {
+    const html = unit.repeat(Math.ceil(1_000_000 / unit.length));
+    const start = performance.now();
+    extractImages(html, 'https://ex.example/');
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
 });
