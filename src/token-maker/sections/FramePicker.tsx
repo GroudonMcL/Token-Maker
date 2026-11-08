@@ -113,7 +113,7 @@ function Gallery({
 }) {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
-  // Every frame best first; the groups keep their own order, with their frames in the same ranking.
+  // Every frame in the owner's order; the groups keep their own order, with their frames in the same order.
   const ranked = useMemo(() => allTiles.map((t, i) => ({ t, i })).sort((a, b) => rankOf(a.t.id) - rankOf(b.t.id) || a.i - b.i).map(({ t }) => t), [allTiles]);
   const groups = useMemo(() => [ALL, ...new Set(allTiles.map((t) => t.group))], [allTiles]);
   const [tab, setTabState] = useState(() => (groups.includes(rememberedTab()) ? rememberedTab() : ALL));

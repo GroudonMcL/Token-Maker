@@ -15,7 +15,7 @@ test('the gallery opens on All frames in the ranking, with every tag filter in v
   await expect(gallery.getByRole('tab').first()).toHaveText(/^All frames/);
   await expect(gallery.getByRole('tab', { name: /All frames/ })).toHaveAttribute('aria-selected', 'true');
   await expect(gallery.getByRole('radio')).toHaveCount(frameOrder.order.length);
-  await expect(gallery.getByRole('radio').first()).toHaveText('Stamped');
+  await expect(gallery.getByRole('radio').first()).toHaveText('No frame');
   await expect(gallery.getByRole('button', { name: 'Rank & tag' })).toHaveCount(0);
 
   const row = gallery.getByRole('group', { name: 'Show only frames tagged' });

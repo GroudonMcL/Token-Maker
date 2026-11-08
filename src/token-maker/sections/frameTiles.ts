@@ -15,7 +15,7 @@ export interface FrameTile {
   group: string;
 }
 
-/** Each frame's place in the owner's ranking (0 = best). */
+/** Each frame's place in the owner's order (by category, then by look: similar frames next to each other). */
 const RANK = new Map(frameOrder.order.map((id, i) => [id, i]));
 export const rankOf = (id: string) => RANK.get(id) ?? Infinity;
 
@@ -33,7 +33,7 @@ const REPLACED = new Set(['cobblestone', 'druid', 'paladin', 'warlock', 'fighter
  * Every frame in the picker, by category (frameCategories.ts): the drawn
  * frames and built-in designs, each a frame of its own in its own category
  * (no versions stacked behind another frame). Within a category, frames are
- * in the owner's ranking, best first; any frame not ranked yet goes after
+ * in the owner's order; any frame not ranked yet goes after
  * them, next to frames made from the same one.
  */
 function frameTiles(): FrameTile[] {

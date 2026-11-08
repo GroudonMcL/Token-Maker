@@ -17,6 +17,17 @@ export type FrameCategory = (typeof FRAME_CATEGORIES)[number];
 
 /** The category of each drawn frame (its preset id) and each built-in design that isn't a version. */
 const ORIGINALS: Record<string, FrameCategory> = {
+  // The owner's Essentials designs. Four were moved out by look (owner's
+  // request): the glowing ones to Elements, the marbles to Stone & Earth.
+  simple: 'Essentials',
+  'dual-tone': 'Essentials',
+  'small-gradient': 'Essentials',
+  'clean-gradient': 'Essentials',
+  rainbow: 'Essentials',
+  'glowing-ice': 'Elements',
+  'glowing-lava': 'Elements',
+  marble: 'Stone & Earth',
+  'gold-red-marble': 'Stone & Earth',
   // Drawn frames (Token Maker's presets).
   none: 'Essentials',
   stamped: 'Metal & Gems',
