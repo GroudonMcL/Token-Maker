@@ -52,6 +52,28 @@
   font-size: var(--text-md);
 }
 
+/* A small badge on the top right of an app still being worked on (apps.ts, wip). */
+.app-switch__app:has(.app-switch__wip) {
+  position: relative;
+}
+
+.app-switch__wip {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  padding: 1px 4px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
 /* ---- Themes menu ---- */
 .palette-picker {
   position: relative;

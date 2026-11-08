@@ -38,6 +38,8 @@ function dropOnnxWasm(): Plugin {
 
 export default defineConfig({
   plugins: [react(), devApi(), tokenMakerPages(), dropOnnxWasm()],
+  // ES module workers, so a worker can load parts of itself when needed (the frame worker's photo textures).
+  worker: { format: 'es' },
   build: {
     rollupOptions: {
       // The main page, and the two apps it shows.

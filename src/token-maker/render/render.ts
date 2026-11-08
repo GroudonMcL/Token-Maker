@@ -21,6 +21,7 @@ import { shapePolygon } from './shapes';
 import { pictureEpoch } from '../frameMaker/render/pictures';
 import { drawFrameDesign } from '../frameMaker/share/frameDesign';
 import type { DesignFrame } from '../document/types';
+import { frameWorkerReady, requestDesignFrame } from './frameWorker';
 
 /** A decoded image the renderer can draw. */
 export interface RenderSource {
@@ -63,6 +64,14 @@ export interface RenderOptions {
    * drawn quickly at the token's own size instead. Editor only.
    */
   frameDraft?: boolean;
+  /**
+   * With `frameSize`: a Frame Maker design not yet drawn at that size is
+   * drawn in a Web Worker (frameWorker.ts), and a small quick copy is shown
+   * until it arrives (the preview redraws then). A heavy design can take
+   * seconds to draw at the view's size, which froze the page just after the
+   * frame was picked. Editor only: the drawing is not ready at once.
+   */
+  frameWorker?: boolean;
 }
 
 // Drawn frames, kept so that changing anything else (a slider, the art)
@@ -71,6 +80,8 @@ export interface RenderOptions {
 const frameLayers = new Map<string, CanvasImageSource>();
 const MAX_FRAME_LAYERS = 6;
 const MAX_CACHED_SIDE = 2048;
+/** The quick copy of a design shown while the worker draws it (frameWorker), at most this many pixels across. */
+const FRAME_DRAFT_SIDE = 384;
 
 /**
  * The frame drawn on a transparent square layer of `size`, centred: a drawn
@@ -80,25 +91,37 @@ const MAX_CACHED_SIDE = 2048;
 // A design is drawn again once a photo texture it uses has arrived (pictureEpoch).
 const frameKey = (style: FrameStyle | DesignFrame, g: FrameGeometry, size: number) =>
   `${typeof style === 'string' ? style : `design:${objectId(style.project)}:${pictureEpoch()}`}|${size}|${JSON.stringify(g)}`;
+// The worker waits for a design's pictures before drawing it, so its copies don't depend on what has loaded here.
+const workerFrameKey = (design: DesignFrame, g: FrameGeometry, size: number) => `worker:${objectId(design.project)}|${size}|${JSON.stringify(g)}`;
+
+/** Keeps a drawn frame as the most recently used, letting the oldest go past the limit. */
+function keepFrameLayer(key: string, layer: CanvasImageSource): void {
+  frameLayers.delete(key);
+  frameLayers.set(key, layer);
+  while (frameLayers.size > MAX_FRAME_LAYERS) frameLayers.delete(frameLayers.keys().next().value!);
+}
+
+/** A cached frame, marked as just used. */
+function cachedFrameLayer(key: string): CanvasImageSource | undefined {
+  const hit = frameLayers.get(key);
+  if (hit) keepFrameLayer(key, hit);
+  return hit;
+}
 
 function frameLayer(style: FrameStyle | DesignFrame, g: FrameGeometry, size: number): CanvasImageSource {
   const key = frameKey(style, g, size);
-  const hit = frameLayers.get(key);
-  if (hit) {
-    // Most recently used goes last.
-    frameLayers.delete(key);
-    frameLayers.set(key, hit);
-    return hit;
-  }
+  const hit = cachedFrameLayer(key);
+  if (hit) return hit;
   const cache = size <= MAX_CACHED_SIDE;
   // Reuse the oldest layer's canvas when it is let go anyway (a Thickness drag
   // makes a new frame every step), which is much quicker than a new canvas.
   let layer: ReturnType<typeof newCanvas> | null = null;
   if (cache && frameLayers.size >= MAX_FRAME_LAYERS) {
     const oldest = frameLayers.keys().next().value!;
-    const old = frameLayers.get(oldest) as ReturnType<typeof newCanvas>;
+    const old = frameLayers.get(oldest) as ReturnType<typeof newCanvas> | ImageBitmap;
     frameLayers.delete(oldest);
-    if (old.width === size && old.height === size) layer = old;
+    // (A copy from the frame worker is a bitmap, which can't be drawn on.)
+    if ('getContext' in old && old.width === size && old.height === size) layer = old;
   }
   layer ??= newCanvas(size, size);
   const lctx = layer.getContext('2d') as Ctx;
@@ -218,9 +241,31 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   const fk = options.frameSize && options.frameSize > 0 ? options.frameSize / size : 1;
   const bigGeometry: FrameGeometry = { ...frameGeometry, R: R * fk, outer: frameGeometry.outer * fk, inner: frameGeometry.inner * fk };
   const wanted = Math.round(size * fk);
-  // Dragging and not drawn at the wanted size yet: drawn at the token's size for now.
-  const frameSize = fk === 1 || (options.frameDraft && !frameLayers.has(frameKey(frameStyle, bigGeometry, wanted))) ? size : wanted;
-  const drawnFrame = () => (frameSize === size ? frameLayer(frameStyle, frameGeometry, size) : frameLayer(frameStyle, bigGeometry, frameSize));
+  let frameSize: number;
+  let drawFrameNow: () => CanvasImageSource;
+  if (fk !== 1 && options.frameWorker && design && frameWorkerReady()) {
+    // A design at the view's size comes from the worker; until it has, a small quick copy is shown.
+    const key = workerFrameKey(design, bigGeometry, wanted);
+    const ready = cachedFrameLayer(key);
+    if (ready) {
+      frameSize = wanted;
+      drawFrameNow = () => ready;
+    } else {
+      // Not while dragging: a Thickness drag makes a new band every step, and only the last one is wanted.
+      if (!options.frameDraft) requestDesignFrame(key, design.project, bigGeometry, wanted, (frame) => keepFrameLayer(key, frame as CanvasImageSource));
+      frameSize = Math.min(size, FRAME_DRAFT_SIDE);
+      const k = frameSize / size;
+      const draftGeometry: FrameGeometry = { ...frameGeometry, R: R * k, outer: frameGeometry.outer * k, inner: frameGeometry.inner * k };
+      drawFrameNow = () => frameLayer(frameStyle, draftGeometry, frameSize);
+    }
+  } else {
+    // Dragging and not drawn at the wanted size yet: drawn at the token's size for now.
+    frameSize = fk === 1 || (options.frameDraft && !frameLayers.has(frameKey(frameStyle, bigGeometry, wanted))) ? size : wanted;
+    drawFrameNow = () => (frameSize === size ? frameLayer(frameStyle, frameGeometry, size) : frameLayer(frameStyle, bigGeometry, frameSize));
+  }
+  // Drawn (or found) once per render, however many times it is used.
+  let frameDrawn: CanvasImageSource | null = null;
+  const drawnFrame = () => (frameDrawn ??= drawFrameNow());
   /** The drawn frame, scaled to the token. */
   const putFrame = (c: Ctx, frame: CanvasImageSource) => {
     if (frameSize === size) return c.drawImage(frame, -R, -R);
@@ -233,7 +278,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
 
   // Where an effect or decoration's Keep inside lets it show (v14: several at once), each part drawn once when first asked for.
   // The background and the art stop at the frame's inner edge, and the frame's own pixels are cut out of them,
-  // so nothing kept inside them spills onto the frame.
+  // so nothing kept inside them spills onto the frame. The art's solid pixels are cut out of the background too.
   const opening = hasFrame && !imageFrame ? shapePolygon(doc.shape, R, Math.max(insets.image, insets.frameInner) * R) : clip;
   const cutFrame = (c: Ctx) => {
     c.save();
@@ -250,6 +295,14 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     mctx.translate(R, R);
     mctx.fillStyle = '#000';
     let ok = true;
+    const paintArt = () => {
+      mctx.save();
+      tracePolygon(mctx, opening);
+      mctx.clip();
+      placeArt(mctx);
+      mctx.drawImage(shown!.image, -art!.width / 2, -art!.height / 2, art!.width, art!.height);
+      mctx.restore();
+    };
     const paintToken = () => {
       // The token's outline: the frame's outer edge, or a picture frame and its hole.
       tracePolygon(mctx, silhouette);
@@ -267,6 +320,13 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
         tracePolygon(mctx, opening);
         mctx.fill();
         cutFrame(mctx);
+        // Only where the background shows: not on the art, only through its see-through parts.
+        if (art && shown) {
+          mctx.save();
+          mctx.globalCompositeOperation = 'destination-out';
+          paintArt();
+          mctx.restore();
+        }
       } else ok = false;
     } else if (target === 'frame') {
       if (frameImage) drawImageFrame(mctx, frameImage, frameR);
@@ -275,12 +335,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     } else if (target === 'art') {
       // The art where it shows in the opening, with its see-through parts left out.
       if (art && shown && opening.length) {
-        mctx.save();
-        tracePolygon(mctx, opening);
-        mctx.clip();
-        placeArt(mctx);
-        mctx.drawImage(shown.image, -art.width / 2, -art.height / 2, art.width, art.height);
-        mctx.restore();
+        paintArt();
         cutFrame(mctx);
       } else ok = false;
     } else if (target === 'popOut') {
@@ -309,18 +364,26 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     return mask;
   };
 
+  // Effects and decorations kept inside the pop-out are drawn after it (13½), on top of it:
+  // drawn in their usual place, the pop-out art would cover them.
+  const overPop = (x: { clip: readonly ClipTarget[] }) => !!pop && x.clip.includes('popOut');
+  const effects = doc.effects.filter((e) => !overPop(e));
+  const popEffects = doc.effects.filter(overPop);
+
   // The decorations (layer 11) on layers of their own: they are part of the outer shadow's silhouette too.
-  // Those set to go under the frame (layer 7½) get a layer of their own.
-  const decorLayer = (under: boolean) => {
-    if (!doc.decorations.some((d) => d.visible && !!d.underFrame === under)) return null;
+  // Those set to go under the frame (layer 7½) get a layer of their own, and so do those over the pop-out.
+  const decorLayer = (under: boolean | undefined, decorations: TokenDocument['decorations']) => {
+    if (!decorations.some((d) => d.visible && (under === undefined || !!d.underFrame === under))) return null;
     const c = newCanvas(L, L);
     const dctx = c.getContext('2d') as Ctx;
     dctx.translate(R + B, R + B);
-    drawDecorations(dctx, doc, R, assets, under, clipMask);
+    drawDecorations(dctx, { ...doc, decorations }, R, assets, under, clipMask);
     return c;
   };
-  const decor = decorLayer(false);
-  const decorUnder = decorLayer(true);
+  const decorations = doc.decorations.filter((d) => !overPop(d));
+  const decor = decorLayer(false, decorations);
+  const decorUnder = decorLayer(true, decorations);
+  const decorPop = decorLayer(undefined, doc.decorations.filter(overPop));
 
   /** Fills the token's whole outline: the shape (or the picture frame), plus pop-out parts and decorations. */
   const paintSilhouette = (c: Ctx, dx = 0) => {
@@ -336,6 +399,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     if (pop) putLayer(c, pop, dx);
     if (decorUnder) putLayer(c, decorUnder, dx);
     if (decor) putLayer(c, decor, dx);
+    if (decorPop) putLayer(c, decorPop, dx);
   };
 
   // 1. Outer drop shadow of the whole silhouette.
@@ -356,7 +420,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   // It fills the inner spacing too, where the backing used to show.
   drawBackground(ctx, doc, assets, clip, R, backing);
   // 4. Effects behind the art (src/render/effects.ts).
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'behind', area, size, subject, 0, assets, clipMask);
+  if (effects.length) drawEffects(ctx, effects, 'behind', area, size, subject, 0, assets, clipMask);
 
   // 5. Processed art, clipped to the inner shape: the picture after
   // adjustments, background removal and brush strokes (src/image/), drawn
@@ -371,7 +435,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   }
 
   // 6–7. Effects over the art, including the overlays that were once the Foreground section (v8).
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'over', area, size, subject, 0, assets, clipMask);
+  if (effects.length) drawEffects(ctx, effects, 'over', area, size, subject, 0, assets, clipMask);
 
   // 7½. Decorations set to go under the frame: over the art, covered by the frame.
   if (decorUnder) putLayer(ctx, decorUnder);
@@ -450,7 +514,7 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
   }
 
   // 10. Effects on the border.
-  if (doc.effects.length) drawEffects(ctx, doc.effects, 'border', area, size, null, 0, assets, clipMask);
+  if (effects.length) drawEffects(ctx, effects, 'border', area, size, null, 0, assets, clipMask);
   // 11. Decorations (src/render/decorations.ts).
   if (decor) putLayer(ctx, decor);
 
@@ -478,6 +542,12 @@ export function renderToken(ctx: Ctx, doc: TokenDocument, assets: AssetMap, size
     // 13. Pop-out art: the same processed bitmap as step 5, drawn through the
     // pop-out mask and clipped only to the square.
     putLayer(ctx, pop);
+
+    // 13½. Effects and decorations kept inside the pop-out, over it.
+    for (const placement of ['behind', 'over', 'border'] as const) {
+      if (popEffects.length) drawEffects(ctx, popEffects, placement, area, size, placement === 'border' ? null : subject, 0, assets, clipMask);
+    }
+    if (decorPop) putLayer(ctx, decorPop);
   }
 
   // 14. Label (src/render/label.ts).

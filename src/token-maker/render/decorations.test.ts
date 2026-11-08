@@ -345,4 +345,20 @@ describe('Keep inside (v14)', () => {
     expect(both.at(128, 3)).toEqual(free.at(128, 3));
     expect(both.at(128, 20)).toEqual(free.at(128, 20));
   });
+
+  it('kept inside the pop-out, a decoration is drawn on top of the parts popping out', () => {
+    // Solid art, zoomed so it runs over the frame, all of it popping out.
+    const gem = (clip: Decoration['clip']) => {
+      const d = plain();
+      d.art = { ...d.art, assetId: 'asset:a', transform: { ...d.art.transform, zoom: 1.6 }, popOut: { enabled: true, strokes: [{ mode: 'add', size: 3, softness: 0, points: [0.5, 0.5, 1] }] } };
+      d.decorations = [{ ...newDecoration('gem', 'g'), place: 'free', x: 0, y: -0.8, size: 0.5, clip }];
+      return draw(d, [['asset:a', solid('#20a040')]]);
+    };
+    const free = gem([]);
+    const kept = gem(['popOut']);
+    // Over the frame band at the top, where the art pops out: a decoration that can reach anywhere goes under
+    // the pop-out, as always; one kept inside the pop-out shows on top of it.
+    expect(free.at(128, 26)).toEqual([32, 160, 64, 255]);
+    expect(kept.at(128, 26)).not.toEqual([32, 160, 64, 255]);
+  });
 });

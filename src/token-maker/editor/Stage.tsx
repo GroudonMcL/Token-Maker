@@ -12,6 +12,7 @@ import { artCorners, baseScale, imageClipPolygon, imagePointAt, rotateAround, zo
 import { decorationCorners, decorationGeometry, nearestSnap, placements, type Placement } from '../render/decorations';
 import { labelPlacement } from '../render/label';
 import { renderToken } from '../render/render';
+import { useFrameWorkerVersion } from '../render/frameWorker';
 import { backgroundAssetId } from '../render/background';
 import { useFontVersion } from '../fonts/fontLoader';
 import { pointInPolygon, type Point } from '../render/shapes';
@@ -119,6 +120,8 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
   const [movingLabel, setMovingLabel] = useState(false);
   // Redraw when a label font finishes loading.
   const fontVersion = useFontVersion();
+  // Redraw when the frame worker has drawn the frame at the view's size.
+  const frameVersion = useFrameWorkerVersion();
 
   // Processed art: the full-size result when ready, else a quick copy (DESIGN.md §5).
   const settling = useStore(docHistory, (s) => s.pendingBase !== null);
@@ -246,10 +249,10 @@ export function Stage({ reserveTop = 64, reserveBottom = 0 }: { reserveTop?: num
         token.height = tokenPx;
       }
       const tctx = token.getContext('2d');
-      if (tctx) renderToken(tctx, doc, assets, tokenPx, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined, frameSize: VIEW_FRAME_SIZE, frameDraft: settling });
+      if (tctx) renderToken(tctx, doc, assets, tokenPx, { processedArt: display?.source, frameAlpha: painting ? 0.5 : undefined, frameSize: VIEW_FRAME_SIZE, frameDraft: settling, frameWorker: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [box.width, box.height, tokenPx, doc, assets, display, painting, fontVersion, settling]);
+  }, [box.width, box.height, tokenPx, doc, assets, display, painting, fontVersion, frameVersion, settling]);
 
   // The art behind the token, and the brush overlays: cheap, so drawn for every view change.
   useEffect(() => {

@@ -18,10 +18,15 @@ export function AppSwitch({ current, compact = false, logo, standalone }: { curr
             type="button"
             className="app-switch__app"
             aria-pressed={a.id === current}
-            title={a.id === current ? undefined : `Switch to ${a.title}`}
+            title={a.id === current ? (a.wip ? 'Work in progress' : undefined) : `Switch to ${a.title}${a.wip ? ' (work in progress)' : ''}`}
             onClick={() => a.id !== current && showApp(a.id)}
           >
             {a.title}
+            {a.wip && (
+              <span className="app-switch__wip" aria-hidden="true">
+                WIP
+              </span>
+            )}
           </button>
         ))}
       </nav>
