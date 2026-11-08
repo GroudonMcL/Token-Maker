@@ -318,4 +318,46 @@ describe('owner feedback v13: turning, scaling, flipping, gradient glows and Kee
       expect(at(img, bandX, R)).toEqual(at(none, bandX, R));
     }
   });
+
+  const tint = (clip: EffectLayer['clip'], patch: Partial<TokenDocument> = {}) =>
+    token([{ kind: 'vignette', spread: 100, clip, color: '#ff00ff', blend: 'normal', intensity: 100 }], patch);
+
+  it('Keep inside: Background draws only where the background shows, not on the art', () => {
+    const none = draw(token([]));
+    const img = draw(tint(['background']));
+    // Beside the figure, in the opening, the background is tinted.
+    expect(changed(none, img)).toBeGreaterThan(100);
+    // Nowhere in the opening that the art is solid is touched (the art alone: no background, no frame there).
+    const artOnly = draw(token([], { background: { ...createDocument().background, kind: 'none' } }));
+    let onArt = 0;
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const i = (y * SIZE + x) * 4;
+        if (Math.hypot(x - R, y - R) < R * 0.6 && artOnly[i + 3] === 255 && img[i] !== none[i]) onArt++;
+      }
+    }
+    expect(onArt).toBe(0);
+  });
+
+  it('Keep inside: Pop-out draws over the parts of the art popping out, not under them', () => {
+    // The whole figure pops out.
+    const popOut = { enabled: true, strokes: [{ mode: 'add' as const, size: 3, softness: 0, points: [0.5, 0.5, 1] }] };
+    const withPop = (d: TokenDocument): TokenDocument => ({ ...d, art: { ...d.art, popOut } });
+    const none = draw(withPop(token([])));
+    const img = draw(withPop(tint(['popOut'])));
+    // On the figure (drawn on top of everything): tinted. Under the old drawing order the pop-out covered it all.
+    const artOnly = draw(withPop(token([], { background: { ...createDocument().background, kind: 'none' } })));
+    let onFigure = 0;
+    let offFigure = 0;
+    for (let i = 0; i < img.length; i += 4) {
+      const differs = Math.abs(img[i]! - none[i]!) + Math.abs(img[i + 1]! - none[i + 1]!) > 12;
+      if (differs && artOnly[i + 3] === 255) onFigure++;
+      // Beside the figure, in the opening (no pop-out there): untouched.
+      const x = (i / 4) % SIZE;
+      const y = Math.floor(i / 4 / SIZE);
+      if (differs && artOnly[i + 3] === 0 && Math.hypot(x - R, y - R) < R * 0.6) offFigure++;
+    }
+    expect(onFigure).toBeGreaterThan(50);
+    expect(offFigure).toBe(0);
+  });
 });

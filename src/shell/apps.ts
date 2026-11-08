@@ -3,9 +3,10 @@
 
 export type AppId = 'token-maker' | 'frame-maker';
 
-export const APPS: { id: AppId; title: string; src: string }[] = [
+/** `wip`: still being worked on, so its switch button carries a small WIP badge. */
+export const APPS: { id: AppId; title: string; src: string; wip?: boolean }[] = [
   { id: 'token-maker', title: 'Token Maker', src: '/token-maker/' },
-  { id: 'frame-maker', title: 'Frame Maker', src: '/frame-maker/' },
+  { id: 'frame-maker', title: 'Frame Maker', src: '/frame-maker/', wip: true },
 ];
 
 /** Sent by an app to the page: show this app. */
