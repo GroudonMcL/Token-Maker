@@ -14,7 +14,7 @@ import type { Effect, FrameProject, Layer, RepeatLayer } from './types';
 type Shadow = Extract<Effect, { kind: 'shadow' }>;
 type Bevel = Extract<Effect, { kind: 'bevel' }>;
 /** A short soft shadow, so a picture sits on what is under it. */
-const pictureContact = (opacity: number): Effect => ({ ...(NEW_EFFECT.shadow() as Shadow), opacity, distance: 0.03, blur: 0.05 });
+export const pictureContact = (opacity: number): Effect => ({ ...(NEW_EFFECT.shadow() as Shadow), opacity, distance: 0.03, blur: 0.05 });
 
 /** Library pictures repeated round the band, in their own colours, tops pointing out. */
 export const pictureRepeat = (name: string, picture: string, o: Partial<RepeatLayer>): Layer => ({

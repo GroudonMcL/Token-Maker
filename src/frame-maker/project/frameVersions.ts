@@ -48,7 +48,7 @@ import {
 import { cellsLayer, chainLayer, gearsLayer, groupLayer, knotworkLayer, NEW_EFFECT } from './defaults';
 import { wear } from './styles';
 import { categoryOf } from './frameCategories';
-import { briarRoses, wreathRoses } from './libraryFrames';
+import { briarRoses, pictureContact, pictureRepeat, wreathRoses } from './libraryFrames';
 import type { ColourSlot } from './colourSlots';
 import type { Layer, StageSettings } from './types';
 
@@ -3316,13 +3316,14 @@ const VERSIONS: Version[] = [
   {
     id: 'rose-wreath-golden',
     name: 'Golden roses',
-    description: 'A jeweller’s wreath: gilded vine, leaves and roses in warm gold.',
+    description: 'A jeweller’s wreath: a gilded vine and leaves with four red roses.',
     after: 'rose-wreath',
     stage: ROSE_STAGE,
-    colours: [slot('gold', 'Gold colour', '#c8952e', ['Vine', 'Roses'])],
+    colours: [slot('gold', 'Gold colour', '#c8952e', ['Vine']), slot('roses', 'Rose colour', '#b01828', ['Roses'])],
+    // Frame review (owner's pick): the Red rose wreath's roses, in their own colours.
     layers: () => [
       { ...growthLayer('vine'), name: 'Vine', count: 2, thickness: 0.05, amplitude: 0.26, waveLength: 2, extra: 'leaves', extraSize: 0.45, color: '#a8782a', extraColor: '#d8a838', seed: 3, effects: [...goldFx(0.35, WARM_GOLD), DROP] },
-      roseBlooms('#d8a838', [...goldFx(0.4, WARM_GOLD), contact(0.7)], 4, 1),
+      pictureRepeat('Roses', 'deco-rose-bloom', { count: 4, at: 0.5, size: 1.35, effects: [pictureContact(0.75)] }),
     ],
   },
   // ── themed-fey ──
@@ -3370,11 +3371,12 @@ const VERSIONS: Version[] = [
   {
     id: 'gothic-thorns-blood-roses',
     name: 'Blood roses',
-    description: 'Black briars over dark stone, blooming with blood-red roses.',
+    description: 'Black briars over dark stone, blooming with six red roses.',
     after: 'gothic-thorns',
     stage: GOTHIC_STAGE,
-    colours: [slot('stone', 'Stone colour', '#24202a', ['Black stone']), slot('roses', 'Rose colour', '#8a0a1a', ['Roses'])],
-    layers: () => [...gothicStone(), gothicBriars('#1a1012', '#2a1418'), { ...repeatLayer(), name: 'Roses', element: 'spiral', count: 6, snapToCorners: false, at: 0.5, size: 0.85, fill: '#8a0a1a', raised: false, effects: [bevel({ size: 0.4, gloss: 0.6 }), glow({ color: '#ff1a2a', opacity: 0.3, size: 0.06 }), contact(0.7)] }],
+    colours: [slot('stone', 'Stone colour', '#24202a', ['Black stone']), slot('roses', 'Rose colour', '#b01828', ['Roses'])],
+    // Frame review (owner's pick): the Red rose wreath's roses, in their own colours.
+    layers: () => [...gothicStone(), gothicBriars('#1a1012', '#2a1418'), pictureRepeat('Roses', 'deco-rose-bloom', { count: 6, at: 0.5, size: 1.3, jitterAngle: 25, seed: 11, effects: [pictureContact(0.75)] })],
   },
   {
     id: 'gothic-thorns-bone',
