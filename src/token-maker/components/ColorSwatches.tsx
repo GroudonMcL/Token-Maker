@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ControlLabel } from './ControlLabel';
 import { useRovingRadio } from './useRovingRadio';
 
@@ -50,7 +50,23 @@ export function ColorSwatches({
   const pickerId = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLInputElement>(null);
   const all = withVaried(swatches);
+  // The picker's colour is shown live (React's onChange fires as it moves) and
+  // recorded as one undo step when it is chosen: the native change event, which
+  // fires when the picker closes. Waiting for blur instead could wait for ever
+  // on a phone, and the next change would join the same undo step.
+  const commitRef = useRef(onCommit);
+  useLayoutEffect(() => {
+    commitRef.current = onCommit;
+  });
+  useEffect(() => {
+    const picker = pickerRef.current;
+    if (!picker) return;
+    const chosen = () => commitRef.current?.(picker.value);
+    picker.addEventListener('change', chosen);
+    return () => picker.removeEventListener('change', chosen);
+  }, []);
   // Until the row has been measured (and where nothing can be measured), the control's own swatches.
   const [fit, setFit] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -109,6 +125,7 @@ export function ColorSwatches({
         <label className="swatch swatch--picker" htmlFor={pickerId} title="Choose any colour">
           <span className="visually-hidden">Custom colour</span>
           <input
+            ref={pickerRef}
             id={pickerId}
             type="color"
             value={HEX.test(value) ? value : '#000000'}
