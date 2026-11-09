@@ -4,6 +4,7 @@ import { listenForSentFrames } from '../editor/shellBridge';
 import { useGlobalImport } from '../editor/useGlobalImport';
 import { useShortcuts } from '../editor/useShortcuts';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { holdImportsUntil } from '../import/importImage';
 import { restore, startAutosave, type RestoreResult } from '../state/autosave';
 import { watchFrameImages } from '../state/frameLibrary';
 import { watchLabelFonts } from '../fonts/fontLoader';
@@ -31,7 +32,10 @@ function boot() {
   if (booted) return;
   booted = true;
   // restore() never throws: a token it can't reopen is kept, not overwritten.
-  void restore().then((result) => {
+  const restoring = restore();
+  // A picture dropped or pasted meanwhile goes in once the token is back, not under it.
+  holdImportsUntil(restoring);
+  void restoring.then((result) => {
     reportRestore(result);
     startAutosave();
     watchLibraryImages();
