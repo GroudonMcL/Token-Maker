@@ -31,13 +31,7 @@ What to do before Token Maker goes public, from a review on 27 October 2026. Whe
 - [x] `/api/*` answers only requests from the site's own pages (8 November 2026): `Sec-Fetch-Site`, or `Referer`/`Origin` for older browsers. Requests without them (curl, scripts) get 403. Those headers can be faked, so the rate limit still matters.
 - [x] The page scanner can no longer be made to run for seconds by broken HTML (8 November 2026): it was regular expressions that slowed down with the square of the page size (60 KB took 6 s); it is now a single pass.
 - [ ] The proxy already blocks fetches to private addresses, size-limits responses and checks file types (`server/safeFetch.ts`, `ipRanges.ts`, `sniff.ts`). Leave that as it is.
-- [ ] Add a full **Content-Security-Policy** and **HSTS** to `public/_headers`. At the moment there is only `frame-ancestors`. The policy has to allow:
-  - Hugging Face (for the model)
-  - jsDelivr (for the ONNX runtime)
-  - `blob:` workers
-  - `'wasm-unsafe-eval'`
-  
-  Test the AI cut-out with the policy on before going live.
+- [x] Full **Content-Security-Policy**, **HSTS** and **COOP** (9 November 2026): in `public/_headers`, and added by the Worker and the Pages Function to the Token Maker pages they serve themselves. What the policy allows, and why, is in `server/securityHeaders.ts`; a test keeps `_headers` the same and checks the policy allows each page's inline theme script by its hash. Tested on the built site under `wrangler dev`: no violations on any page, and the AI cut-out downloads the model and runs. **If you add adverts, analytics or another outside script, add its hosts to the policy** or it will be blocked.
 - [x] `npm audit`: upgraded to 4.3.1. Re-test the AI cut-out in a browser. Before: 4 high-severity advisories, all in `@huggingface/transformers`' Node-only dependencies (`sharp`, `onnxruntime-node`, `adm-zip`). None of them reach the browser bundle. Moving from 4.2.0 (pinned) to 4.3.1 clears them. Re-test the AI cut-out after the upgrade.
 
 ## 4. Performance
