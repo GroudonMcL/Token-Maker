@@ -5,6 +5,7 @@ import { addressFromDrop, normaliseAddress } from '../import/webAddress';
 import { importFromAddress, importManyAddresses, splitAddresses } from '../import/webImport';
 import { toast } from '../ui/toast';
 import { importFiles, importWithMessage } from './importWithMessage';
+import { isTextField } from './useShortcuts';
 
 /**
  * Drag and drop anywhere on the page, and paste (DESIGN.md §6.1).
@@ -49,6 +50,10 @@ export function useGlobalImport(): boolean {
     const onPaste = (e: ClipboardEvent) => {
       const data = e.clipboardData;
       if (!data) return;
+      // Pasting text into a text box stays normal pasting, even when the
+      // clipboard also holds a picture (text copied from a web page often does).
+      const typing = isTextField(e.target);
+      if (typing && data.getData('text/plain').trim()) return;
       const item = [...data.items].find((i) => i.kind === 'file' && i.type.startsWith('image/'));
       const file = item?.getAsFile();
       if (file) {
@@ -56,9 +61,7 @@ export function useGlobalImport(): boolean {
         void importWithMessage(file, file.name && file.name !== 'image.png' ? file.name : '');
         return;
       }
-      // Pasting text into a text box stays normal pasting.
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, [contenteditable]')) return;
+      if (typing) return;
       // A pasted web address goes through the web import (DESIGN.md §6.1 item 3).
       const text = data.getData('text/plain').trim();
       const many = isBatchOn() ? splitAddresses(text) : [];
