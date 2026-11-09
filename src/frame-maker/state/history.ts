@@ -16,7 +16,12 @@ export interface HistoryState<T> {
   future: T[];
   /** Value before the current transient change began, or null. */
   pendingBase: T | null;
-  set: (next: T, opts?: { transient?: boolean }) => void;
+  /**
+   * `quiet`: changes the value without an undo step, for what only changes
+   * the view (a group folded in the layer list). Undo then shows each step
+   * as it was.
+   */
+  set: (next: T, opts?: { transient?: boolean; quiet?: boolean }) => void;
   commit: () => void;
   undo: () => void;
   redo: () => void;
@@ -34,6 +39,10 @@ export function createHistoryStore<T>(initial: T, limit = 200): StoreApi<History
 
     set: (next, opts) => {
       const { present, past, pendingBase } = get();
+      if (opts?.quiet) {
+        set({ present: next });
+        return;
+      }
       if (opts?.transient) {
         set({ present: next, pendingBase: pendingBase ?? present });
         return;
@@ -65,6 +74,8 @@ export function createHistoryStore<T>(initial: T, limit = 200): StoreApi<History
     },
 
     redo: () => {
+      // A drag under way is a new change: it ends redo, like any other change.
+      get().commit();
       const { present, past, future } = get();
       if (future.length === 0) return;
       set({ present: future[0] as T, past: [...past, present], future: future.slice(1) });

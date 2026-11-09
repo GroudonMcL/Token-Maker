@@ -14,6 +14,7 @@ import { finder, recentrePath, turnLayer } from '../render/hitTest';
 import { repeatPlacements } from '../render/layers';
 import { shapeAsPath } from '../render/placed';
 import { createHistoryStore } from './history';
+import { keepPrevious } from './previousProject';
 
 export const history = createHistoryStore<FrameProject>(createProject());
 
@@ -41,7 +42,8 @@ export const ui = createStore<UiState>(() => ({ selectedId: null, selectedIds: [
 
 export const useProject = () => useStore(history, (s) => s.present);
 export const useCanUndo = () => useStore(history, (s) => s.past.length > 0 || s.pendingBase !== null);
-export const useCanRedo = () => useStore(history, (s) => s.future.length > 0);
+// Not during a drag: the drag will end redo when it's recorded.
+export const useCanRedo = () => useStore(history, (s) => s.future.length > 0 && s.pendingBase === null);
 export const useUi = <T>(pick: (s: UiState) => T) => useStore(ui, pick);
 
 const get = () => history.getState().present;
@@ -49,11 +51,16 @@ const get = () => history.getState().present;
 export interface EditOptions {
   /** Part of a drag: shown at once, recorded as one undo step by commit(). */
   transient?: boolean;
+  /** Only changes the view (a group folded): no undo step. */
+  quiet?: boolean;
 }
 
 function update(fn: (p: FrameProject) => FrameProject, opts?: EditOptions): void {
   history.getState().set(fn(get()), opts);
 }
+
+/** True when the patch would change nothing (so no undo step is recorded for it). */
+const changesNothing = (layer: Layer, patch: Partial<Layer>) => Object.entries(patch).every(([k, v]) => Object.is((layer as unknown as Record<string, unknown>)[k], v));
 
 const withLayers = (fn: (layers: Layer[]) => Layer[]) => (p: FrameProject) => ({ ...p, layers: fn(p.layers) });
 
@@ -90,14 +97,29 @@ export function selectedLayer(): Layer | undefined {
   return findLayer(get().layers, ui.getState().selectedId);
 }
 
-/** Replaces the open project (new, open, template): a fresh undo history. */
+/** Opens a project with a fresh undo history: the one the last visit left, and in tests. */
 export function loadProject(project: FrameProject): void {
   history.getState().reset(project);
   select(project.layers.at(-1)?.id ?? null);
 }
 
-export function newProject(): void {
-  loadProject(createProject());
+/**
+ * Puts another project in place of the open one (New, Open, a template) as
+ * one undo step, so Undo brings the old design back. The old design is also
+ * kept in this browser (state/previousProject.ts) for after the page closes.
+ * Returns the replaced design's name.
+ */
+export function replaceProject(project: FrameProject): string {
+  commit();
+  const old = get();
+  history.getState().set(project);
+  select(project.layers.at(-1)?.id ?? null);
+  void keepPrevious(old);
+  return old.name;
+}
+
+export function newProject(): string {
+  return replaceProject(createProject());
 }
 
 /** Adds a layer just above the selected one, in the same group (or on top), and selects it. */
@@ -121,7 +143,10 @@ export function addLayers(added: Layer[]): void {
 
 /** Changes a layer's settings. Locked layers (or ones in a locked group) can't be changed, except to unlock, show/hide or fold them. */
 export function updateLayer(id: string, patch: Partial<Layer>, opts?: EditOptions): void {
-  if (!findLayer(get().layers, id)) return;
+  const layer = findLayer(get().layers, id);
+  if (!layer) return;
+  // Nothing changes: no new project, so no undo step (a transient one still ends a drag on its old value).
+  if (changesNothing(layer, patch) && !opts?.transient) return;
   const harmless = Object.keys(patch).every((k) => k === 'locked' || k === 'visible' || k === 'collapsed');
   if (isLocked(get().layers, id) && !harmless) return;
   update(withLayers((layers) => mapLayer(layers, id, (l) => ({ ...l, ...patch }) as Layer)), opts);
@@ -132,7 +157,7 @@ export const toggleVisible = (id: string) => updateLayer(id, { visible: !findLay
 export const toggleLocked = (id: string) => updateLayer(id, { locked: !findLayer(get().layers, id)?.locked });
 export const toggleCollapsed = (id: string) => {
   const l = findLayer(get().layers, id);
-  if (l?.type === 'group') updateLayer(id, { collapsed: !l.collapsed });
+  if (l?.type === 'group') updateLayer(id, { collapsed: !l.collapsed }, { quiet: true });
 };
 
 export function duplicateLayer(id: string): void {
@@ -257,11 +282,14 @@ export function ungroup(id: string): void {
 }
 
 export function updateStage(patch: Partial<StageSettings>, opts?: EditOptions): void {
+  const stage = get().stage as unknown as Record<string, unknown>;
+  if (!opts?.transient && Object.entries(patch).every(([k, v]) => Object.is(stage[k], v))) return;
   update((p) => ({ ...p, stage: { ...p.stage, ...patch } }), opts);
 }
 
 export function renameProject(name: string): void {
-  update((p) => ({ ...p, name: name.trim() || 'Untitled frame' }));
+  const next = name.trim() || 'Untitled frame';
+  if (next !== get().name) update((p) => ({ ...p, name: next }));
 }
 
 /** Changes the selected path's points (one undo step unless transient). */

@@ -8,8 +8,11 @@ const V4_BLOCKED: [number, number][] = [
 ].map(([a, p]) => [parseV4(a as string)!, p as number]);
 
 const V6_BLOCKED: [bigint, number][] = [
-  ["::", 128], ["::1", 128], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8], ["2001:db8::", 32],
-  ["64:ff9b::", 96], ["100::", 64], ["2002::", 16],
+  // ::/96 holds :: and ::1, and the old IPv4-compatible form (::7f00:1 is 127.0.0.1).
+  ["::", 96], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8], ["2001:db8::", 32],
+  // NAT64 (64:ff9b::/96, and the local-use 64:ff9b:1::/48), Teredo (2001::/32) and 6to4 (2002::/16)
+  // tunnel to IPv4 addresses that could be private.
+  ["64:ff9b::", 96], ["64:ff9b:1::", 48], ["2001::", 32], ["100::", 64], ["2002::", 16],
 ].map(([a, p]) => [parseV6(a as string)!, p as number]);
 
 export function parseV4(address: string): number | null {

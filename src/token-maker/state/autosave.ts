@@ -8,11 +8,23 @@ import type { TokenDocument } from '../document/types';
 import { decodeImage } from '../import/decode';
 import { addAsset, assetStore } from './assets';
 import { docHistory, resetDoc } from './tokenStore';
+import { toast } from '../ui/toast';
 
 const DOC_KEY = 'current-doc';
 const BATCH_KEY = 'batch';
+/** A saved token that couldn't be reopened, kept so autosave doesn't overwrite it. "New" clears it. */
+const UNREADABLE_KEY = 'unreadable-doc';
 const ASSET_PREFIX = 'asset:';
 let idb: UseStore | null = null;
+
+/**
+ * Saved pictures that must not be deleted this session, although the token
+ * on screen doesn't use them: pictures that couldn't be reopened, or every
+ * saved picture when the saved token itself couldn't be.
+ */
+let keptPictures: ReadonlySet<string> | 'all' = new Set();
+/** True when the saved token couldn't be read or backed up: saving would overwrite it. */
+let savingBlocked = false;
 
 function store(): UseStore | null {
   if (typeof indexedDB === 'undefined') return null;
@@ -29,7 +41,7 @@ export function usedAssetIds(doc: TokenDocument, batch: readonly BatchItem[] = [
 /** Saves the document, the batch and their pictures (if not saved yet), and removes pictures no longer used. */
 export async function saveNow(doc: TokenDocument, batch: BatchState = batchStore.getState()): Promise<void> {
   const db = store();
-  if (!db) return;
+  if (!db || savingBlocked) return;
   const items = syncedItems(batch, doc);
   await set(DOC_KEY, doc, db);
   await set(BATCH_KEY, { ...batch, items }, db);
@@ -40,22 +52,57 @@ export async function saveNow(doc: TokenDocument, batch: BatchState = batchStore
     const asset = assetStore.getState().assets.get(id);
     if (asset) await set(id, asset.blob, db);
   }
-  await Promise.all(saved.filter((k) => !used.includes(k)).map((k) => del(k, db)));
+  const kept = keptPictures;
+  if (kept === 'all') return;
+  await Promise.all(saved.filter((k) => !used.includes(k) && !kept.has(k)).map((k) => del(k, db)));
 }
 
-/** Loads the autosaved token, if any. Returns true when something was restored. */
-export async function restore(): Promise<boolean> {
+/**
+ * What happened when the autosaved token was reopened:
+ * - `restored`: it is on screen. `missingPictures` counts pictures that
+ *   couldn't be opened; they are left out, but kept in storage.
+ * - `none`: nothing was saved.
+ * - `unreadable`: it couldn't be reopened. It was kept (`kept`), and its
+ *   pictures with it, so autosaving the new token doesn't overwrite it; if
+ *   it couldn't even be kept, autosave stays off for this visit.
+ */
+export type RestoreResult =
+  | { status: 'restored'; missingPictures: number }
+  | { status: 'none' }
+  | { status: 'unreadable'; kept: boolean };
+
+/** Loads the autosaved token, if any. A picture or a token that can't be reopened is never deleted. */
+export async function restore(): Promise<RestoreResult> {
   const db = store();
-  if (!db) return false;
+  if (!db) return { status: 'none' };
+  let raw: unknown;
+  let rawBatch: unknown;
+  let doc: TokenDocument;
+  let batch: BatchState | null;
   try {
-    const raw = await get(DOC_KEY, db);
-    if (!raw) return false;
-    const doc = migrateDocument(raw);
-    const batch = readBatch(await get(BATCH_KEY, db));
+    raw = await get(DOC_KEY, db);
+    if (!raw) return { status: 'none' };
+    rawBatch = await get(BATCH_KEY, db);
+    doc = migrateDocument(raw);
+    batch = readBatch(rawBatch);
+  } catch (err) {
+    console.warn('Could not restore the autosaved token', err);
+    return { status: 'unreadable', kept: await keepUnreadable(db, raw, rawBatch) };
+  }
+
+  try {
+    const unopened = new Set<string>();
     for (const id of usedAssetIds(doc, batch?.items)) {
-      const blob = await get<Blob>(id, db);
-      if (blob) addAsset({ id, blob, ...(await decodeImage(blob)) });
+      try {
+        const blob = await get<Blob>(id, db);
+        if (blob) addAsset({ id, blob, ...(await decodeImage(blob)) });
+      } catch (err) {
+        console.warn(`Could not reopen the saved picture ${id}`, err);
+        unopened.add(id);
+      }
     }
+    // While a token that couldn't be reopened is kept, so are all its pictures.
+    keptPictures = (await get(UNREADABLE_KEY, db).catch(() => true)) === undefined ? unopened : 'all';
     const has = (id: string | null) => !!id && assetStore.getState().assets.has(id);
     if (doc.art.assetId && !has(doc.art.assetId)) doc.art.assetId = null;
     if (doc.background.image?.type === 'asset' && !has(doc.background.image.assetId)) doc.background.image = null;
@@ -65,14 +112,35 @@ export async function restore(): Promise<boolean> {
       const items = batch.items.filter((it) => it.id === batch.activeId || has(it.assetId));
       loadBatch({ ...batch, items, activeId: items.some((it) => it.id === batch.activeId) ? batch.activeId : null });
     }
-    return true;
+    return { status: 'restored', missingPictures: unopened.size };
   } catch (err) {
     console.warn('Could not restore the autosaved token', err);
+    return { status: 'unreadable', kept: await keepUnreadable(db, raw, rawBatch) };
+  }
+}
+
+/**
+ * Moves a saved token that couldn't be reopened out of autosave's way, and
+ * keeps every saved picture, so a later version of the site can still open
+ * it. If that fails, saving is turned off for this visit instead.
+ */
+async function keepUnreadable(db: UseStore, raw: unknown, rawBatch: unknown): Promise<boolean> {
+  keptPictures = 'all';
+  try {
+    if (raw === undefined) throw new Error('The saved token could not be read');
+    await set(UNREADABLE_KEY, { savedAt: Date.now(), doc: raw, batch: rawBatch ?? null }, db);
+    return true;
+  } catch (err) {
+    console.warn('Could not keep the unreadable token; autosave is off for this visit', err);
+    savingBlocked = true;
     return false;
   }
 }
 
+/** Deletes everything saved ("New"), including a token that couldn't be reopened, and starts saving again. */
 export async function clearAutosave(): Promise<void> {
+  keptPictures = new Set();
+  savingBlocked = false;
   const db = store();
   if (!db) return;
   const all = await keys(db);
@@ -91,20 +159,52 @@ function readBatch(raw: unknown): BatchState | null {
   return { on: true, items, activeId: typeof r.activeId === 'string' ? r.activeId : null };
 }
 
-/** Starts saving shortly after every change. Returns a function that stops it. */
+export const SAVE_FAILED_MESSAGE = "Your token couldn't be kept in this browser (its storage is full or blocked). Export it, or save it as a preset, to keep it.";
+
+/**
+ * Starts saving shortly after every change, and at once when the page is
+ * hidden or closed, so the last change isn't lost. Saves run one after
+ * another, never two at once. Says so (once, until saving works again) when
+ * the browser won't store the token. Returns a function that stops it.
+ */
 export function startAutosave(delayMs = 400): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let chain: Promise<void> = Promise.resolve();
+  let warned = false;
+  const save = () => {
+    timer = undefined;
+    chain = chain.then(async () => {
+      try {
+        await saveNow(docHistory.getState().present);
+        warned = false;
+      } catch (err) {
+        console.warn('Autosave failed', err);
+        if (!warned) toast(SAVE_FAILED_MESSAGE, 'error', 10_000);
+        warned = true;
+      }
+    });
+  };
   const later = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => void saveNow(docHistory.getState().present).catch((e) => console.warn('Autosave failed', e)), delayMs);
+    timer = setTimeout(save, delayMs);
   };
+  const flush = () => {
+    if (timer === undefined) return;
+    clearTimeout(timer);
+    save();
+  };
+  const onVisibility = () => document.visibilityState === 'hidden' && flush();
   const unsubscribe = docHistory.subscribe((state, prev) => {
     if (state.present !== prev.present) later();
   });
   const unsubscribeBatch = batchStore.subscribe(later);
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', onVisibility);
   return () => {
     clearTimeout(timer);
     unsubscribe();
     unsubscribeBatch();
+    window.removeEventListener('pagehide', flush);
+    document.removeEventListener('visibilitychange', onVisibility);
   };
 }

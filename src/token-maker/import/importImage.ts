@@ -23,12 +23,47 @@ export function tidyName(fileName: string): string {
 /** Where an imported picture goes: the token's art, or the background behind it (DESIGN.md §6.3). */
 export type ImportTarget = 'art' | 'background';
 
+// ---- Keeping imports in the order they were asked for ----
+//
+// Decoding a picture, or downloading one from the web, takes a moment, and a
+// big or slow one can finish after one asked for later. Each import takes a
+// ticket when the user asks for it, and a picture only goes in if no newer
+// one has gone in to the same place since: the newest wins, however long each
+// takes, and a newer import that fails doesn't block an older one. In batch
+// mode every picture joins the batch, so there is nothing to choose.
+
+let lastTicket = 0;
+const applied: Record<ImportTarget, number> = { art: 0, background: 0 };
+
+/** Takes the next ticket. Call when the user asks for a picture (a web import before its download). */
+export const newImportTicket = (): number => ++lastTicket;
+
+/** True when this import's picture should go in (and marks it as gone in). */
+function claim(target: ImportTarget, ticket: number): boolean {
+  if (target === 'art' && isBatchOn()) return true;
+  if (ticket < applied[target]) return false;
+  applied[target] = ticket;
+  return true;
+}
+
+let held: Promise<unknown> = Promise.resolve();
+/**
+ * Imports wait for this before putting a picture in: the autosaved token being
+ * restored at start-up, which would otherwise replace a picture dropped while
+ * it loads.
+ */
+export function holdImportsUntil(done: Promise<unknown>): void {
+  held = done.catch(() => {});
+}
+
 /** Makes a picture the background (an "image" background of the user's own). */
-export async function importBackgroundFile(file: File | Blob, fileName = (file as File).name ?? ''): Promise<void> {
+export async function importBackgroundFile(file: File | Blob, fileName = (file as File).name ?? '', ticket = newImportTicket()): Promise<void> {
   if (!isImageFile({ type: file.type, name: fileName })) {
     throw new ImageDecodeError("That isn't an image file. Try PNG, JPG, WebP, GIF, AVIF, BMP or SVG.");
   }
   const decoded = await decodeImage(file);
+  await held;
+  if (!claim('background', ticket)) return; // a newer picture has gone in since
   const id = newAssetId();
   addAsset({ id, blob: file, ...decoded });
   updateDoc((doc) => ({
@@ -37,16 +72,18 @@ export async function importBackgroundFile(file: File | Blob, fileName = (file a
   }));
 }
 
-/** Imports to the art or the background. */
-export function importTo(target: ImportTarget, file: File | Blob, fileName?: string): Promise<void> {
-  return target === 'background' ? importBackgroundFile(file, fileName) : importImageFile(file, fileName);
+/** Imports to the art or the background. `ticket`: taken when the user asked (see newImportTicket); a new one if not given. */
+export function importTo(target: ImportTarget, file: File | Blob, fileName?: string, ticket = newImportTicket()): Promise<void> {
+  return target === 'background' ? importBackgroundFile(file, fileName, ticket) : importImageFile(file, fileName, ticket);
 }
 
-export async function importImageFile(file: File | Blob, fileName = (file as File).name ?? ''): Promise<void> {
+export async function importImageFile(file: File | Blob, fileName = (file as File).name ?? '', ticket = newImportTicket()): Promise<void> {
   if (!isImageFile({ type: file.type, name: fileName })) {
     throw new ImageDecodeError("That isn't an image file. Try PNG, JPG, WebP, GIF, AVIF, BMP or SVG.");
   }
   const decoded = await decodeImage(file);
+  await held;
+  if (!claim('art', ticket)) return; // a newer picture has gone in since
   const id = newAssetId();
   addAsset({ id, blob: file, ...decoded });
   const name = tidyName(fileName);

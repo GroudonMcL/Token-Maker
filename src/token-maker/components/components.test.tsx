@@ -131,6 +131,35 @@ describe('ColorSwatches', () => {
     await userEvent.type(hex, 'ABCDEF{Enter}');
     expect(onChange).toHaveBeenLastCalledWith('#abcdef');
   });
+
+  it('records a colour from the picker when it is chosen, without waiting for the picker to lose focus', () => {
+    const onChange = vi.fn();
+    const onCommit = vi.fn();
+    function Harness() {
+      const [value, setValue] = useState('#111111');
+      return (
+        <ColorSwatches
+          label="Colour"
+          value={value}
+          swatches={['#111111']}
+          onChange={(hex) => {
+            setValue(hex);
+            onChange(hex);
+          }}
+          onCommit={onCommit}
+        />
+      );
+    }
+    render(<Harness />);
+    const picker = screen.getByLabelText('Custom colour') as HTMLInputElement;
+    // Moving round the picker: shown live, nothing recorded yet.
+    fireEvent.input(picker, { target: { value: '#335577' } });
+    expect(onChange).toHaveBeenLastCalledWith('#335577');
+    expect(onCommit).not.toHaveBeenCalled();
+    // Choosing it (the picker closes): recorded, though the picker still has focus.
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onCommit).toHaveBeenCalledWith('#335577');
+  });
 });
 
 describe('GradientEditor', () => {

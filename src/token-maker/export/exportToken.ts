@@ -16,7 +16,7 @@ import { getAssets } from '../state/assets';
 import { loadFrameImage } from '../state/frameLibrary';
 import { ensureLibraryImages } from '../state/libraryAssets';
 import { ensurePictures } from '../state/pictureLibrary';
-import { ensureAiMask } from '../image/aiRemoval';
+import { aiStore, ensureAiMask } from '../image/aiRemoval';
 import { render, type AssetMap } from '../render/render';
 import { FORMATS, finalSize, type ExportFormat } from './formats';
 
@@ -29,14 +29,38 @@ export interface ExportOptions {
   quality: number;
 }
 
-/** Loads everything the renderer needs at full quality: art, background and frame pictures, the label's font. */
-export async function prepareForExport(doc: TokenDocument, assets: AssetMap): Promise<AssetMap> {
+/**
+ * Parts of the token that couldn't be loaded, so the export was made without
+ * them, e.g. "the frame picture". The export goes ahead (the rest of the
+ * token is fine) and says what is missing; see missingPartsMessage.
+ */
+export type MissingParts = Set<string>;
+
+/** "Exported without the frame picture and the label's font: they couldn't be loaded.", or null. */
+export function missingPartsMessage(missing: MissingParts): string | null {
+  const parts = [...missing];
+  if (!parts.length) return null;
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+  return `Made without ${list}: ${parts.length === 1 ? 'it' : 'they'} couldn't be loaded. Check your connection and export again.`;
+}
+
+/** Loads everything the renderer needs at full quality: art, background and frame pictures, the label's font. Adds what couldn't be loaded to `missing`. */
+export async function prepareForExport(doc: TokenDocument, assets: AssetMap, missing?: MissingParts): Promise<AssetMap> {
+  const onFail = (what: string) => missing?.add(what);
   await ensureAiMask(doc); // an AI cut-out, made for this picture if it hasn't been yet
+  const ai = doc.art.removal.enabled && doc.art.removal.method === 'ai' && doc.art.assetId ? aiStore.getState() : null;
+  if (ai && !ai.masks.has(doc.art.assetId!)) onFail('the AI cut-out (the background was left in)');
   await prepareArt(doc, assets); // full-size processed art, usually ready already
-  await ensureLibraryImages(doc); // a built-in background picture, usually loaded already
-  if (doc.frame.kind === 'image' && doc.frame.image) await loadFrameImage(doc.frame.image.source).catch((e) => console.warn(e)); // the picture frame
-  await ensurePictures(doc); // picture effects and decorations
-  await ensureLabelFont(doc); // the label's font, so it is never drawn with a fallback
+  await ensureLibraryImages(doc, onFail); // a built-in background picture, usually loaded already
+  if (doc.frame.kind === 'image' && doc.frame.image) {
+    // the picture frame
+    await loadFrameImage(doc.frame.image.source).catch((e) => {
+      console.warn(e);
+      onFail('the frame picture');
+    });
+  }
+  await ensurePictures(doc, onFail); // picture effects and decorations
+  await ensureLabelFont(doc, onFail); // the label's font, so it is never drawn with a fallback
   // The store may have gained the background or frame picture since `assets` was read.
   return new Map([...getAssets(), ...assets]);
 }
@@ -75,9 +99,9 @@ export function releaseCanvas(canvas: AnyCanvas): void {
   canvas.height = 0;
 }
 
-/** The whole export of one token: prepare, render, encode. */
-export async function exportToken(doc: TokenDocument, assets: AssetMap, opts: ExportOptions): Promise<Blob> {
-  const ready = await prepareForExport(doc, assets);
+/** The whole export of one token: prepare, render, encode. Parts that couldn't be loaded are added to `missing`. */
+export async function exportToken(doc: TokenDocument, assets: AssetMap, opts: ExportOptions, missing?: MissingParts): Promise<Blob> {
+  const ready = await prepareForExport(doc, assets, missing);
   await nextFrame(); // let the page show "Exporting…" before the render
   const canvas = renderForExport(doc, ready, opts);
   try {

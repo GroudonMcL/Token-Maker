@@ -560,7 +560,9 @@ A **setting** follows the gem's outline (or an oval round any other element): a 
 
 Undo/redo works on the structured project (token-maker's `history.ts`): every edit is one step; a slider, colour-picker, handle or point drag is one step. Loading a project starts a fresh history.
 
-Autosave: the project's JSON is written to IndexedDB (`frame-maker:project`) 0.4 s after each change and restored on the next visit. First visit opens Token Maker's Stamped frame.
+Autosave: the project's JSON is written to IndexedDB (`frame-studio:project`) 0.4 s after each change and restored on the next visit. First visit opens Token Maker's Stamped frame. A saved project that can't be read is copied to `frame-studio:unreadable-project` first and the editor says so, so autosaving the new project doesn't overwrite it.
+
+**Replacing the design** (New, Open, Blank project, a template) is one undo step, so Undo brings the old design back, and the message says so. The replaced design is also kept in IndexedDB (`frame-studio:previous-project`, one design: the latest replaced; `src/state/previousProject.ts`), and the New dialog shows it first, as **Your previous design**, so a design replaced by mistake can still be reopened after the page is closed. Opening it swaps the two.
 
 ## 7. Quality rules
 

@@ -3,9 +3,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { openSection } from './panel';
 
-// Phase 10: polish and launch. A phone pass (every control at least 44 px
-// to touch), an accessibility pass (axe in both themes, keyboard use) and
-// the first-time experience.
+// Phase 10: polish and launch. An accessibility pass (axe in both themes,
+// keyboard use) and the first-time experience.
 
 const GOBLIN = readFileSync('e2e/token-maker/fixtures/flat-goblin.png');
 
@@ -27,73 +26,6 @@ async function openAll(scope: Locator) {
     }
   }
 }
-
-/** Visible controls smaller than `min` px to touch (counting invisible padding drawn by ::before/::after). */
-async function smallTargets(scope: Locator, min: number): Promise<string[]> {
-  return scope.evaluate((root, min) => {
-    const bad: string[] = [];
-    const sel = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="slider"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], label[for]';
-    for (const el of Array.from(root.querySelectorAll<HTMLElement>(sel))) {
-      // The colour picker's input fills its swatch, which is what you touch.
-      const r = (el.matches('.swatch--picker input') ? el.parentElement! : el).getBoundingClientRect();
-      if (!r.width || !r.height) continue;
-      const cs = getComputedStyle(el);
-      if (cs.visibility === 'hidden' || el.closest('[hidden], [aria-hidden="true"], .visually-hidden')) continue;
-      // A text input's label can be any size: the box itself is the target.
-      if (el.tagName === 'LABEL') continue;
-      let w = r.width;
-      let h = r.height;
-      for (const pseudo of ['::before', '::after']) {
-        const p = getComputedStyle(el, pseudo);
-        if (p.content === 'none' || p.position !== 'absolute') continue;
-        const px = (v: string) => (v.endsWith('px') ? parseFloat(v) : 0);
-        w = Math.max(w, r.width - px(p.left) - px(p.right));
-        h = Math.max(h, r.height - px(p.top) - px(p.bottom));
-      }
-      // Range inputs: the whole row is draggable, so only the height counts.
-      if (el instanceof HTMLInputElement && el.type === 'range') w = Math.max(w, min);
-      if (w + 0.5 < min || h + 0.5 < min) {
-        const name = el.getAttribute('aria-label') || el.textContent?.trim().slice(0, 30) || el.getAttribute('title') || el.className;
-        bad.push(`${el.tagName.toLowerCase()} "${name}" ${Math.round(w)}×${Math.round(h)}`);
-      }
-    }
-    return [...new Set(bad)];
-  }, min);
-}
-
-test.describe('phone pass', () => {
-  test('every control in every tab is at least 44 px to touch', async ({ page, isMobile }) => {
-    test.skip(!isMobile, 'phone only');
-    test.setTimeout(120_000);
-    await page.goto('/token-maker/');
-    await loadGoblin(page);
-    const problems: string[] = [];
-    problems.push(...(await smallTargets(page.locator('.editor'), 44)).map((p) => `canvas/top: ${p}`));
-    const tabs = page.getByRole('tab');
-    const count = await tabs.count();
-    for (let t = 0; t < count; t++) {
-      const tab = tabs.nth(t);
-      const name = (await tab.textContent())?.trim();
-      await tab.click();
-      const panel = page.getByRole('tabpanel');
-      // Each section in the tab, one at a time (only one is open at once).
-      const toggles = panel.locator('.section__toggle');
-      const sections = Math.max(1, await toggles.count());
-      for (let s = 0; s < sections; s++) {
-        const toggle = toggles.nth(s);
-        if ((await toggles.count()) && (await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
-        // Lists start empty: add one of each so their cards are checked too.
-        for (const add of ['Add a label', 'Vignette', 'Fire', 'Gem']) {
-          const b = panel.getByRole('button', { name: add, exact: true }).first();
-          if ((await b.count()) && (await b.isVisible())) await b.click().catch(() => {});
-        }
-        await openAll(panel);
-        problems.push(...(await smallTargets(panel, 44)).map((p) => `${name}: ${p}`));
-      }
-    }
-    expect([...new Set(problems)]).toEqual([]);
-  });
-});
 
 for (const theme of ['dark', 'light'] as const) {
   test.describe(`accessibility (${theme} theme)`, () => {

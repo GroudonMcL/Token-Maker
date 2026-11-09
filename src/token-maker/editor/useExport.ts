@@ -9,7 +9,7 @@ import { getAssets } from '../state/assets';
 import { getDoc } from '../state/tokenStore';
 import { toast } from '../ui/toast';
 import { baseNameFor, getExportSettings, uniqueFileNames } from '../export/exportSettings';
-import { copyPng, downloadBlob, exportToken, nextFrame, type ExportOptions } from '../export/exportToken';
+import { copyPng, downloadBlob, exportToken, missingPartsMessage, nextFrame, type ExportOptions, type MissingParts } from '../export/exportToken';
 import { FORMATS } from '../export/formats';
 import { makeZip } from '../export/zip';
 
@@ -36,6 +36,13 @@ function options(): ExportOptions {
 }
 
 const NO_ART = 'Add an image first: upload, drop or paste one.';
+
+/** Says it's done, or, when parts couldn't be loaded, what the file was made without. */
+function reportDone(done: string, missing: MissingParts) {
+  const without = missingPartsMessage(missing);
+  if (without) toast(`${done.replace(/\.$/, '')}. ${without}`, 'error', 12_000);
+  else toast(done);
+}
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : 'The export failed.');
 
 /** Downloads the token on screen with the Export panel's choices, and says so. */
@@ -50,9 +57,10 @@ export async function exportCurrentToken(): Promise<void> {
   const name = `${baseNameFor(doc.name)}.${FORMATS[opts.format].ext}`;
   exportProgress.setState({ ...IDLE, busy: true, total: 1, label: `Making ${name}…` });
   try {
-    const blob = await exportToken(doc, getAssets(), opts);
+    const missing: MissingParts = new Set();
+    const blob = await exportToken(doc, getAssets(), opts, missing);
     downloadBlob(blob, name);
-    toast(`Downloaded ${name}`);
+    reportDone(`Downloaded ${name}`, missing);
   } catch (err) {
     toast(messageOf(err), 'error');
   } finally {
@@ -69,8 +77,9 @@ export async function copyCurrentToken(): Promise<void> {
   }
   try {
     // Started before any waiting, so the copy still counts as part of the click (Safari).
-    await copyPng(exportToken(doc, getAssets(), { ...options(), format: 'png' }));
-    toast('Copied the token. Paste it into your VTT or anywhere else.');
+    const missing: MissingParts = new Set();
+    await copyPng(exportToken(doc, getAssets(), { ...options(), format: 'png' }, missing));
+    reportDone('Copied the token. Paste it into your VTT or anywhere else.', missing);
   } catch (err) {
     toast(messageOf(err), 'error', 8000);
   }
@@ -98,6 +107,7 @@ export async function exportAllTokens(): Promise<void> {
   const total = items.length;
   exportProgress.setState({ ...IDLE, busy: true, total, label: `Token 1 of ${total}` });
   const files: { name: string; blob: Blob }[] = [];
+  const missing: MissingParts = new Set();
   try {
     for (const [i, item] of items.entries()) {
       if (exportProgress.getState().cancelled) {
@@ -106,7 +116,7 @@ export async function exportAllTokens(): Promise<void> {
       }
       exportProgress.setState({ done: i, label: `Token ${i + 1} of ${total}: ${names[i]}` });
       const assets = getAssets();
-      files.push({ name: names[i]!, blob: await exportToken(docForItem(shared, item), assets, opts) });
+      files.push({ name: names[i]!, blob: await exportToken(docForItem(shared, item), assets, opts, missing) });
       const src = item.assetId ? assets.get(item.assetId) : undefined;
       if (src && item.id !== batch.activeId) forgetArt(src);
     }
@@ -114,7 +124,7 @@ export async function exportAllTokens(): Promise<void> {
     await nextFrame();
     const zip = await makeZip(files);
     downloadBlob(zip, 'tokens.zip');
-    toast(`Downloaded tokens.zip with ${total} token${total === 1 ? '' : 's'}`);
+    reportDone(`Downloaded tokens.zip with ${total} token${total === 1 ? '' : 's'}`, missing);
   } catch (err) {
     toast(messageOf(err), 'error', 8000);
   } finally {

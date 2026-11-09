@@ -115,7 +115,8 @@ function addPhase6Fields(layer: unknown): unknown {
   if (!isObj(layer) || !KNOWN_TYPES.has(layer.type as string)) return layer;
   const out: Obj = { effects: [], ...layer };
   if (Array.isArray(layer.children)) out.children = layer.children.map(addPhase6Fields);
-  if (layer.type === 'shape' || layer.type === 'path') Object.assign(out, { faceted: false, facetTable: 0.5, facetDepth: 1 }, out);
+  // Defaults first, so a layer's own values (if it has them) win.
+  if (layer.type === 'shape' || layer.type === 'path') Object.assign(out, { faceted: false, facetTable: 0.5, facetDepth: 1, ...out });
   return out;
 }
 
@@ -205,14 +206,20 @@ export function parseProject(input: unknown): ParseResult {
   if (version > SCHEMA_VERSION) {
     return { ok: false, error: `This project was made with a newer Frame Maker (format ${version}); this one reads up to ${SCHEMA_VERSION}.` };
   }
-  if (version < 1) return { ok: false, error: 'This project file has no valid format version.' };
+  if (version < 1 || !Number.isInteger(version)) return { ok: false, error: 'This project file has no valid format version.' };
   let p: Obj = raw;
-  while (version < SCHEMA_VERSION) {
-    p = MIGRATIONS[version](p);
-    version++;
-  }
   const warnings: string[] = [];
-  const layers = checkLayers(p.layers, warnings, new Set<string>(), 0);
+  let layers: Layer[];
+  // The checks are meant to cope with anything; if one doesn't, the file is refused rather than the editor failing.
+  try {
+    while (version < SCHEMA_VERSION) {
+      p = MIGRATIONS[version](p);
+      version++;
+    }
+    layers = checkLayers(p.layers, warnings, new Set<string>(), 0);
+  } catch {
+    return { ok: false, error: "This project file is damaged and can't be opened." };
+  }
   if (!Array.isArray(p.layers)) warnings.push('The project had no layer list; it starts empty.');
   return {
     ok: true,

@@ -60,6 +60,16 @@ describe('SSRF rules: which addresses may be fetched', () => {
     expect(isBlockedAddress('::ffff:10.0.0.1')).toBe(true);
     expect(isBlockedAddress('1.1.1.1')).toBe(false);
     expect(isBlockedAddress('2606:4700::1111')).toBe(false);
+  });
+
+  it('refuses IPv6 forms that lead to IPv4 or private addresses', () => {
+    // IPv4-compatible (127.0.0.1, 10.0.0.1), local-use NAT64, Teredo, and the unspecified and loopback addresses.
+    for (const a of ['::7f00:1', '::127.0.0.1', '::a00:1', '64:ff9b:1::a00:1', '2001:0:4136:e378::1', '::', '::1']) {
+      expect(isBlockedAddress(a), a).toBe(true);
+    }
+    expect(validateUrl.bind(null, 'https://[::7f00:1]/x.png')).toThrow();
+    // Public IPv6 that merely starts with 2001 is fine.
+    expect(isBlockedAddress('2001:4860:4860::8888')).toBe(false);
     expect(isLocalHostname('nas.lan')).toBe(true);
     expect(isLocalHostname('example.com')).toBe(false);
   });

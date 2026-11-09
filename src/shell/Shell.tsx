@@ -6,13 +6,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { APPS, SHOW_APP_MESSAGE, type AppId } from './apps';
+import { APPS, type AppId } from './apps';
+import { FRAME_MESSAGE, FRAME_RECEIVED_MESSAGE, READY_MESSAGE, SEND_FRAME_MESSAGE, SHOW_APP_MESSAGE } from './messages';
 import { PALETTE_KEY, readPalette, applyPalette } from './palettes';
 
-/** Messages between the shell and the apps (see the apps' shellBridge.ts and sendToTokenMaker.ts). */
-const SEND_FRAME_MESSAGE = 'tokenmaker:send-frame';
-const FRAME_MESSAGE = 'tokenmaker:frame';
-const READY_MESSAGE = 'tokenmaker:token-maker-ready';
+/** A design from Frame Maker on its way to Token Maker: kept until Token Maker says it arrived. */
+interface Pending {
+  id: number;
+  text: string;
+  /** Posted to the Token Maker page that is open now. */
+  posted: boolean;
+}
 
 // Named before the site was renamed from Token Studio; kept so the saved choice still applies.
 const APP_KEY = 'token-studio:app';
@@ -34,7 +38,8 @@ export function Shell() {
   const tokenMaker = useRef<HTMLIFrameElement>(null);
   const frameMaker = useRef<HTMLIFrameElement>(null);
   const tokenMakerReady = useRef(false);
-  const waiting = useRef<string[]>([]);
+  const waiting = useRef<Pending[]>([]);
+  const nextId = useRef(1);
 
   const show = (id: AppId) => {
     setApp(id);
@@ -51,7 +56,11 @@ export function Shell() {
     const deliver = () => {
       const target = tokenMaker.current?.contentWindow;
       if (!tokenMakerReady.current || !target) return;
-      for (const text of waiting.current.splice(0)) target.postMessage({ type: FRAME_MESSAGE, text }, origin);
+      for (const item of waiting.current) {
+        if (item.posted) continue;
+        item.posted = true;
+        target.postMessage({ type: FRAME_MESSAGE, text: item.text, id: item.id }, origin);
+      }
     };
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== origin) return;
@@ -60,10 +69,14 @@ export function Shell() {
       if (data?.type === SHOW_APP_MESSAGE && fromApp && APPS.some((a) => a.id === data.app)) {
         show(data.app as AppId);
       } else if (data?.type === READY_MESSAGE && e.source === tokenMaker.current?.contentWindow) {
+        // Sent again when Token Maker reloads: a design posted to the old page that never arrived is sent again.
         tokenMakerReady.current = true;
+        for (const item of waiting.current) item.posted = false;
         deliver();
+      } else if (data?.type === FRAME_RECEIVED_MESSAGE && e.source === tokenMaker.current?.contentWindow) {
+        waiting.current = waiting.current.filter((item) => item.id !== (data as { id?: unknown }).id);
       } else if (data?.type === SEND_FRAME_MESSAGE && typeof data.text === 'string' && e.source === frameMaker.current?.contentWindow) {
-        waiting.current.push(data.text);
+        waiting.current.push({ id: nextId.current++, text: data.text, posted: false });
         show('token-maker');
         deliver();
       }

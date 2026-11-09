@@ -43,4 +43,16 @@ describe('createHistoryStore', () => {
     for (let i = 1; i <= 10; i++) s.getState().set(i);
     expect(s.getState().past).toEqual([7, 8, 9]);
   });
+
+  it('Redo during a drag records the drag and ends redo, instead of mixing the two up', () => {
+    const s = createHistoryStore(0);
+    s.getState().set(1);
+    s.getState().undo();
+    s.getState().set(5, { transient: true });
+    s.getState().redo();
+    s.getState().commit();
+    expect(s.getState().present).toBe(5);
+    expect(s.getState().past).toEqual([0]);
+    expect(s.getState().future).toEqual([]);
+  });
 });

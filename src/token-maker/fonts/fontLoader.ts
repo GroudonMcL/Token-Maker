@@ -182,11 +182,14 @@ function newFontId(): string {
 
 // ---- Keeping the label's font loaded ----
 
-/** Loads the label's font; resolves when it is ready (the export waits for this). */
-export async function ensureLabelFont(doc: Pick<TokenDocument, 'label'>): Promise<void> {
+/** Loads the label's font; resolves when it is ready (the export waits for this). Never throws: `onFail` hears if it couldn't be. */
+export async function ensureLabelFont(doc: Pick<TokenDocument, 'label'>, onFail?: (what: string) => void): Promise<void> {
   const l = doc.label;
   if (!l) return;
-  await loadFont(l.font, l.bold, l.italic).catch((e) => console.warn(e));
+  await loadFont(l.font, l.bold, l.italic).catch((e) => {
+    console.warn(e);
+    onFail?.("the label's font (a plain font was used)");
+  });
   if (canLoadFonts()) await document.fonts.ready;
 }
 

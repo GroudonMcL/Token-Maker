@@ -2,13 +2,9 @@
 // passes on a design Frame Maker sends; it arrives here as a message from the
 // same site and is opened like a .framemaker.json file.
 
+import { FRAME_MESSAGE, FRAME_RECEIVED_MESSAGE, fromSitePage, inSite, READY_MESSAGE } from '../../shell/messages';
 import { revealSection } from '../layout/reveal';
 import { openDesignText } from './designActions';
-
-/** The message the main page's shell sends with a design. */
-export const FRAME_MESSAGE = 'tokenmaker:frame';
-/** The message telling the shell Token Maker can take designs. */
-export const READY_MESSAGE = 'tokenmaker:token-maker-ready';
 
 let listening = false;
 
@@ -17,10 +13,13 @@ export function listenForSentFrames(): void {
   if (listening) return;
   listening = true;
   window.addEventListener('message', (e: MessageEvent) => {
-    if (e.origin !== window.location.origin) return;
-    const data = e.data as { type?: unknown; text?: unknown } | null;
+    // Only the site's page passes designs on; not another frame or a window this page opened.
+    if (!fromSitePage(e)) return;
+    const data = e.data as { type?: unknown; text?: unknown; id?: unknown } | null;
     if (data?.type !== FRAME_MESSAGE || typeof data.text !== 'string') return;
+    // Tells the page it arrived, so it isn't sent again after a reload.
+    if (typeof data.id === 'number') window.parent.postMessage({ type: FRAME_RECEIVED_MESSAGE, id: data.id }, window.location.origin);
     void openDesignText(data.text).then((ok) => ok && revealSection('frame'));
   });
-  if (window.parent !== window) window.parent.postMessage({ type: READY_MESSAGE }, window.location.origin);
+  if (inSite()) window.parent.postMessage({ type: READY_MESSAGE }, window.location.origin);
 }

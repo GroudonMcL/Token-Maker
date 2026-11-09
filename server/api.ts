@@ -24,11 +24,46 @@ export interface ApiDeps {
   fetchImpl?: typeof fetch;
   checkHost?: SafeFetchOptions['checkHost'];
   timeoutMs?: number;
-  limits?: { image: RateLimiter; page: RateLimiter };
+  limits?: Limits;
 }
 
-/** Per-copy limiters: about one page lookup every 3 s and a few images a second, per visitor. */
-export const defaultLimits = { image: new RateLimiter(90), page: new RateLimiter(20) };
+/** Counts one request for a visitor: 0 when allowed, else the seconds to wait. */
+export interface Limiter {
+  take(key: string): number | Promise<number>;
+}
+export interface Limits {
+  image: Limiter;
+  page: Limiter;
+}
+
+/** Requests a minute per visitor: about one page lookup every 3 s and a few images a second. */
+export const LIMITS_PER_MINUTE = { image: 90, page: 20 } as const;
+
+/**
+ * Per-copy limiters, counted in this copy's memory. They are a fallback: on
+ * Cloudflare each copy of the code counts on its own, so the Worker uses
+ * Cloudflare's rate-limiting binding when it is set up (worker/index.ts).
+ */
+export const defaultLimits: Limits = { image: new RateLimiter(LIMITS_PER_MINUTE.image), page: new RateLimiter(LIMITS_PER_MINUTE.page) };
+
+/**
+ * True when the request comes from a page on this site. Browsers send
+ * Sec-Fetch-Site; older ones send an Origin or Referer to compare instead.
+ * A request with none of them (curl, scripts, other servers) is refused.
+ * Those headers can be faked, so this stops other websites and casual
+ * reuse as a free proxy; the rate limit is what stops a determined script.
+ */
+export function fromOwnSite(request: Request): boolean {
+  const site = request.headers.get('sec-fetch-site');
+  if (site) return site === 'same-origin' || site === 'same-site';
+  const from = request.headers.get('origin') ?? request.headers.get('referer');
+  if (!from) return false;
+  try {
+    return new URL(from).host === new URL(request.url).host;
+  } catch {
+    return false;
+  }
+}
 
 /** Headers on every answer: never cached by shared caches, never run as a page. */
 const BASE_HEADERS = {
@@ -76,13 +111,10 @@ function failure(err: unknown): Response {
 }
 
 /** Shared checks: our own pages only, rate limit, and a `url` parameter. */
-function precheck(request: Request, limiter: RateLimiter): { url: string } | Response {
-  // Browsers say where a request came from; refuse other websites using us as a proxy.
-  if (request.headers.get('sec-fetch-site') === 'cross-site') {
-    return errorResponse(403, 'forbidden', 'This service only works from the Token Maker site.');
-  }
+async function precheck(request: Request, limiter: Limiter): Promise<{ url: string } | Response> {
+  if (!fromOwnSite(request)) return errorResponse(403, 'forbidden', 'This service only works from the Token Maker site.');
   const ip = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local';
-  const wait = limiter.take(ip);
+  const wait = await limiter.take(ip);
   if (wait) return errorResponse(429, 'rate_limited', `Too many requests. Try again in ${wait} seconds.`, wait);
   const url = new URL(request.url).searchParams.get('url')?.trim();
   if (!url) return errorResponse(400, 'bad_url', 'Add ?url= with the web address.');
@@ -91,7 +123,7 @@ function precheck(request: Request, limiter: RateLimiter): { url: string } | Res
 }
 
 export async function handleFetchImage(request: Request, deps: ApiDeps = {}): Promise<Response> {
-  const pre = precheck(request, (deps.limits ?? defaultLimits).image);
+  const pre = await precheck(request, (deps.limits ?? defaultLimits).image);
   if (pre instanceof Response) return pre;
   try {
     const { response } = await safeFetch(pre.url, { accept: IMAGE_ACCEPT, ...fetchOptions(deps) });
@@ -113,7 +145,7 @@ export async function handleFetchImage(request: Request, deps: ApiDeps = {}): Pr
 }
 
 export async function handlePageImages(request: Request, deps: ApiDeps = {}): Promise<Response> {
-  const pre = precheck(request, (deps.limits ?? defaultLimits).page);
+  const pre = await precheck(request, (deps.limits ?? defaultLimits).page);
   if (pre instanceof Response) return pre;
   try {
     validateUrl(pre.url);

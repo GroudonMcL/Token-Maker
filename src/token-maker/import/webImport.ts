@@ -15,7 +15,7 @@ import { useStore } from 'zustand';
 import type { ApiErrorBody, ApiErrorCode, FoundImage, PageImagesResult } from '../../../server/apiTypes.ts';
 import { revealSection } from '../layout/reveal';
 import { toast } from '../ui/toast';
-import { importTo, type ImportTarget } from './importImage';
+import { importTo, newImportTicket, type ImportTarget } from './importImage';
 import { friendlyError, isDataImageUrl, looksLikeImageUrl, nameFromImageUrl, nameFromTitle, normaliseAddress } from './webAddress';
 
 export interface WebImportState {
@@ -96,14 +96,26 @@ async function fetchDirect(url: string): Promise<Blob | null> {
   }
 }
 
-/** Downloads an image (straight from its site, else through the proxy) and makes it the token's art. */
-async function loadImage(url: string, name: string, tryDirect = true): Promise<void> {
+/** One web import: where its picture goes, its place in the queue (importImage.ts), and whether it is still wanted. */
+interface Job {
+  to: ImportTarget;
+  ticket: number;
+  /** False once the user closed the import or started another one. */
+  wanted: () => boolean;
+}
+
+/** Downloads an image (straight from its site, else through the proxy) and puts it where the job says. */
+async function loadImage(url: string, name: string, job: Job, tryDirect = true): Promise<void> {
   const direct = tryDirect ? await fetchDirect(url) : null;
-  if (direct) return importTo(target(), direct, name || nameFromImageUrl(url));
+  const fileName = name || nameFromImageUrl(url);
+  if (direct) {
+    if (job.wanted()) await importTo(job.to, direct, fileName, job.ticket);
+    return;
+  }
   const res = await apiFetch(proxiedImageUrl(url));
   if (!res.ok || isHtml(res)) throw await apiError(res);
   const blob = await res.blob();
-  await importTo(target(), blob, name || nameFromImageUrl(url));
+  if (job.wanted()) await importTo(job.to, blob, fileName, job.ticket);
 }
 
 async function findImages(url: string): Promise<PageImagesResult> {
@@ -127,7 +139,7 @@ export function importFromAddress(text: string, source: ImportSource = 'box', to
   const raw = text.trim();
   webImportStore.setState({ target: to });
   if (isDataImageUrl(raw)) {
-    void importDataUrl(raw, source);
+    void importDataUrl(raw, source, to);
     return true;
   }
   const url = normaliseAddress(raw);
@@ -139,10 +151,11 @@ export function importFromAddress(text: string, source: ImportSource = 'box', to
   return true;
 }
 
-async function importDataUrl(dataUrl: string, source: ImportSource) {
+async function importDataUrl(dataUrl: string, source: ImportSource, to: ImportTarget) {
+  const ticket = newImportTicket();
   try {
     const blob = await (await fetch(dataUrl)).blob();
-    await importTo(target(), blob, '');
+    await importTo(to, blob, '', ticket);
   } catch (err) {
     setError(err, '', source);
   }
@@ -157,18 +170,20 @@ async function run(url: URL, source: ImportSource): Promise<RunResult> {
   webImportStore.setState({ ...IDLE, status: 'loading', address, target: to });
   if (source !== 'box') revealSection('import');
   const current = () => mine === generation;
+  const job: Job = { to, ticket: newImportTicket(), wanted: current };
   try {
     // Any address may be a picture its site lets us read directly, even without the proxy.
     const direct = await fetchDirect(address);
     if (direct) {
-      await importTo(to, direct, nameFromImageUrl(address));
+      if (!current()) return 'overtaken';
+      await importTo(to, direct, nameFromImageUrl(address), job.ticket);
       if (current()) webImportStore.setState({ ...IDLE, target: to });
       return 'loaded';
     }
     if (!current()) return 'overtaken';
     if (looksLikeImageUrl(url)) {
       try {
-        await loadImage(address, '', false);
+        await loadImage(address, '', job, false);
         if (current()) webImportStore.setState({ ...IDLE, target: to });
         return 'loaded';
       } catch (err) {
@@ -179,10 +194,10 @@ async function run(url: URL, source: ImportSource): Promise<RunResult> {
     const found = await findImages(address);
     if (!current()) return 'overtaken';
     if (found.kind === 'image') {
-      await loadImage(found.url, '');
+      await loadImage(found.url, '', job);
       if (current()) webImportStore.setState({ ...IDLE, target: to });
     } else if (found.images.length === 1) {
-      await loadImage(found.images[0]!.url, nameForPicked(found.images[0]!, found.title));
+      await loadImage(found.images[0]!.url, nameForPicked(found.images[0]!, found.title), job);
       if (current()) webImportStore.setState({ ...IDLE, target: to });
     } else {
       webImportStore.setState({ status: 'choosing', address: found.url, images: found.images, pageTitle: found.title, target: to });
@@ -248,7 +263,7 @@ export async function pickWebImage(url: string): Promise<void> {
   const mine = ++generation;
   webImportStore.setState({ status: 'loading', picked: url, error: undefined });
   try {
-    await loadImage(url, nameForPicked(img, state.pageTitle));
+    await loadImage(url, nameForPicked(img, state.pageTitle), { to: state.target, ticket: newImportTicket(), wanted: () => mine === generation });
   } catch (err) {
     if (mine !== generation) return;
     webImportStore.setState({ status: 'choosing', error: messageOf(err) });

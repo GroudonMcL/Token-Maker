@@ -81,8 +81,10 @@ export function LibraryDialog({ onClose }: { onClose: () => void }) {
               const file = e.target.files?.[0];
               e.target.value = '';
               if (!file) return;
-              const text = await readTextFile(file);
-              const result = text === null ? ({ ok: false, error: 'That file is too big to be a Frame Maker library.' } as const) : await importLibrary(text);
+              const failed = { ok: false, error: "That file couldn't be read or added to your library." } as const;
+              const text = await readTextFile(file).catch(() => undefined);
+              if (text === undefined) return showMessage(failed.error, true);
+              const result = text === null ? ({ ok: false, error: 'That file is too big to be a Frame Maker library.' } as const) : await importLibrary(text).catch(() => failed);
               if (!result.ok) return showMessage(result.error, true);
               const what = [result.count ? (result.count === 1 ? 'one item' : `${result.count} items`) : '', result.styles ? (result.styles === 1 ? 'one style' : `${result.styles} styles`) : ''].filter(Boolean).join(' and ');
               showMessage(`Added ${what} to your library.${result.warnings.length ? ` ${result.warnings.join(' ')}` : ''}`);
