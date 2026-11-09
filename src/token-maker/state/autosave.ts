@@ -8,6 +8,7 @@ import type { TokenDocument } from '../document/types';
 import { decodeImage } from '../import/decode';
 import { addAsset, assetStore } from './assets';
 import { docHistory, resetDoc } from './tokenStore';
+import { toast } from '../ui/toast';
 
 const DOC_KEY = 'current-doc';
 const BATCH_KEY = 'batch';
@@ -158,20 +159,52 @@ function readBatch(raw: unknown): BatchState | null {
   return { on: true, items, activeId: typeof r.activeId === 'string' ? r.activeId : null };
 }
 
-/** Starts saving shortly after every change. Returns a function that stops it. */
+export const SAVE_FAILED_MESSAGE = "Your token couldn't be kept in this browser (its storage is full or blocked). Export it, or save it as a preset, to keep it.";
+
+/**
+ * Starts saving shortly after every change, and at once when the page is
+ * hidden or closed, so the last change isn't lost. Saves run one after
+ * another, never two at once. Says so (once, until saving works again) when
+ * the browser won't store the token. Returns a function that stops it.
+ */
 export function startAutosave(delayMs = 400): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let chain: Promise<void> = Promise.resolve();
+  let warned = false;
+  const save = () => {
+    timer = undefined;
+    chain = chain.then(async () => {
+      try {
+        await saveNow(docHistory.getState().present);
+        warned = false;
+      } catch (err) {
+        console.warn('Autosave failed', err);
+        if (!warned) toast(SAVE_FAILED_MESSAGE, 'error', 10_000);
+        warned = true;
+      }
+    });
+  };
   const later = () => {
     clearTimeout(timer);
-    timer = setTimeout(() => void saveNow(docHistory.getState().present).catch((e) => console.warn('Autosave failed', e)), delayMs);
+    timer = setTimeout(save, delayMs);
   };
+  const flush = () => {
+    if (timer === undefined) return;
+    clearTimeout(timer);
+    save();
+  };
+  const onVisibility = () => document.visibilityState === 'hidden' && flush();
   const unsubscribe = docHistory.subscribe((state, prev) => {
     if (state.present !== prev.present) later();
   });
   const unsubscribeBatch = batchStore.subscribe(later);
+  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', onVisibility);
   return () => {
     clearTimeout(timer);
     unsubscribe();
     unsubscribeBatch();
+    window.removeEventListener('pagehide', flush);
+    document.removeEventListener('visibilitychange', onVisibility);
   };
 }

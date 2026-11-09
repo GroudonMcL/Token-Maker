@@ -1,8 +1,16 @@
 import 'fake-indexeddb/auto';
-import { createStore, get, keys } from 'idb-keyval';
+import { createStore, get, keys, set } from 'idb-keyval';
+import { toastStore } from '../ui/toast';
 import { createDocument } from '../document/defaults';
 import { addAsset, clearAssets } from './assets';
-import { clearAutosave, restore, saveNow } from './autosave';
+import { clearAutosave, restore, SAVE_FAILED_MESSAGE, saveNow, startAutosave } from './autosave';
+
+// Storing goes through the real idb-keyval, but a test can make it fail.
+vi.mock('idb-keyval', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('idb-keyval')>();
+  return { ...actual, set: vi.fn(actual.set) };
+});
+const settle = () => new Promise((r) => setTimeout(r, 30));
 import { getDoc, resetDoc, updateDoc } from './tokenStore';
 import { addBatchItem, batchStore, selectItem, setBatchMode } from '../batch/batch';
 
@@ -143,5 +151,29 @@ describe('autosave (DESIGN.md §4.4)', () => {
     // "New" clears everything, the kept token included.
     await clearAutosave();
     expect(await savedKeys()).toEqual([]);
+  });
+
+  it('saves at once when the page is closed, without waiting', async () => {
+    const stop = startAutosave(60_000);
+    updateDoc((d) => ({ ...d, name: 'Closing time' }));
+    window.dispatchEvent(new Event('pagehide'));
+    await settle();
+    stop();
+    expect((await get<{ name: string }>('current-doc', db))?.name).toBe('Closing time');
+  });
+
+  it("says once, not on every change, when the browser won't store the token", async () => {
+    const actualSet = (await vi.importActual<typeof import('idb-keyval')>('idb-keyval')).set;
+    vi.mocked(set).mockImplementation(() => Promise.reject(new Error('QuotaExceededError')));
+    toastStore.setState({ toasts: [] });
+    const stop = startAutosave(60_000);
+    for (const name of ['One', 'Two', 'Three']) {
+      updateDoc((d) => ({ ...d, name }));
+      window.dispatchEvent(new Event('pagehide'));
+      await settle();
+    }
+    stop();
+    vi.mocked(set).mockImplementation(actualSet);
+    expect(toastStore.getState().toasts.map((t) => t.text)).toEqual([SAVE_FAILED_MESSAGE]);
   });
 });
