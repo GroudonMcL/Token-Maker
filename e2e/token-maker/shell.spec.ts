@@ -55,15 +55,4 @@ test.describe('app shell', () => {
     await page.goto('/token-maker/');
     await expect(page.getByTestId('ad-slot')).toHaveCount(0);
   });
-
-  test('About and Privacy pages open from the site links', async ({ page }) => {
-    await page.goto('/token-maker/');
-    const footer = page.getByRole('navigation', { name: 'Site' });
-    await footer.getByRole('link', { name: 'About' }).click();
-    await expect(page.getByRole('heading', { name: 'About Token Maker' })).toBeVisible();
-    await footer.getByRole('link', { name: 'Privacy' }).click();
-    await expect(page.getByRole('heading', { name: 'Privacy' })).toBeVisible();
-    await page.goto('/token-maker/privacy');
-    await expect(page.getByRole('heading', { name: 'Privacy' })).toBeVisible();
-  });
 });

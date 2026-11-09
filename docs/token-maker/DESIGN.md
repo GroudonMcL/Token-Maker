@@ -389,7 +389,7 @@ Desktop and phone are **equally important**.
 
 **Phone (< 768 px):** canvas fills the top part of the screen; a **bottom sheet** with icon tabs for each section (Import, Image, Background, Foreground, Lighting, Effects, Frame, Decor, Label, Export) that can be dragged up/down; big touch targets (≥ 44 px); pinch to zoom, two-finger rotate; brushes work with finger and pen.
 
-*(Phase 10, phone pass: every control is at least 44 px to touch on touch screens — slider and hex number boxes, swatches, segmented buttons, small buttons, list cards and the logo; segmented rows wrap rather than squeeze; the floating toolbar scrolls sideways rather than shrinking its buttons (on narrow phones its zoom readout is hidden); the sheet's grab handle reaches 24 px up over the canvas. When the bottom sheet is half or fully open the token moves up into the space above a half-open sheet instead of hiding behind it. `e2e/phase10.spec.ts` checks every control in every phone tab.)*
+*(Phase 10, phone pass: every control is at least 44 px to touch on touch screens — slider and hex number boxes, swatches, segmented buttons, small buttons, list cards and the logo; segmented rows wrap rather than squeeze; the floating toolbar scrolls sideways rather than shrinking its buttons (on narrow phones its zoom readout is hidden); the sheet's grab handle reaches 24 px up over the canvas. When the bottom sheet is half or fully open the token moves up into the space above a half-open sheet instead of hiding behind it.)*
 
 **Tablet:** desktop layout with a narrower panel, or phone layout in portrait. *(Phase 0: from 768 px wide the desktop layout is used with a 290 px panel; below 768 px the phone layout is used.)*
 
