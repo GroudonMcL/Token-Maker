@@ -152,7 +152,13 @@ export async function forgetAiMask(assetId: string): Promise<void> {
   if (db) await del(assetId, db).catch(() => {});
 }
 
-const checked = new Set<string>();
+/**
+ * Each picture's look for a saved mask, started once. Every call waits for
+ * it: a second call while it was still reading IndexedDB (restoring a token
+ * adds several pictures in a row) used to start the AI as well, downloading
+ * the model again although the mask was saved.
+ */
+const restores = new Map<string, Promise<boolean>>();
 
 /**
  * Makes sure the art has its mask when AI removal is on: from this browser if
@@ -162,14 +168,18 @@ export async function ensureAiMask(doc: Pick<TokenDocument, 'art'>): Promise<voi
   const r = doc.art.removal;
   const id = doc.art.assetId;
   if (!r.enabled || r.method !== 'ai' || !id) return;
-  const s = aiStore.getState();
-  const busy = running.get(id);
-  if (busy) return busy;
-  if (s.masks.has(id) || s.status.get(id)?.state === 'error') return;
-  if (!checked.has(id)) {
-    checked.add(id);
-    if (await restoreMask(id)) return;
-  }
+  const settled = () => {
+    const s = aiStore.getState();
+    return running.get(id) ?? (s.masks.has(id) || s.status.get(id)?.state === 'error');
+  };
+  const before = settled();
+  if (before) return before === true ? undefined : before;
+  let restoring = restores.get(id);
+  if (!restoring) restores.set(id, (restoring = restoreMask(id)));
+  await restoring;
+  // Another call may have restored the mask or started the AI meanwhile.
+  const after = settled();
+  if (after) return after === true ? undefined : after;
   const src = assetStore.getState().assets.get(id);
   if (src) await runAiRemoval(id, src);
 }
