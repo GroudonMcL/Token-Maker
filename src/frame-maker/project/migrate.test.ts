@@ -38,6 +38,20 @@ describe('project files', () => {
     }
   });
 
+  it('refuses a format version that is not a whole number, instead of failing', () => {
+    for (const schemaVersion of [1.5, 4.2, Number.NaN]) {
+      const r = parseProject(JSON.stringify({ ...createProject(), schemaVersion }));
+      expect(r.ok, String(schemaVersion)).toBe(false);
+    }
+  });
+
+  it("keeps a version 4 shape's own facet settings when adding Phase 6's defaults", () => {
+    const shape = { ...shapeLayer(), faceted: true, facetTable: 0.2, facetDepth: 0.4 };
+    const r = parseProject(JSON.stringify({ format: 'frame-studio-project', schemaVersion: 4, name: 'Old', stage: {}, layers: [shape] }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.project.layers[0]).toMatchObject({ faceted: true, facetTable: 0.2, facetDepth: 0.4 });
+  });
+
   it('refuses a project from a newer version instead of guessing', () => {
     const r = parseProject({ ...createProject(), schemaVersion: SCHEMA_VERSION + 1 });
     expect(r.ok).toBe(false);

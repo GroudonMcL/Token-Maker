@@ -95,7 +95,7 @@ export function TopBar({ onNew, onHelp, onMessage, onVary, onTheme, narrow = fal
             const file = e.target.files?.[0];
             e.target.value = '';
             if (!file) return;
-            const result = await readProjectFile(file);
+            const result = await readProjectFile(file).catch(() => ({ ok: false, error: "That file couldn't be read." }) as const);
             if (!result.ok) return onMessage(result.error, true);
             const old = replaceProject(result.project);
             const undoNote = `Undo brings back "${old}"; New lists it too.`;
