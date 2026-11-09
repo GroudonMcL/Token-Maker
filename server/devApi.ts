@@ -10,19 +10,25 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 import { handleFetchImage, handlePageImages, type ApiDeps } from './api.ts';
 import { isBlockedAddress } from './ipRanges.ts';
+import { pinnedFetch } from './pinnedFetch.ts';
 import { SafeFetchError } from './safeFetch.ts';
 
-async function checkHost(hostname: string): Promise<void> {
-  let addresses: { address: string }[];
-  try {
-    addresses = await lookup(hostname, { all: true });
-  } catch {
-    throw new SafeFetchError("The site couldn't be reached.", 'network');
-  }
-  if (!addresses.length || addresses.some((a) => isBlockedAddress(a.address))) {
-    throw new SafeFetchError('That address is on a private network.', 'blocked');
-  }
+/** Refuses a hostname that DNS points at a private address (with a clear message; see pinnedFetch for why that alone isn't enough). */
+export function checkHostWith(resolve: (hostname: string) => Promise<{ address: string }[]>) {
+  return async (hostname: string): Promise<void> => {
+    let addresses: { address: string }[];
+    try {
+      addresses = await resolve(hostname);
+    } catch {
+      throw new SafeFetchError("The site couldn't be reached.", 'network');
+    }
+    if (!addresses.length || addresses.some((a) => isBlockedAddress(a.address))) {
+      throw new SafeFetchError('That address is on a private network.', 'blocked');
+    }
+  };
 }
+
+const checkHost = checkHostWith((hostname) => lookup(hostname, { all: true }));
 
 const ROUTES: Record<string, (request: Request, deps: ApiDeps) => Promise<Response>> = {
   '/api/fetch-image': handleFetchImage,
@@ -38,7 +44,13 @@ async function apiMiddleware(req: IncomingMessage, res: ServerResponse, next: ()
   if (!route || req.method !== 'GET') return next();
   const headers = new Headers();
   for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers.set(k, v);
-  const response = await route(new Request(url, { headers }), { checkHost });
+  // The rate limit counts per visitor: use the address that really connected,
+  // not one the request claims (X-Forwarded-For can say anything).
+  headers.delete('x-forwarded-for');
+  headers.set('cf-connecting-ip', req.socket.remoteAddress ?? 'local');
+  // checkHost gives a clear message for a private address; pinnedFetch makes sure
+  // the address connected to is the one checked (no DNS rebinding).
+  const response = await route(new Request(url, { headers }), { checkHost, fetchImpl: pinnedFetch });
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));
   res.end(Buffer.from(await response.arrayBuffer()));
