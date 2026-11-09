@@ -1,5 +1,7 @@
-import { lazy, Suspense, type ComponentType } from 'react';
+import { lazy, Suspense, useState, type ComponentType } from 'react';
 import type { SectionId } from '../layout/sections';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { SectionFailed } from '../ui/SectionFailed';
 import { ImportSection } from './ImportSection';
 
 // Only the Import section, open at the start, comes with the first load.
@@ -20,13 +22,18 @@ const loaders = {
   export: () => import('./ExportSection').then((m) => ({ default: m.ExportSection })),
 } satisfies Partial<Record<SectionId, () => Promise<{ default: ComponentType }>>>;
 
-function lazySection(load: () => Promise<{ default: ComponentType }>): ComponentType {
-  const Content = lazy(load);
+export function lazySection(load: () => Promise<{ default: ComponentType }>): ComponentType {
+  let Content = lazy(load);
   return function LazySection() {
+    // A failed load stays failed inside lazy(), so a new one is made, and
+    // drawn by starting the section again (a new key).
+    const [attempt, setAttempt] = useState(0);
     return (
-      <Suspense fallback={<p className="control__hint" role="status">Loading…</p>}>
-        <Content />
-      </Suspense>
+      <ErrorBoundary key={attempt} onError={() => (Content = lazy(load))} fallback={() => <SectionFailed retry={() => setAttempt((a) => a + 1)} />}>
+        <Suspense fallback={<p className="control__hint" role="status">Loading…</p>}>
+          <Content />
+        </Suspense>
+      </ErrorBoundary>
     );
   };
 }
