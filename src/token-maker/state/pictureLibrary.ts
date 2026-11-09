@@ -118,12 +118,16 @@ export function documentPictures(doc: Pick<TokenDocument, 'effects' | 'decoratio
   return out;
 }
 
-/** Makes sure every picture the document uses is loaded, a Frame Maker design's photo textures too. */
-export async function ensurePictures(doc: Pick<TokenDocument, 'effects' | 'decorations' | 'frame'>): Promise<void> {
+/** Makes sure every picture the document uses is loaded, a Frame Maker design's photo textures too. Never throws: `onFail` hears what couldn't be. */
+export async function ensurePictures(doc: Pick<TokenDocument, 'effects' | 'decorations' | 'frame'>, onFail?: (what: string) => void): Promise<void> {
   const design = doc.frame.kind === 'design' ? doc.frame.design : null;
+  const failed = (what: string) => (e: unknown) => {
+    console.warn(e);
+    onFail?.(what);
+  };
   await Promise.all([
-    ...documentPictures(doc).map((src) => loadPicture(src).catch((e) => console.warn(e))),
-    design ? loadFrameDesignPictures(design.project).catch((e) => console.warn(e)) : undefined,
+    ...documentPictures(doc).map((src) => loadPicture(src).catch(failed('a picture effect or decoration'))),
+    design ? loadFrameDesignPictures(design.project).catch(failed("the frame design's photo textures")) : undefined,
   ]);
 }
 

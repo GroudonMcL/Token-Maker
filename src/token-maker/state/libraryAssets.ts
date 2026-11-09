@@ -27,10 +27,14 @@ export function loadLibraryImage(id: string): Promise<void> {
   return p;
 }
 
-/** Makes sure every built-in picture the document uses is loaded. */
-export async function ensureLibraryImages(doc: TokenDocument): Promise<void> {
+/** Makes sure every built-in picture the document uses is loaded. Never throws: `onFail` hears what couldn't be. */
+export async function ensureLibraryImages(doc: TokenDocument, onFail?: (what: string) => void): Promise<void> {
   const img = doc.background.image;
-  if (img?.type === 'library') await loadLibraryImage(img.id).catch((e) => console.warn(e));
+  if (img?.type === 'library')
+    await loadLibraryImage(img.id).catch((e) => {
+      console.warn(e);
+      onFail?.('the background picture');
+    });
 }
 
 /** Keeps built-in pictures loaded as the document changes (undo, autosave restore, New). Returns a stop function. */
