@@ -64,6 +64,8 @@ export function createHistoryStore<T>(initial: T, limit = 200): StoreApi<History
     },
 
     redo: () => {
+      // A drag under way is a new change: it ends redo, like any other change.
+      get().commit();
       const { present, past, future } = get();
       if (future.length === 0) return;
       set({ present: future[0] as T, past: [...past, present], future: future.slice(1) });

@@ -13,8 +13,10 @@ import {
   moveLayerTo,
   redo,
   renameLayer,
+  renameProject,
   select,
   selectRange,
+  toggleCollapsed,
   toggleLocked,
   toggleSelect,
   toggleVisible,
@@ -22,6 +24,7 @@ import {
   undo,
   ungroup,
   updateLayer,
+  updateStage,
 } from './projectStore';
 
 const layers = () => history.getState().present.layers;
@@ -179,5 +182,20 @@ describe('groups in the store', () => {
     expect(ui.getState().pathEdit).toEqual({ drawing: true, point: null });
     select(null);
     expect(ui.getState().pathEdit).toBeNull();
+  });
+
+  it('edits that change nothing, and folding a group, are not undo steps', () => {
+    loadProject(createProject([named('A'), { ...groupLayer([named('B')]), name: 'G' }]));
+    const a = layers()[0]!;
+    const g = layers()[1]!;
+    updateLayer(a.id, { name: 'A', visible: a.visible });
+    updateStage({ shape: history.getState().present.stage.shape });
+    renameProject(history.getState().present.name + '  ');
+    toggleCollapsed(g.id);
+    expect(findLayer(layers(), g.id)).toMatchObject({ collapsed: true });
+    expect(history.getState().past).toEqual([]);
+    // A real change still is one.
+    renameLayer(a.id, 'Renamed');
+    expect(history.getState().past).toHaveLength(1);
   });
 });

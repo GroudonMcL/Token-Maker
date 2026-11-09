@@ -22,7 +22,8 @@ export function useCanUndo() {
 }
 
 export function useCanRedo() {
-  return useStore(docHistory, (s) => s.future.length > 0);
+  // Not during a drag: the drag will end redo when it's recorded.
+  return useStore(docHistory, (s) => s.future.length > 0 && s.pendingBase === null);
 }
 
 export function getDoc(): TokenDocument {
