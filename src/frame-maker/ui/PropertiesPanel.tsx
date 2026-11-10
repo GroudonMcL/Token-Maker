@@ -66,7 +66,7 @@ import { DETAIL_NAMES, ELEMENT_NAMES, LINE_ELEMENTS } from '../render/elements';
 import { PICTURES, pictureById } from '../project/pictures';
 import { LIBRARY_PICTURE_GROUPS, LIBRARY_PICTURES, TEXTURE_PICTURES, libraryPictureById, libraryPictureThumbUrl, type LibraryPictureGroup } from '../project/libraryPictures';
 import { switchPlace, toggleSeparate, toggleSmooth } from '../render/hitTest';
-import { commit, convertToLayers, finishDrawing, setPathEdit, setPathPoints, shapeToPath, turnGroup, ungroup, updateLayer, useProject, useUi } from '../state/projectStore';
+import { commit, convertToLayers, finishDrawing, setPathEdit, setPathPoints, shapeToPath, turnGroup, ungroup, updateLayer, useProject, useProjectPart, useUi } from '../state/projectStore';
 import { ColorField, ColorList, Fold, OptionalColor, PatternField, PercentList, Select, Slider, TextField, Toggle } from './controls';
 import { DataView } from './DataView';
 import { EffectStack, EffectsSection } from './EffectsPanel';
@@ -217,15 +217,28 @@ function setterFor<L extends Layer>(layer: L): Set<L> {
   return (patch, transient) => updateLayer(layer.id, patch as Partial<Layer>, { transient });
 }
 
-/** A new layer of the same kind: what the reset buttons put settings back to. */
+const NO_DEFAULTS: Record<string, unknown> = {};
+const layerDefaults = new Map<string, Record<string, unknown>>();
+
+/**
+ * A new layer of the same kind: what the reset buttons put settings back to.
+ * Made once per kind and kept: every slider asks for it each time the panel
+ * is drawn, which is on every step of a slider being dragged. Only read from.
+ */
 function defaultsFor(layer: Layer): Record<string, unknown> {
-  if (layer.type === 'texture') return textureLayer(layer.kind) as unknown as Record<string, unknown>;
-  if (layer.type === 'unsupported') return {};
-  return NEW_LAYER[layer.type]() as unknown as Record<string, unknown>;
+  if (layer.type === 'unsupported') return NO_DEFAULTS;
+  const kind = layer.type === 'texture' ? `texture:${layer.kind}` : layer.type;
+  let made = layerDefaults.get(kind);
+  if (!made) {
+    made = (layer.type === 'texture' ? textureLayer(layer.kind) : NEW_LAYER[layer.type]()) as unknown as Record<string, unknown>;
+    layerDefaults.set(kind, made);
+  }
+  return made;
 }
 
 /** A slider bound to one numeric setting of a layer, with a button that puts it back as a new layer has it. */
 function num<L extends Layer>(layer: L, set: Set<L>, key: keyof L & string, label: string, min: number, max: number, extra: Partial<Parameters<typeof Slider>[0]> = {}) {
+  const standard = defaultsFor(layer)[key];
   return (
     <Slider
       key={key}
@@ -234,7 +247,7 @@ function num<L extends Layer>(layer: L, set: Set<L>, key: keyof L & string, labe
       min={min}
       max={max}
       disabled={layer.locked}
-      defaultValue={typeof defaultsFor(layer)[key] === 'number' ? (defaultsFor(layer)[key] as number) : undefined}
+      defaultValue={typeof standard === 'number' ? standard : undefined}
       onChange={(v, transient) => set({ [key]: v } as Partial<L>, transient)}
       onCommit={commit}
       {...extra}
@@ -315,7 +328,7 @@ function BlendingControls({ layer }: { layer: Layer }) {
 }
 
 function LayerControls({ layer, light }: { layer: Layer; light: number }) {
-  const { layers } = useProject();
+  const layers = useProjectPart((p) => p.layers);
   const disabled = layer.locked;
   switch (layer.type) {
     case 'legacyFrame': {
@@ -1192,7 +1205,7 @@ function SettingControls({ layer }: { layer: RepeatLayer }) {
 }
 
 function TextControls({ layer }: { layer: TextLayer }) {
-  const { layers } = useProject();
+  const layers = useProjectPart((p) => p.layers);
   const disabled = layer.locked;
   const set = setterFor(layer);
   return (
@@ -1290,7 +1303,7 @@ function SeedRow<L extends Layer & { seed: number }>({ layer, hint }: { layer: L
 
 /** Follow (the band or a path) and the position across the band, for generators that run along a track. */
 function TrackControls({ layer }: { layer: GrowthLayer | KnotworkLayer | GearsLayer | ChainLayer }) {
-  const { layers } = useProject();
+  const layers = useProjectPart((p) => p.layers);
   const set = setterFor(layer);
   const target = layer.follow ? findLayer(layers, layer.follow) : undefined;
   const onPath = !!target && (target.type === 'line' || (target.type === 'path' && target.points.length > 1));

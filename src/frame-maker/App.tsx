@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties } from 'react';
 import { loadAutosave, startAutosave } from './state/autosave';
 import { findLayer, isLocked } from './project/tree';
 import { deleteLayer, duplicateLayer, groupSelected, loadProject, redo, ui, undo, ungroup, history } from './state/projectStore';
 import { copyPicked, cutPicked, pasteLayers } from './state/clipboard';
 import { clearMessage, showMessage, useMessage } from './state/messages';
-import { useProject } from './state/projectStore';
+import { useProjectPart } from './state/projectStore';
 import { projectFromFrame } from './project/defaults';
 import { LayersPanel } from './ui/LayersPanel';
 import { LightingPanel } from './ui/LightingPanel';
@@ -14,7 +14,6 @@ import { LibraryDialog } from './ui/LibraryDialog';
 import { PropertiesPanel } from './ui/PropertiesPanel';
 import { pathEditKey } from './ui/pathKeys';
 import { Stage } from './ui/Stage';
-import { TemplateDialog } from './ui/TemplateDialog';
 import { TextureDialog } from './ui/TextureDialog';
 import { TopBar } from './ui/TopBar';
 import { WelcomeCard } from './ui/WelcomeCard';
@@ -37,6 +36,33 @@ function useMediaQuery(query: string): boolean {
   );
 }
 
+type TemplateDialogProps = { mode: 'new' | 'addFrame'; onClose: () => void };
+
+/**
+ * The New / Add frame gallery. It lists every Token Maker frame, several
+ * hundred kB of designs, so its code is fetched when it is first opened
+ * rather than with the editor.
+ */
+function TemplateDialog({ mode, onClose }: TemplateDialogProps) {
+  const [Dialog, setDialog] = useState<ComponentType<TemplateDialogProps> | null>(null);
+  useEffect(() => {
+    let live = true;
+    import('./ui/TemplateDialog').then(
+      (m) => live && setDialog(() => m.TemplateDialog),
+      () => {
+        if (!live) return;
+        showMessage("The frames couldn't be loaded. Check your connection and try again.", true);
+        onClose();
+      },
+    );
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return Dialog ? <Dialog mode={mode} onClose={onClose} /> : <div className="toast" role="status">Loading frames…</div>;
+}
+
 export function App() {
   const [ready, setReady] = useState(false);
   const [dialog, setDialog] = useState<'new' | 'addFrame' | 'texture' | 'library' | 'vary' | 'theme' | null>(null);
@@ -44,7 +70,8 @@ export function App() {
   const [sheet, setSheet] = useState<'layers' | 'properties'>('layers');
   const narrow = useMediaQuery(NARROW_QUERY);
   const message = useMessage();
-  const stage = useProject().stage;
+  // Only the stage: the whole editor would otherwise be drawn again on every step of every slider.
+  const stage = useProjectPart((p) => p.stage);
   // The side panels' widths, dragged with the handles on their inner edges (null: the layout's own).
   const [layersWidth, setLayersWidth] = useState<number | null>(() => readPanelWidth('layers'));
   const [propertiesWidth, setPropertiesWidth] = useState<number | null>(() => readPanelWidth('properties'));

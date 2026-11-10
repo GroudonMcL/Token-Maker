@@ -45,7 +45,7 @@ import {
   toggleSelect,
   toggleVisible,
   ungroup,
-  useProject,
+  useProjectPart,
   useUi,
 } from '../state/projectStore';
 import { copyToClipboard, pasteFromClipboard } from '../state/clipboard';
@@ -82,7 +82,7 @@ function rowsOf(layers: Layer[], depth = 0): Row[] {
 }
 
 export function LayersPanel({ onAddFrame, onAddTexture, onOpenLibrary }: { onAddFrame: () => void; onAddTexture: () => void; onOpenLibrary?: () => void }) {
-  const project = useProject();
+  const layers = useProjectPart((p) => p.layers);
   const selectedId = useUi((s) => s.selectedId);
   const selectedIds = useUi((s) => s.selectedIds);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -91,9 +91,9 @@ export function LayersPanel({ onAddFrame, onAddTexture, onOpenLibrary }: { onAdd
   const menuButton = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
-  const found = selectedId ? locate(project.layers, selectedId) : null;
+  const found = selectedId ? locate(layers, selectedId) : null;
   const selected = found?.layer;
-  const rows = rowsOf(project.layers);
+  const rows = rowsOf(layers);
 
   const onDrop = (e: DragEvent, target: Layer) => {
     e.preventDefault();
@@ -109,7 +109,7 @@ export function LayersPanel({ onAddFrame, onAddTexture, onOpenLibrary }: { onAdd
   // When the focused row goes (deleted or cut), the focus moves to the row picked in its place rather than being lost.
   useEffect(() => {
     if (selectedId && document.activeElement === document.body) list.current?.querySelector<HTMLElement>(`[data-id="${selectedId}"]`)?.focus();
-  }, [selectedId, project]);
+  }, [selectedId, layers]);
 
   // An opened menu takes the focus to its first item; closing it gives it back.
   useEffect(() => {
@@ -132,7 +132,7 @@ export function LayersPanel({ onAddFrame, onAddTexture, onOpenLibrary }: { onAdd
     return true;
   };
 
-  const siblings = found ? (found.parent ? found.parent.children : project.layers) : [];
+  const siblings = found ? (found.parent ? found.parent.children : layers) : [];
   const atTop = !!found && found.index === siblings.length - 1 && !found.parent;
   const atBottom = !!found && found.index === 0 && !found.parent;
 

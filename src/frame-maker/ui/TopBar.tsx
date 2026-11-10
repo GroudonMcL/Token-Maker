@@ -23,7 +23,7 @@ import {
 import { inSite, sendToTokenMaker } from '../io/sendToTokenMaker';
 import { AppSwitch } from '../../shell/AppSwitch';
 import { PalettePicker } from '../../shell/PalettePicker';
-import { redo, renameProject, replaceProject, setMode, undo, useCanRedo, useCanUndo, useProject, useUi, history } from '../state/projectStore';
+import { redo, renameProject, replaceProject, setMode, undo, useCanRedo, useCanUndo, useProjectPart, useUi, history } from '../state/projectStore';
 import { Field, Select, Segmented, Toggle } from './controls';
 import { helpFor, hintId } from './help';
 import { stageArt } from './stageArt';
@@ -39,7 +39,7 @@ const EXPORT_KINDS: { value: ExportKind; label: string }[] = [
 ];
 
 export function TopBar({ onNew, onHelp, onMessage, onVary, onTheme, narrow = false }: { onNew: () => void; onHelp: () => void; onMessage: (text: string, error?: boolean) => void; onVary?: () => void; onTheme?: () => void; narrow?: boolean }) {
-  const project = useProject();
+  const name = useProjectPart((p) => p.name);
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
   const mode = useUi((s) => s.mode);
@@ -77,7 +77,7 @@ export function TopBar({ onNew, onHelp, onMessage, onVary, onTheme, narrow = fal
           </div>
         }
       />
-      <input className="project-name" aria-label="Project name" key={project.name} defaultValue={project.name} onBlur={(e) => e.target.value !== project.name && renameProject(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
+      <input className="project-name" aria-label="Project name" key={name} defaultValue={name} onBlur={(e) => e.target.value !== name && renameProject(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
       <nav className="actions" aria-label="Project">
         <button type="button" className="btn" onClick={onNew} title="Start a new design from a template or a blank page">
           <FilePlus2 size={18} aria-hidden="true" /> <span className="btn-label">New</span>

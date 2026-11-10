@@ -41,6 +41,12 @@ interface UiState {
 export const ui = createStore<UiState>(() => ({ selectedId: null, selectedIds: [], mode: 'basic', pathEdit: null, copiedEffects: null }));
 
 export const useProject = () => useStore(history, (s) => s.present);
+/**
+ * One part of the project (its layers, its stage, its name). A component that
+ * reads only that part is drawn again only when that part changes, not on
+ * every step of a slider that changes something else.
+ */
+export const useProjectPart = <T>(pick: (project: FrameProject) => T) => useStore(history, (s) => pick(s.present));
 export const useCanUndo = () => useStore(history, (s) => s.past.length > 0 || s.pendingBase !== null);
 // Not during a drag: the drag will end redo when it's recorded.
 export const useCanRedo = () => useStore(history, (s) => s.future.length > 0 && s.pendingBase === null);

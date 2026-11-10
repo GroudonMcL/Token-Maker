@@ -6,7 +6,7 @@
 // Works with a finger too (handles are easier to catch), and from the
 // keyboard: with the canvas focused, the arrow keys move the selected layer.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SHAPES } from '../engine/legacy/catalog';
 import type { FrameGeometry } from '../engine/legacy/frameKit';
 import type { Point } from '../engine/legacy/shapes';
@@ -213,6 +213,18 @@ const ZOOMS = [1, 1.5, 2, 3, 4, 6, 8];
 const MAX_PX = 4096;
 const VIEW_NAMES: Record<RenderView, string> = { picture: 'The picture', height: 'Height map', normals: 'Normal map' };
 
+/** The canvas the quick, screen-sized preview is drawn on before it is sharpened: one, kept, rather than a new one for every draw. */
+let quickCanvas: HTMLCanvasElement | null = null;
+
+/** Where the pointer was, and the keys held, at the newest move of a drag. */
+interface Move {
+  pt: Point;
+  clientX: number;
+  clientY: number;
+  shiftKey: boolean;
+  altKey: boolean;
+}
+
 export function Stage() {
   const project = useProject();
   const selectedId = useUi((s) => s.selectedId);
@@ -252,33 +264,50 @@ export function Stage() {
   const [pictures, setPictures] = useState(0);
   useEffect(() => onPictureLoaded(() => setPictures((n) => n + 1)), []);
 
+  // The size the preview was last drawn at: changing a canvas's size empties it.
+  const drawnPx = useRef(0);
   useEffect(() => {
     const el = canvas.current;
     const ctx = el?.getContext('2d');
     if (!el || !ctx) return;
     const art = project.stage.showArt ? stageArt() : null;
+    let sharpen = 0;
     const full = () => {
       renderProject(ctx, project, px, { art, view });
       // How many layers this render had to draw (the rest came from the cache): read by the end-to-end tests.
       el.dataset.drawn = String(renderStats.drawn);
       el.dataset.reused = String(renderStats.reused);
     };
-    // Effects work on every pixel, so on a sharp (high-density) screen a design with
-    // effects is drawn at the screen's own size first, then sharpened once editing pauses.
-    if (px <= side || !flatten(project.layers).some((l) => l.visible && l.effects?.some((e) => e.on))) return full();
-    const quick = document.createElement('canvas');
-    quick.width = quick.height = side;
-    const qctx = quick.getContext('2d');
-    if (!qctx) return full();
-    renderProject(qctx, project, side, { art, view });
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, px, px);
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(quick, 0, 0, px, px);
-    ctx.restore();
-    const id = setTimeout(full, 300);
-    return () => clearTimeout(id);
+    const draw = () => {
+      drawnPx.current = px;
+      // Effects work on every pixel, so on a sharp (high-density) screen a design with
+      // effects is drawn at the screen's own size first, then sharpened once editing pauses.
+      if (px <= side || !flatten(project.layers).some((l) => l.visible && l.effects?.some((e) => e.on))) return full();
+      const quick = (quickCanvas ??= document.createElement('canvas'));
+      if (quick.width !== side || quick.height !== side) quick.width = quick.height = side;
+      const qctx = quick.getContext('2d');
+      if (!qctx) return full();
+      renderProject(qctx, project, side, { art, view });
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, px, px);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(quick, 0, 0, px, px);
+      ctx.restore();
+      sharpen = window.setTimeout(full, 300);
+    };
+    // A canvas whose size just changed is empty, so it is drawn at once. Otherwise the
+    // preview is drawn at most once per animation frame, however many changes arrive
+    // in it (a drag or a slider can send several): only the newest is drawn.
+    if (drawnPx.current !== px) {
+      draw();
+      return () => clearTimeout(sharpen);
+    }
+    const frame = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(sharpen);
+    };
   }, [project, px, side, fonts, view, pictures]);
 
   useEffect(() => {
@@ -401,10 +430,17 @@ export function Stage() {
     return () => el.removeEventListener('wheel', onWheel);
   });
 
-  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  // A drag changes the design at most once per animation frame: pointer moves can
+  // arrive faster than the screen is drawn, and each change draws the design again.
+  const move = useRef<Move | null>(null);
+  const moveFrame = useRef(0);
+  const applyMove = () => {
+    moveFrame.current = 0;
     const d = drag.current;
-    if (!d) return;
-    const pt = toPoint(e);
+    const e = move.current;
+    move.current = null;
+    if (!d || !e) return;
+    const pt = e.pt;
     let patch: Partial<Layer> | null = null;
     if (d.kind === 'pan') {
       setPan({ x: d.pan.x + e.clientX - d.from.x, y: d.pan.y + e.clientY - d.from.y });
@@ -430,10 +466,28 @@ export function Stage() {
     }
     if (patch) updateLayer(d.layer.id, patch, { transient: true });
   };
+  // The frame's callback uses the newest design and view, not the ones from when it was asked for.
+  const latestMove = useRef(applyMove);
+  useLayoutEffect(() => {
+    latestMove.current = applyMove;
+  });
+  useEffect(() => () => cancelAnimationFrame(moveFrame.current), []);
+
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drag.current) return;
+    move.current = { pt: toPoint(e), clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey, altKey: e.altKey };
+    moveFrame.current ||= requestAnimationFrame(() => latestMove.current());
+  };
 
   const endDrag = () => {
+    // The last move, if it is still waiting for its frame, is part of the drag.
+    if (moveFrame.current) {
+      cancelAnimationFrame(moveFrame.current);
+      applyMove();
+    }
     if (drag.current && drag.current.kind !== 'pan') commit();
     drag.current = null;
+    move.current = null;
   };
 
   /** Arrow keys move the selected layer a little (Shift: more), one undo step each. */
