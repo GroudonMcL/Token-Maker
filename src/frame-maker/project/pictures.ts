@@ -1,7 +1,8 @@
 // The photo textures a "picture" paint can use: seamless photographs from
 // Poly Haven (polyhaven.com) and ambientCG (ambientcg.com), both CC0
 // (public domain, no credit needed; credited anyway in Help → Artwork
-// credits and ASSETS-CREDITS.md). Their pixels are in render/pictureData.ts.
+// credits and ASSETS-CREDITS.md). Their pixels are 512 px JPEGs in
+// public/textures/, fetched when a design first uses one (render/pictures.ts).
 
 export interface PictureInfo {
   id: string;
@@ -51,3 +52,5 @@ export const PICTURES = [
 export type PictureId = (typeof PICTURES)[number]['id'];
 export const PICTURE_IDS = PICTURES.map((p) => p.id) as readonly PictureId[];
 export const pictureById = (id: string) => (PICTURES as readonly PictureInfo[]).find((p) => p.id === id);
+/** Where the browser finds it. */
+export const pictureUrl = (id: string) => `/textures/${id}.jpg`;

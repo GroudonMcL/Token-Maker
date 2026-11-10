@@ -6,6 +6,7 @@
 // (loadPictures), so they never get the stand-in colour.
 
 import { isLibraryPicture, libraryPictureUrl } from '../project/libraryPictures';
+import { pictureById, pictureUrl } from '../project/pictures';
 import type { Paint } from '../project/types';
 
 export interface PictureImage {
@@ -13,10 +14,10 @@ export interface PictureImage {
   height: number;
 }
 
-/** Decodes a photo texture's data URL, or fetches and decodes a library picture's address (`/pictures/….webp`). */
+/** Fetches and decodes a picture's address on the site: a photo texture's (`/textures/….jpg`) or a library picture's (`/pictures/….webp`). */
 type Decode = (url: string) => Promise<PictureImage>;
 
-/** The browser's decoder; tests and scripts set @napi-rs/canvas's (setPictureDecoder), reading library pictures from public/. */
+/** The browser's decoder; tests and scripts set @napi-rs/canvas's (setPictureDecoder), reading the files from public/. */
 let decode: Decode = async (url) => {
   const img = new Image();
   img.src = url;
@@ -45,10 +46,10 @@ export function onPictureLoaded(fn: () => void): () => void {
 function load(id: string): Promise<void> {
   let p = loading.get(id);
   if (!p) {
-    // Library pictures (version 13) are the site's own files; photo textures are bundled data.
-    const address = isLibraryPicture(id) ? Promise.resolve(libraryPictureUrl(id)) : import('./pictureData').then(({ PICTURE_DATA }) => PICTURE_DATA[id]);
-    p = address
-      .then(async (url) => {
+    // Both kinds are the site's own files, so the browser fetches each once and caches it, for both apps.
+    const url = isLibraryPicture(id) ? libraryPictureUrl(id) : pictureById(id) ? pictureUrl(id) : undefined;
+    p = Promise.resolve()
+      .then(async () => {
         if (!url) return;
         loaded.set(id, await decode(url));
         epoch++;
