@@ -142,17 +142,6 @@ export const THEMED_TEMPLATES: ThemedTemplate[] = [
     ],
   },
   {
-    id: 'autumn-leaves',
-    name: 'Autumn leaves',
-    description: 'A birch-bark hoop with a scatter of tumbling red, orange and gold leaves.',
-    make: () => [
-      { ...bandFillLayer(), name: 'Birch bark', paint: { kind: 'lit', color: '#d8d0c0', light: 0.6, dark: 0.7, pressed: false, highlight: null }, effects: [bevel({ size: 0.3, gloss: 0.1, surface: 'brushed', surfaceDepth: 0.4 })] },
-      { ...textureLayer('wear'), name: 'Bark marks', color: '#3a3028', strength: 1.4, clip: 'band' },
-      { ...growthLayer('vine'), name: 'Twig', count: 1, thickness: 0.04, waveLength: 2.4, amplitude: 0.2, branching: 0.25, extra: 'none', color: '#4a3020', effects: [soft(0.5)] },
-      { ...repeatLayer(), name: 'Leaves', element: 'leaf', mode: 'spacing', spacing: 0.32, snapToCorners: false, at: 0.5, size: 0.62, stretch: 0.6, fill: '#c83a14', altColors: ['#e88a1a', '#d8b030', '#a02810'], raised: true, jitterSize: 0.45, jitterAngle: 120, skipChance: 0.25, alternateSides: 0.18, seed: 21 },
-    ],
-  },
-  {
     id: 'celestial-halo',
     name: 'Celestial halo',
     description: 'White gold with a radiant sunburst, faceted stars and a soft heavenly bloom.',

@@ -5,7 +5,6 @@ import { FRAME_PRESETS, framePresetById } from '../../render/catalog';
 import { frameAccent } from '../../render/frames';
 import { pictureById, type PictureId } from './pictures';
 import { DEFAULT_LIBRARY_PICTURE } from './libraryPictures';
-import { bevel, glow, material, shadow, styleEffects } from './styles';
 
 export { EFFECT_NAMES, NEW_EFFECT } from './effectDefaults';
 import {
@@ -407,20 +406,6 @@ export const LAYERED_TEMPLATES: LayeredTemplate[] = [
     ],
   },
   {
-    id: 'battle-steel',
-    name: 'Battle-worn steel',
-    description: 'Hammered steel with dents and scratches, a pressed-in step and a ring of rivets.',
-    make: () => [
-      { ...bandFillLayer(), name: 'Steel band', paint: { kind: 'lit', color: '#8a8f99', light: 0.75, dark: 0.8, pressed: false, highlight: null } },
-      { ...bandFillLayer(), name: 'Pressed-in step', from: 0.65, to: 1, paint: { kind: 'lit', color: '#8a8f99', light: 0.75, dark: 0.8, pressed: true, highlight: null } },
-      { ...textureLayer('hammered'), name: 'Hammered', color: '#8a8f99', amount: 0.6, seed: 0x2e3d },
-      { ...textureLayer('wear'), name: 'Battle wear', color: '#8a8f99' },
-      { ...lineLayer(), name: 'Outer rim', at: 0.02, width: 0.04, paint: { kind: 'solid', color: '#e8ecf0' } },
-      { ...lineLayer(), name: 'Inner rim', at: 0.99, width: 0.03, paint: { kind: 'solid', color: '#14161a' } },
-      { ...repeatLayer(), name: 'Rivets', at: 0.33, size: 0.3, fill: '#9aa0aa' },
-    ],
-  },
-  {
     id: 'night-sky',
     name: 'Night sky',
     description: 'Colours round the ring from dusk to midnight, with stars, haze and a glowing line.',
@@ -446,17 +431,6 @@ export const LAYERED_TEMPLATES: LayeredTemplate[] = [
     ],
   },
   // Phase 6: designs made with effects (DESIGN.md §6.4).
-  {
-    id: 'hellforged-iron',
-    name: 'Hellforged iron',
-    description: 'Blackened, chipped iron split by burning cracks, with iron spikes round the edge.',
-    make: () => [
-      { ...repeatLayer(), name: 'Spikes', element: 'spike', count: 16, at: -0.12, size: 0.5, stretch: 0.7, fill: '#7a7a7a', raised: false, snapToCorners: true, effects: [bevel({ profile: 'chisel', size: 0.3, gloss: 0.3 }), material('iron'), shadow({ distance: 0.04, blur: 0.05 })] },
-      { ...bandFillLayer(), name: 'Iron band', paint: { kind: 'solid', color: '#7a7a7a' }, effects: styleEffects('blackened-iron') },
-      { ...textureLayer('cracks'), name: 'Burning cracks', color: '#ff6a1a', amount: 0.6, clip: 'band', seed: 0x4e11, effects: [glow({ inner: true, color: '#ffe08a', opacity: 0.6, size: 0.03 }), glow({ color: '#ff3a0a', opacity: 0.8, size: 0.12 })] },
-      { ...lineLayer(), name: 'Inner rim', at: 0.96, width: 0.07, paint: { kind: 'solid', color: '#7a7a7a' }, effects: [bevel({ size: 0.5, gloss: 0.4 }), material('iron')] },
-    ],
-  },
   // Phase 7: ornaments anywhere.
   // Phase 9: a shared height map.
   // Phase 8: made only from generators and styles.

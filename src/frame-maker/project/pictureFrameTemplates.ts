@@ -6,7 +6,7 @@
 // the "Token Maker's built-in frames" section of New, ready to change.
 
 import { bandFillLayer, growthLayer, lineLayer, repeatLayer, textureLayer } from './defaults';
-import { bevel, glow, material, shadow, wear } from './styles';
+import { bevel, glow, material, shadow } from './styles';
 import type { ThemedTemplate } from './themedTemplates';
 import type { Effect, Paint } from './types';
 
@@ -35,17 +35,6 @@ export const PICTURE_FRAME_TEMPLATES: ThemedTemplate[] = [
       { ...repeatLayer(), name: 'Outer leaves', element: 'leaf', count: 24, snapToCorners: false, at: 0.26, size: 1.05, stretch: 0.42, rotation: -68, fill: '#d8a838', fillPaint: photo('gold', 0.6), raised: false, effects: [bevel({ size: 0.5, gloss: 0.8 }), material('gold', 0.6), soft(0.55)] },
       { ...repeatLayer(), name: 'Inner leaves', element: 'leaf', count: 24, snapToCorners: false, at: 0.74, offset: 0.5, size: 1.05, stretch: 0.42, rotation: 68, fill: '#d8a838', fillPaint: photo('gold', 0.6), raised: false, effects: [bevel({ size: 0.5, gloss: 0.8 }), material('gold', 0.6), soft(0.55)] },
       { ...lineLayer(), name: 'Gold band', at: 0.5, width: 0.3, paint: photo('gold', 1.2), effects: [bevel({ size: 0.6, depth: 1.4, gloss: 0.9 }), material('gold', 0.5), soft(0.6)] },
-    ],
-  },
-  {
-    id: 'iron-rivets',
-    name: 'Iron rivets',
-    description: 'A wide band of scuffed iron plate with a sunken inner rim and a ring of round rivets.',
-    stage: { thickness: 0.2, outerSpacing: 0.02 },
-    make: () => [
-      { ...bandFillLayer(), name: 'Iron plate', paint: photo('hammered-metal', 1.2, { tint: '#4e545c' }), effects: [wear({ chips: 0.03, polish: 0.3, grime: 0.4, scale: 0.12, scratches: 0.1 }), bevel({ profile: 'chisel', size: 0.18, gloss: 0.6 }), material('iron', 0.75), soft(0.7)] },
-      { ...lineLayer(), name: 'Inner rim', at: 0.86, width: 0.07, paint: solid('#20242a'), opacity: 0.8, blend: 'multiply', effects: [bevel({ direction: 'sunken', size: 0.5, gloss: 0.5 })] },
-      { ...repeatLayer(), name: 'Rivets', element: 'bead', count: 16, snapToCorners: false, at: 0.42, size: 0.3, fill: '#a8b0ba', raised: true, effects: [material('steel', 0.8), shadow({ distance: 0.03, blur: 0.02, opacity: 0.8 })] },
     ],
   },
   {
@@ -91,18 +80,6 @@ export const PICTURE_FRAME_TEMPLATES: ThemedTemplate[] = [
       { ...bandFillLayer(), name: 'Rope', paint: solid('#a8885a'), effects: [bevel({ size: 0.9, depth: 1.5, gloss: 0.2 }), soft(0.75)] },
       { ...textureLayer('rope'), name: 'Twist', color: '#b8986a', amount: 1, strength: 1.2, seed: 0xbead },
       { ...bandFillLayer(), name: 'Fibres', paint: photo('hessian', 0.5), opacity: 0.45, blend: 'overlay' },
-    ],
-  },
-  {
-    id: 'shield-rim',
-    name: 'Shield rim',
-    description: 'Oak planks bound by a steel rim, studded with brass nails like a round shield.',
-    stage: { thickness: 0.18, outerSpacing: 0.02 },
-    make: () => [
-      { ...bandFillLayer(), name: 'Oak planks', from: 0.4, to: 1, paint: photo('wood-planks', 1.6, { angle: 90 }), effects: [bevel({ direction: 'sunken', size: 0.15, gloss: 0.3 })] },
-      { ...repeatLayer(), name: 'Plank joins', element: 'tick', count: 12, snapToCorners: false, at: 0.7, size: 0.6, stretch: 0.12, fill: '#2a1a0c', raised: false, shaded: false, opacity: 0.8, blend: 'multiply' },
-      { ...bandFillLayer(), name: 'Steel rim', to: 0.42, paint: photo('hammered-metal', 1, { tint: '#b0b6c0' }), effects: [bevel({ size: 0.5, gloss: 0.8 }), soft(0.7)] },
-      { ...repeatLayer(), name: 'Brass nails', element: 'bead', count: 12, snapToCorners: false, at: 0.21, size: 0.32, fill: '#d0a040', raised: true, effects: [material('bronze'), shadow({ distance: 0.03, blur: 0.02, opacity: 0.7 })] },
     ],
   },
 ];

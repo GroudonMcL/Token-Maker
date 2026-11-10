@@ -205,10 +205,10 @@ describe('the crafted borders', () => {
 });
 
 describe("Token Maker's built-in frames (once picture frames)", () => {
-  it('are the seven kept of the eight Token Maker had as pictures, and most use photo textures', () => {
-    expect(PICTURE_FRAME_TEMPLATES.map((t) => t.id)).toEqual(['gilded-laurel', 'iron-rivets', 'runestone', 'thorns', 'celestial', 'rope', 'shield-rim']);
+  it('are the five kept of the eight Token Maker had as pictures, and most use photo textures', () => {
+    expect(PICTURE_FRAME_TEMPLATES.map((t) => t.id)).toEqual(['gilded-laurel', 'runestone', 'thorns', 'celestial', 'rope']);
     const photos = PICTURE_FRAME_TEMPLATES.filter((t) => JSON.stringify(t.make()).includes('"kind":"picture"'));
-    expect(photos.length).toBeGreaterThanOrEqual(5);
+    expect(photos.length).toBeGreaterThanOrEqual(3);
   });
 
   it.each(PICTURE_FRAME_TEMPLATES.map((t) => [t.name, t] as const))('%s survives a file round trip and draws on every shape', (_n, t) => {

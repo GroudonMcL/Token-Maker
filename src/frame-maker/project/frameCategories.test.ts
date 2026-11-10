@@ -40,4 +40,15 @@ describe('frame categories', () => {
     for (const gone of ['cleric', 'dragon-scales', 'raven-plume', 'riveted-plates', 'guild-silver', 'brass-beads', 'jewelled', 'overgrown-ruin', 'enamel-gold', 'amethyst-geode'])
       expect(ids.has(gone), gone).toBe(false);
   });
+
+  it('no longer list the built-in designs the owner removed as too like other frames', () => {
+    const ids = new Set(BUILT_IN_FRAMES.map((f) => f.id));
+    const gone = [
+      'jewelled-eternity', 'battle-steel-notched', 'battle-steel', 'iron-rivets', 'shield-rim', 'radiant-gold-holy', 'jewelled-pave', 'cleric-silver',
+      'eldritch-crystal-geode', 'autumn-leaves-birch', 'autumn-leaves', 'rose-wreath-red', 'hellforged-iron', 'frostbound-glacier', 'frostbound-steel',
+      'emberforged-molten', 'rune-plates-runelit', 'starfield-moons', 'celestial-halo-golden', 'warlock-watchers', 'grim-iron-bone-ring',
+      'gothic-thorns-blood-roses', 'rogue-daggers', 'barbarian-club-oak',
+    ];
+    for (const id of gone) expect(ids.has(id), id).toBe(false);
+  });
 });

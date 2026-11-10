@@ -98,7 +98,7 @@ describe('editor panels', () => {
     await userEvent.clear(screen.getByRole('searchbox', { name: 'Search frames' }));
     await userEvent.click(screen.getByRole('tab', { name: /^All frames/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Fire / lava' }));
-    expect(screen.getByRole('button', { name: 'Magma' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Infernal' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Stamped' })).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
   }, 20_000);

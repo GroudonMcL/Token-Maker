@@ -30,12 +30,6 @@ export const pictureRepeat = (name: string, picture: string, o: Partial<RepeatLa
   ...o,
 });
 
-/** Red rose wreath: four full roses and four buds. */
-export const wreathRoses = (): Layer[] => [
-  pictureRepeat('Roses', 'deco-rose-bloom', { count: 4, at: 0.5, size: 1.35, effects: [pictureContact(0.75)] }),
-  pictureRepeat('Buds', 'deco-rose-bud', { count: 4, offset: 0.5, at: 0.5, size: 1.1, effects: [pictureContact(0.7)] }),
-];
-
 /** Rose briar: seven shaded roses darkened to the old spirals' red (#a01828), with a soft bevel for depth. */
 export const briarRoses = (): Layer =>
   pictureRepeat('Roses', 'deco-rose-shaded', {

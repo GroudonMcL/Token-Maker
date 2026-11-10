@@ -85,9 +85,9 @@ for (const name of ['Hammered metal', 'Starfield']) {
 }
 await page.screenshot({ path: `${out}/09-textures.png` });
 
-// 10. The Battle-worn steel template, with its battle wear selected.
+// 10. The Bloodied steel design (Battle-worn steel was removed), with its battle wear selected.
 await page.getByRole('button', { name: 'New' }).click();
-await page.getByRole('button', { name: 'Battle-worn steel' }).click();
+await page.getByRole('button', { name: 'Bloodied steel' }).click();
 await page.getByRole('tree', { name: /Layers/ }).getByRole('treeitem', { name: /Battle wear Texture/ }).click();
 await page.screenshot({ path: `${out}/10-battle-worn-steel.png` });
 

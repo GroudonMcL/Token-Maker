@@ -108,8 +108,8 @@ test('done when: a band styled as hammered bronze follows the light, and its exp
 
 test('the templates made with effects open, and effects can be copied onto other layers', async ({ page }) => {
   for (const id of ['dwarven-bronze', 'eldritch-crystal', 'radiant-gold']) await openSample(page, id);
-  await pick(page, 'Hellforged iron');
-  await expect(page.getByRole('img', { name: 'Preview of Hellforged iron' })).toBeVisible();
+  await pick(page, 'Hellforged');
+  await expect(page.getByRole('img', { name: 'Preview of Hellforged' })).toBeVisible();
   await openSample(page, 'dwarven-bronze');
   await page.getByRole('treeitem', { name: /Plates/ }).click();
   await page.getByRole('button', { name: 'Copy effects' }).click();

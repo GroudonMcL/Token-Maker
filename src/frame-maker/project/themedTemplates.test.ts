@@ -26,7 +26,7 @@ const painted = (d: Uint8ClampedArray) => d.reduce((n, _v, i) => (i % 4 === 3 &&
 
 describe('themed borders', () => {
   it('are a varied set with their own ids, distinct from the other templates', () => {
-    expect(THEMED_TEMPLATES.length).toBeGreaterThanOrEqual(10);
+    expect(THEMED_TEMPLATES.length).toBeGreaterThanOrEqual(9);
     const ids = [...THEMED_TEMPLATES, ...LAYERED_TEMPLATES].map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     // Between them they use the generators, gems, text and the lighting rig.

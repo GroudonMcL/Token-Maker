@@ -23,11 +23,12 @@ export const rankOf = (id: string) => RANK.get(id) ?? Infinity;
 export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrder.tags;
 
 /**
- * Drawn frames the frame review replaced with a Frame Maker remake (owner's
- * pick, version 13): no longer offered, though tokens made with them still
- * draw them.
+ * Drawn frames no longer offered, though tokens made with them still draw
+ * them: the ones the frame review replaced with a Frame Maker remake
+ * (owner's pick, version 13), and the ones the owner removed as too like
+ * other frames (the look-alike review).
  */
-const REPLACED = new Set(['cobblestone', 'druid', 'paladin', 'warlock', 'fighter', 'artificer']);
+const REPLACED = new Set(['cobblestone', 'druid', 'paladin', 'warlock', 'fighter', 'artificer', 'engraved', 'ranger', 'magma', 'sorcerer', 'monk', 'barbarian']);
 
 /**
  * Every frame in the picker, by category (frameCategories.ts): the drawn

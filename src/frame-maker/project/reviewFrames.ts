@@ -141,11 +141,6 @@ const INFO: Record<string, Info> = {
     description: 'Two staggered rows of curved blued-steel plates over a dark ring, with a brass rivet inside each plate.',
     colours: [slot('steel', 'Steel colour', '#6a7c96', ['Outer plates', 'Inner plates']), slot('rivets', 'Rivet colour', '#d8a838', ['Rivets'])],
   },
-  'grim-iron-bone-ring': {
-    name: 'Grim iron',
-    description: 'Hammered iron with two rows of steel rivets and six embossed bone skulls.',
-    colours: [slot('iron', 'Iron colour', '#6a707c', ['Band', 'Pressed-in step'])],
-  },
   'nautical-pirate': {
     name: 'Pirate treasure',
     description: 'Oak planks between gold bands, a ring of gold doubloons, gems set in gold studs and a skull and crossbones.',
@@ -216,11 +211,6 @@ const INFO: Record<string, Info> = {
     name: 'Paladin’s oath',
     description: 'Bright silver with a royal-blue enamel channel, glowing gold crosses and pearls (remakes the drawn Paladin).',
     colours: [slot('enamel', 'Enamel colour', '#1a3490', ['Enamel']), slot('gold', 'Cross colour', '#e8b840', ['Crosses', 'Gold edge'])],
-  },
-  'warlock-watchers': {
-    name: 'Warlock’s watchers',
-    description: 'Saturated purple with necrotic smoke, a violet seam and six watching eyes in sunken sockets (remakes the drawn Warlock).',
-    colours: [slot('band', 'Band colour', '#7a3aa8', ['Band', 'Pressed-in step']), slot('glow', 'Eye colour', '#c8e020', ['Eyes'])],
   },
   'fighter-plates': {
     name: 'Fighter’s plate',
@@ -315,12 +305,6 @@ const INFO: Record<string, Info> = {
   rope: {
     description: 'A warm twisted rope with brass whippings.',
     colours: [slot('rope', 'Rope colour', '#b08850', ['Rope', 'Twist']), slot('brass', 'Whipping colour', '#c89040', ['Whippings'])],
-  },
-  'barbarian-club-oak': {
-    name: 'Iron-bound oak',
-    description: 'Warm grained oak with hammered iron bands and bright domed steel studs.',
-    after: 'barbarian-club',
-    colours: [slot('wood', 'Wood colour', '#9a6a3a', ['Band', 'Pressed-in step'])],
   },
   'sorcerer-scales': {
     name: 'Dragon-blooded',

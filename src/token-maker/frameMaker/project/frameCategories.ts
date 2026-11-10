@@ -58,8 +58,6 @@ const ORIGINALS: Record<string, FrameCategory> = {
   rogue: 'Hide, Cloth & Rope',
   // The old picture frames.
   'gilded-laurel': 'Metal & Gems',
-  'iron-rivets': 'Metal & Gems',
-  'shield-rim': 'Metal & Gems',
   runestone: 'Stone & Earth',
   thorns: 'Wood & Nature',
   celestial: 'Sky & Stars',
@@ -75,14 +73,12 @@ const ORIGINALS: Record<string, FrameCategory> = {
   // Frame Maker's Layered designs.
   'brass-beads': 'Metal & Gems',
   jewelled: 'Metal & Gems',
-  'battle-steel': 'Metal & Gems',
   'dwarven-bronze': 'Metal & Gems',
   'radiant-gold': 'Metal & Gems',
   'royal-inscription': 'Metal & Gems',
   'rune-plates': 'Metal & Gems',
   royal: 'Metal & Gems',
   celtic: 'Stone & Earth',
-  'hellforged-iron': 'Elements',
   frostbound: 'Elements',
   'glowing-runes': 'Magic',
   'eldritch-crystal': 'Magic',
@@ -100,7 +96,6 @@ const ORIGINALS: Record<string, FrameCategory> = {
   'amethyst-geode': 'Stone & Earth',
   'rose-wreath': 'Wood & Nature',
   'fey-glade': 'Wood & Nature',
-  'autumn-leaves': 'Wood & Nature',
   'tidal-ring': 'Elements',
   'hellfire-ring': 'Elements',
   'frost-ring': 'Elements',
@@ -183,7 +178,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'starfield-deep-space': 'Sky & Stars',
   'starfield-star-chart': 'Sky & Stars',
   'starfield-galaxy': 'Sky & Stars',
-  'starfield-moons': 'Sky & Stars',
   'starfield-aurora': 'Sky & Stars',
   // Made from bard.
   'bard-lute': 'Wood & Nature',
@@ -192,7 +186,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'bard-lyre': 'Metal & Gems',
   // Made from cleric.
   'cleric-holy-light': 'Metal & Gems',
-  'cleric-silver': 'Metal & Gems',
   'cleric-temple': 'Stone & Earth',
   'cleric-dawn': 'Sky & Stars',
   // Made from druid.
@@ -236,7 +229,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'ranger-pine': 'Wood & Nature',
   // Made from rogue.
   'rogue-shadow-leather': 'Hide, Cloth & Rope',
-  'rogue-daggers': 'Hide, Cloth & Rope',
   'rogue-cant': 'Dark & Grim',
   'rogue-poison': 'Hide, Cloth & Rope',
   'rogue-smoke': 'Dark & Grim',
@@ -303,7 +295,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'raven-plume-bone': 'Hide, Cloth & Rope',
   'raven-plume-owl': 'Hide, Cloth & Rope',
   // Made from emberforged.
-  'emberforged-molten': 'Elements',
   'emberforged-forge-runes': 'Elements',
   'emberforged-frostfire': 'Elements',
   // Made from storm-wisps.
@@ -326,7 +317,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   // Made from jewelled.
   'jewelled-silver': 'Metal & Gems',
   // Made from battle-steel.
-  'battle-steel-notched': 'Metal & Gems',
   'battle-steel-bloodied': 'Dark & Grim',
   // Made from night-sky.
   'night-sky-dusk': 'Sky & Stars',
@@ -339,14 +329,9 @@ const VERSIONS: Record<string, FrameCategory> = {
   // Made from dragon-scales.
   'dragon-scales-serpent': 'Hide, Cloth & Rope',
   // Made from jewelled.
-  'jewelled-pave': 'Metal & Gems',
   'jewelled-art-deco': 'Metal & Gems',
   'jewelled-garnets': 'Metal & Gems',
-  'jewelled-eternity': 'Metal & Gems',
-  // Made from eldritch-crystal.
-  'eldritch-crystal-geode': 'Stone & Earth',
   // Made from radiant-gold.
-  'radiant-gold-holy': 'Metal & Gems',
   'radiant-gold-rose': 'Metal & Gems',
   'radiant-gold-prayer': 'Metal & Gems',
   // Made from hellforged-iron.
@@ -359,14 +344,11 @@ const VERSIONS: Record<string, FrameCategory> = {
   // Made from rune-plates.
   'rune-plates-bronze': 'Metal & Gems',
   'rune-plates-stone': 'Stone & Earth',
-  'rune-plates-runelit': 'Magic',
   'rune-plates-silver-gold': 'Metal & Gems',
   // Made from moon-stars.
   'moon-stars-midnight': 'Sky & Stars',
   'moon-stars-phases': 'Sky & Stars',
   // Made from frostbound.
-  'frostbound-steel': 'Elements',
-  'frostbound-glacier': 'Elements',
   'frostbound-snowfall': 'Elements',
   // Made from celtic.
   'celtic-emerald-gold': 'Metal & Gems',
@@ -377,7 +359,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'royal-purple-silver': 'Metal & Gems',
   'royal-ermine': 'Hide, Cloth & Rope',
   // Made from grim-iron.
-  'grim-iron-bone-ring': 'Dark & Grim',
   'grim-iron-crowned-skulls': 'Dark & Grim',
   // Made from enamel-gold.
   'enamel-gold-sapphire': 'Metal & Gems',
@@ -388,7 +369,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'worn-iron-smouldering': 'Metal & Gems',
   'worn-iron-rusted': 'Metal & Gems',
   // Made from rose-wreath.
-  'rose-wreath-red': 'Wood & Nature',
   'rose-wreath-briar': 'Wood & Nature',
   'rose-wreath-golden': 'Metal & Gems',
   // Made from fey-glade.
@@ -397,7 +377,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'fey-glade-fireflies': 'Wood & Nature',
   // Made from gothic-thorns.
   'gothic-thorns-shaded': 'Dark & Grim',
-  'gothic-thorns-blood-roses': 'Dark & Grim',
   'gothic-thorns-bone': 'Dark & Grim',
   // Made from tidal-ring.
   'tidal-ring-lagoon': 'Elements',
@@ -443,12 +422,10 @@ const VERSIONS: Record<string, FrameCategory> = {
   'nautical-driftwood': 'Wood & Nature',
   'nautical-pirate': 'Hide, Cloth & Rope',
   // Made from autumn-leaves.
-  'autumn-leaves-birch': 'Wood & Nature',
   'autumn-leaves-maple': 'Wood & Nature',
   'autumn-leaves-gilded': 'Metal & Gems',
   // Made from celestial-halo.
   'celestial-halo-white-gold': 'Sky & Stars',
-  'celestial-halo-golden': 'Sky & Stars',
   // Made from desert-tomb.
   'desert-tomb-sandstone': 'Stone & Earth',
   'desert-tomb-lapis': 'Stone & Earth',
@@ -470,7 +447,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'victors-laurel': 'Metal & Gems',
   'storm-ring-storm-clouds': 'Elements',
   'paladin-oath': 'Metal & Gems',
-  'warlock-watchers': 'Dark & Grim',
   'fighter-plates': 'Metal & Gems',
   'druid-oak': 'Wood & Nature',
   'druid-vine': 'Wood & Nature',
@@ -482,7 +458,6 @@ const VERSIONS: Record<string, FrameCategory> = {
   'thorns-silverwork-bare': 'Wood & Nature',
   'cleric-dawn-pearls': 'Metal & Gems',
   'artificer-brass': 'Metal & Gems',
-  'barbarian-club-oak': 'Hide, Cloth & Rope',
   'sorcerer-scales': 'Magic',
   'storm-ring-arcane-clouds': 'Elements',
   'storm-ring-blood-clouds': 'Elements',
