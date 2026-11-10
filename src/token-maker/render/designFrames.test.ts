@@ -17,7 +17,7 @@ import { setCanvasFactory as setFrameMakerCanvas } from '../frameMaker/render/ca
 import { renderProject } from '../frameMaker/render/renderProject';
 import { loadFrameDesignPictures, readFrameDesign, type FrameProject } from '../frameMaker/share/frameDesign';
 import { setCanvasFactory } from '../image/processedArt';
-import { BUILT_IN_DESIGNS, builtInDesignFrame } from './builtInDesigns';
+import { BUILT_IN_DESIGNS, builtInBand, builtInDesignFrame } from './builtInDesigns';
 import { SHAPES } from './catalog';
 import type { Ctx } from './frameKit';
 import { renderToken } from './render';
@@ -123,8 +123,9 @@ describe('Frame Maker designs as frames', () => {
 
   it.each(BUILT_IN_DESIGNS.map((b) => [b.name, b] as const))('the built-in %s design looks the same as in Frame Maker once its photos have loaded', async (_name, b) => {
     const design = builtInDesignFrame(b.id)!;
+    const band = builtInBand(b.id)!;
     await loadFrameDesignPictures(design.project);
-    const doc = frameOnly(design.project, (d) => (d.frame = { ...d.frame, thickness: b.band.thickness, outerSpacing: Math.max(d.frame.outerSpacing, b.band.outerSpacing) }));
+    const doc = frameOnly(design.project, (d) => (d.frame = { ...d.frame, thickness: band.thickness, outerSpacing: Math.max(d.frame.outerSpacing, band.outerSpacing) }));
     const a = inTokenMaker(doc, 128);
     const c = inFrameMaker(doc, 128);
     expect(a.some((v) => v !== 0)).toBe(true);

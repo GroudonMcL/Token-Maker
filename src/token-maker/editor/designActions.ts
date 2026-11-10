@@ -3,7 +3,7 @@
 // this browser's design library, and copied into the document.
 
 import type { DesignFrame } from '../document/types';
-import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
+import type { BuiltInBand } from '../render/defaultDesign';
 import { readFrameDesign, type FrameProject } from '../frameMaker/share/frameDesign';
 import { saveDesign } from '../state/designLibrary';
 import { toast } from '../ui/toast';
@@ -23,9 +23,7 @@ export function applyDesignFrame(id: string, name: string, project: FrameProject
  * thickness it was made for, and enough room outside it for anything that
  * reaches past the band (the Celestial star's points).
  */
-export function applyBuiltInDesign(id: string): void {
-  const design = builtInDesignFrame(id);
-  const band = BUILT_IN_DESIGNS.find((b) => b.id === design?.id)?.band;
+export function applyBuiltInDesign(design: DesignFrame | null, band: BuiltInBand | null): void {
   if (!design || !band) return;
   updateFrameAndArt((d) => ({
     ...d,

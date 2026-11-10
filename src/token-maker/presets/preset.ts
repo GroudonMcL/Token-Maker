@@ -10,7 +10,7 @@
 // the same migrations as a saved token (src/document/migrate.ts).
 
 import { createDocument } from '../document/defaults';
-import { migrateDocument } from '../document/migrate';
+import { migrateDocument, readyToMigrate } from '../document/migrate';
 import { SCHEMA_VERSION, type TokenDocument } from '../document/types';
 
 export const PRESET_SCHEMA_VERSION = 1;
@@ -91,6 +91,11 @@ export function applyLook(doc: TokenDocument, look: PresetLook): TokenDocument {
       ? { ...copy.background, image: doc.background.image }
       : copy.background;
   return { ...doc, ...copy, background, label };
+}
+
+/** Call before migratePreset on a preset from a file, a code or storage: loads what an old look needs to be upgraded (see readyToMigrate). */
+export async function readyToMigratePreset(raw: unknown): Promise<void> {
+  if (isObject(raw) && isObject(raw.look)) await readyToMigrate({ ...raw.look, schemaVersion: typeof raw.docVersion === 'number' ? raw.docVersion : SCHEMA_VERSION });
 }
 
 /**
@@ -192,6 +197,7 @@ export async function presetFromText(text: string): Promise<TokenPreset> {
     } catch {
       throw new PresetError("That file isn't a Token Maker preset (it couldn't be read).");
     }
+    await readyToMigratePreset(parsed);
     return migratePreset(parsed);
   }
   const m = /^TKP(\d+)\.([A-Za-z0-9_-]+)$/.exec(t.replace(/\s+/g, ''));
@@ -204,7 +210,9 @@ export async function presetFromText(text: string): Promise<TokenPreset> {
     } else if (m[1] !== '0') {
       throw new PresetError('This preset code was made with a newer version of Token Maker. Reload the page to update.');
     }
-    return migratePreset(JSON.parse(new TextDecoder().decode(bytes)));
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    await readyToMigratePreset(parsed);
+    return migratePreset(parsed);
   } catch (e) {
     if (e instanceof PresetError) throw e;
     throw new PresetError("That preset code is damaged. Check it was copied in full.");

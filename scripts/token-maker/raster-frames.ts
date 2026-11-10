@@ -11,11 +11,11 @@ import { setCanvasFactory as setFrameMakerCanvas } from '../../src/token-maker/f
 import { setPictureDecoder } from '../../src/token-maker/frameMaker/render/pictures';
 import { loadFrameDesignPictures } from '../../src/token-maker/frameMaker/share/frameDesign';
 import { setCanvasFactory } from '../../src/token-maker/image/processedArt';
-import { builtInDesignById } from '../../src/token-maker/render/builtInDesigns';
+import { builtInBand } from '../../src/token-maker/render/builtInDesigns';
 import { framePresetById } from '../../src/token-maker/render/catalog';
 import type { Ctx } from '../../src/token-maker/render/frameKit';
 import { renderToken } from '../../src/token-maker/render/render';
-import { builtInFrames, TILES } from '../../src/token-maker/sections/frameTiles';
+import { builtInFrame, TILES } from '../../src/token-maker/sections/frameTiles';
 import { LIBRARY_FRAMES } from '../../src/token-maker/render/libraryFrames';
 
 const make = (w: number, h: number) => createCanvas(w, h) as unknown as HTMLCanvasElement;
@@ -38,9 +38,9 @@ for (const lib of LIBRARY_FRAMES) {
   if (preset) {
     doc.frame = { ...doc.frame, kind: 'code', presetId: preset.id, style: preset.style, color: preset.color, highlightColor: null };
   } else {
-    const design = builtInFrames.get(tile.id)!;
+    const design = builtInFrame(tile.id)!;
     await loadFrameDesignPictures(design.project);
-    const band = builtInDesignById(tile.id)!.band;
+    const band = builtInBand(tile.id)!;
     doc.frame = { ...doc.frame, kind: 'design', design, thickness: band.thickness, outerSpacing: doc.frame.outerSpacing };
   }
   const c = createCanvas(SIZE, SIZE);

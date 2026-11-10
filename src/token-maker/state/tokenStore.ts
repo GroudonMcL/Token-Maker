@@ -4,7 +4,7 @@
 // drag is one undo step.
 
 import { useStore } from 'zustand';
-import { newTokenDocument } from '../render/builtInDesigns';
+import { newTokenDocument } from '../render/defaultDesign';
 import type { TokenDocument } from '../document/types';
 import { createHistoryStore } from './history';
 

@@ -17,7 +17,7 @@ import { FRAME_PRESETS, SHAPES } from '../../src/token-maker/render/catalog';
 import type { Ctx } from '../../src/token-maker/render/frameKit';
 import { renderToken } from '../../src/token-maker/render/render';
 import { sampleArt } from '../../src/token-maker/render/sampleArt';
-import { builtInFrames, TILES } from '../../src/token-maker/sections/frameTiles';
+import { builtInFrame, TILES } from '../../src/token-maker/sections/frameTiles';
 import { THUMB_CELL, THUMB_COLS } from '../../src/token-maker/sections/frameThumbSheet';
 import { registerBundledFonts } from './nodeFonts';
 
@@ -29,7 +29,10 @@ setPictureDecoder(async (url) => loadImage(url.startsWith('data:') ? Buffer.from
 registerBundledFonts();
 
 const ids = TILES.map((t) => t.id);
-for (const d of builtInFrames.values()) await loadFrameDesignPictures(d.project);
+for (const t of TILES) {
+  const d = builtInFrame(t.id);
+  if (d) await loadFrameDesignPictures(d.project);
+}
 const assets = new Map([['asset:sample', sampleArt(make, 128)]]);
 const rows = Math.ceil(ids.length / THUMB_COLS);
 
@@ -41,7 +44,7 @@ for (const shape of SHAPES.map((s) => s.id)) {
     doc.shape = shape;
     doc.art.assetId = 'asset:sample';
     const p = FRAME_PRESETS.find((x) => x.id === id);
-    const design = builtInFrames.get(id);
+    const design = builtInFrame(id);
     if (p) doc.frame = { ...doc.frame, presetId: p.id, style: p.style, color: p.color };
     else if (design) doc.frame = { ...doc.frame, kind: 'design', design };
     else throw new Error(`Unknown frame ${id}`);

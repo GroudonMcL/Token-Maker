@@ -7,6 +7,7 @@ import { savedPresets } from '../presets/presetStore';
 import { getDoc, resetDoc, undo, updateDoc } from '../state/tokenStore';
 import { DecorationsSection } from './DecorationsSection';
 import { FrameSection } from './FrameSection';
+import { loadFrameCatalogue } from '../render/frameCatalogue';
 import { PresetsSection } from './PresetsSection';
 
 // Picture frames need a real browser to decode; pretend every frame is a ring with a round hole.
@@ -22,6 +23,9 @@ vi.mock('../state/frameLibrary', async (original) => ({
     open: false,
   }),
 }));
+
+// The editor loads the frame catalogue when the gallery opens; here it is ready from the start.
+beforeAll(async () => void (await loadFrameCatalogue()));
 
 const controlsShown = (container: HTMLElement) => expect(container.querySelectorAll('[data-control]').length).toBeGreaterThan(3);
 

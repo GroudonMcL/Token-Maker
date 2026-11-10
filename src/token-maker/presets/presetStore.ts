@@ -12,9 +12,9 @@ import { UPLOAD_PREFIX } from '../fonts/catalog';
 import { hasUploadedFont, saveUploadedFont, uploadedFont } from '../fonts/fontLoader';
 import { hasUploadedFrame, saveUploadedFrame, uploadedFrameBlob } from '../state/frameLibrary';
 import { documentPictures, hasUploadedPicture, saveUploadedPicture, uploadedPictureBlob } from '../state/pictureLibrary';
-import { migratePreset, PresetError, type TokenPreset } from './preset';
+import { migratePreset, PresetError, readyToMigratePreset, type TokenPreset } from './preset';
 import { hasDesign, saveDesign } from '../state/designLibrary';
-import { isBuiltInDesign } from '../render/builtInDesigns';
+import { isBuiltInDesign } from '../render/defaultDesign';
 
 let idb: UseStore | null = null;
 function store(): UseStore | null {
@@ -41,6 +41,7 @@ export async function refreshSavedPresets(): Promise<void> {
   const list: { preset: TokenPreset; saved: number }[] = [];
   for (const [, v] of await entries<string, Saved>(db)) {
     try {
+      await readyToMigratePreset(v?.preset);
       list.push({ preset: migratePreset(v?.preset), saved: v?.saved ?? 0 });
     } catch (e) {
       console.warn('Skipped a damaged preset', e);

@@ -13,20 +13,24 @@ import { createPortal } from 'react-dom';
 import { ControlLabel } from '../components';
 import { FRAME_TAG_GROUPS, tagLabel } from '../config/frameTags';
 import type { ShapeId } from '../render/catalog';
-import { FRAME_TAGS, rankOf, type FrameTile } from './frameTiles';
+import { FRAME_TAGS, rankOf, type FrameTile } from './frameOrder';
 import { sheetStyle } from './frameThumbSheet';
 
-export type { FrameTile } from './frameTiles';
+export type { FrameTile } from './frameOrder';
 
 export function FramePicker({
   tiles,
+  current,
   thumbs,
   value,
   onChange,
   onOpen,
   shape,
 }: {
-  tiles: readonly FrameTile[];
+  /** Every frame, or null while the frame catalogue loads (it starts loading when the gallery opens). */
+  tiles: readonly FrameTile[] | null;
+  /** The chosen frame. */
+  current: FrameTile;
   /** The token's shape: the ready-made thumbnails are drawn on it. */
   shape: ShapeId;
   thumbs: Map<string, string> | null;
@@ -37,7 +41,6 @@ export function FramePicker({
 }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
-  const current = tiles.find((t) => t.id === value);
   const close = () => {
     setOpen(false);
     button.current?.focus();
@@ -48,8 +51,8 @@ export function FramePicker({
       <div className="frame-pick__current" data-testid="current-frame">
         <Thumb id={value} shape={shape} src={thumbs?.get(value)} size={56} />
         <div className="frame-pick__current-text">
-          <strong>{current?.label ?? 'Frame'}</strong>
-          <small>{current?.group}</small>
+          <strong>{current.label}</strong>
+          <small>{current.group}</small>
         </div>
         <button ref={button} type="button" className="btn btn--primary frame-pick__change" aria-haspopup="dialog" aria-expanded={open} onClick={() => {
             onOpen?.();
@@ -96,27 +99,32 @@ const rememberedFilter = () => (remembered.get('filter') as string[] | undefined
 /** The gallery tab listing every frame, in the owner's ranking. */
 const ALL = 'All frames';
 
+const NO_TILES: readonly FrameTile[] = [];
+
 function Gallery({
-  tiles: allTiles,
+  tiles: loadedTiles,
   thumbs,
   shape,
   value,
   onPick,
   onClose,
 }: {
-  tiles: readonly FrameTile[];
+  tiles: readonly FrameTile[] | null;
   thumbs: Map<string, string> | null;
   shape: ShapeId;
   value: string;
   onPick: (id: string) => void;
   onClose: () => void;
 }) {
+  const loaded = loadedTiles !== null;
+  const allTiles = loadedTiles ?? NO_TILES;
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   // Every frame in the owner's order; the groups keep their own order, with their frames in the same order.
   const ranked = useMemo(() => allTiles.map((t, i) => ({ t, i })).sort((a, b) => rankOf(a.t.id) - rankOf(b.t.id) || a.i - b.i).map(({ t }) => t), [allTiles]);
   const groups = useMemo(() => [ALL, ...new Set(allTiles.map((t) => t.group))], [allTiles]);
-  const [tab, setTabState] = useState(() => (groups.includes(rememberedTab()) ? rememberedTab() : ALL));
+  const [chosenTab, setTabState] = useState(rememberedTab);
+  const tab = groups.includes(chosenTab) ? chosenTab : ALL;
   const [query, setQuery] = useState('');
   const [filter, setFilterState] = useState<string[]>(rememberedFilter);
   const setTab = (t: string) => {
@@ -136,10 +144,14 @@ function Gallery({
   const tiles = filter.length ? ranked.filter((t) => filter.every((f) => FRAME_TAGS[t.id]?.includes(f))) : ranked;
   const inTab = (g: string) => (g === ALL ? tiles : tiles.filter((t) => t.group === g));
 
+  // Focus starts on the chosen frame, or on the search box while the frames load; it moves to the chosen frame when they arrive, unless it has been moved since.
   useEffect(() => {
-    const start = box.current?.querySelector<HTMLElement>('[aria-checked="true"]') ?? box.current?.querySelector<HTMLElement>('input');
+    const search = box.current?.querySelector<HTMLElement>('input');
+    const elsewhere = box.current?.contains(document.activeElement) && document.activeElement !== search;
+    if (elsewhere || (search as HTMLInputElement | undefined)?.value) return;
+    const start = box.current?.querySelector<HTMLElement>('[aria-checked="true"]') ?? search;
     start?.focus();
-  }, []);
+  }, [loaded]);
 
   const q = query.trim().toLowerCase();
   const tileButton = (t: FrameTile) => (
@@ -213,7 +225,13 @@ function Gallery({
             ))}
           </div>
           <div className="frame-pick__grid" role="radiogroup" aria-label={q ? 'Matching frames' : `${tab} frames`}>
-            {shown.length ? shown : <p className="frame-pick__none">{q ? `No frames match “${query}”.` : 'No frames with all of these tags here.'}</p>}
+            {!loaded ? (
+              <p className="frame-pick__none" role="status">Loading frames…</p>
+            ) : shown.length ? (
+              shown
+            ) : (
+              <p className="frame-pick__none">{q ? `No frames match “${query}”.` : 'No frames with all of these tags here.'}</p>
+            )}
           </div>
         </div>
       </div>

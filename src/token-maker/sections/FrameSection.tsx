@@ -6,14 +6,16 @@ import { nudgeHole, pickImageFrame, uploadFrame } from '../editor/frameActions';
 import { applyBuiltInDesign, applyDesignFrame, openDesignFile } from '../editor/designActions';
 import type { DesignFrame, FrameSettings, ImageFrame } from '../document/types';
 import { refreshDesigns, removeDesign, useDesignLibrary } from '../state/designLibrary';
-import { builtInDesignById, builtInDesignFrame, isBuiltInDesign } from '../render/builtInDesigns';
+import { DEFAULT_DESIGN, DEFAULT_DESIGN_ID, defaultDesignFrame, isBuiltInDesign } from '../render/defaultDesign';
+import { loadFrameCatalogue, useFrameCatalogue, type FrameCatalogue } from '../render/frameCatalogue';
+import { categoryOf } from '../frameMaker/project/frameCategories';
+import { toast } from '../ui/toast';
 import { refreshUploadedFrames, removeUploadedFrame, useUploadedFrames } from '../state/frameLibrary';
 import { framePresetById, SHAPES, type ShapeId } from '../render/catalog';
 import { LIBRARY_FRAMES, libraryFrameThumbUrl } from '../render/libraryFrames';
 import { onSheet, preloadSheet } from './frameThumbSheet';
 import { commitDoc, updateDoc, useDoc } from '../state/tokenStore';
-import { designThumbnail } from './frameThumbs';
-import { loadFramePictures, thumbOf, TILES } from './frameTiles';
+import { designThumbnail, frameThumbnail } from './frameThumbs';
 import { createDocument } from '../document/defaults';
 import { FramePicker } from './FramePicker';
 import { frameAccent } from '../render/frames';
@@ -324,7 +326,12 @@ function BandSliders() {
 /** A colour picker for each of a built-in design's colour slots (its band, its highlights…). */
 function BuiltInColours({ id }: { id: string }) {
   const chosen = useDoc((d) => d.frame.design?.colours);
-  const slots = builtInDesignById(id)?.colours ?? [];
+  // The starting frame's colours come with the page; every other design's are in the frame catalogue.
+  const isDefault = id === DEFAULT_DESIGN_ID;
+  const catalogue = useFrameCatalogue(!isDefault);
+  if (!isDefault && !catalogue) return <p className="control__hint" role="status">Loading this frame's colours…</p>;
+  const slots = (isDefault ? DEFAULT_DESIGN : catalogue?.builtInDesignById(id))?.colours ?? [];
+  const builtInDesignFrame = (designId: string, colours: Record<string, string>) => (isDefault ? defaultDesignFrame(colours) : (catalogue?.builtInDesignFrame(designId, colours) ?? null));
   if (!slots.length) return <p className="control__hint">A Frame Maker design with its own colours. Open it in Frame Maker (New → Token Maker's frames) to change them.</p>;
   const setColour = (slotId: string, colour: string) =>
     updateDoc((d) => {
@@ -356,7 +363,7 @@ const SLICE_MS = 12;
  * them all at once. Only frames missing from the sheet are drawn here, a
  * slice at a time once the gallery is first opened.
  */
-function useFrameThumbs(shape: ShapeId, value: string) {
+function useFrameThumbs(shape: ShapeId, value: string, catalogue: FrameCatalogue | null) {
   const [state, setState] = useState<{ key: string; map: Map<string, string> }>({ key: '', map: new Map() });
   const [gallery, setGallery] = useState(false);
   // Bumped when photo textures arrive, so the designs using them are drawn again.
@@ -369,30 +376,33 @@ function useFrameThumbs(shape: ShapeId, value: string) {
       for (const [id, url] of entries) next.set(id, url);
       return { key, map: next };
     });
-  const missing = useMemo(() => TILES.filter((t) => !onSheet(t.id)).map((t) => t.id), []);
+  const missing = useMemo(() => (catalogue?.TILES ?? []).filter((t) => !onSheet(t.id)).map((t) => t.id), [catalogue]);
+  // A drawn frame's thumbnail needs no catalogue; a built-in design's waits for it.
+  const thumbOf = (id: string) => (catalogue ? catalogue.thumbOf(id, shape) : isBuiltInDesign(id) ? null : frameThumbnail(id, shape, 96));
 
   // Photo textures for the designs that are about to be drawn.
   useEffect(() => {
     let live = true;
     const ids = (gallery ? missing : [value]).filter((id) => !onSheet(id));
-    void loadFramePictures(ids).then((redraw) => {
+    if (!catalogue || !ids.length) return;
+    void catalogue.loadFramePictures(ids).then((redraw) => {
       if (live && redraw) setEpoch((e) => e + 1);
     });
     return () => {
       live = false;
     };
-  }, [gallery, value, missing]);
+  }, [gallery, value, missing, catalogue]);
 
   // The frame the panel shows, if it isn't on the sheet, on the next frame so the tab opens at once.
   useEffect(() => {
     if (onSheet(value)) return;
     const id = requestAnimationFrame(() => {
-      const url = thumbOf(value, shape);
+      const url = thumbOf(value);
       if (url) add([[value, url]]);
     });
     return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, key]);
+  }, [value, key, catalogue]);
 
   // Every tile missing from the sheet, a slice at a time, once the gallery has been opened.
   useEffect(() => {
@@ -404,7 +414,7 @@ function useFrameThumbs(shape: ShapeId, value: string) {
       const done: [string, string][] = [];
       while (i < missing.length && performance.now() - start < SLICE_MS) {
         const id = missing[i++]!;
-        const url = thumbOf(id, shape);
+        const url = thumbOf(id);
         if (url) done.push([id, url]);
       }
       if (done.length) add(done);
@@ -413,7 +423,7 @@ function useFrameThumbs(shape: ShapeId, value: string) {
     timer = window.setTimeout(step, 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gallery, key]);
+  }, [gallery, key, missing]);
 
   return { map, fillGallery: () => setGallery(true) };
 }
@@ -428,7 +438,18 @@ function DrawnFrame() {
   const builtIn = frame.kind === 'design' && isBuiltInDesign(frame.design?.id) ? frame.design!.id : null;
   const accent = builtIn ? null : frameAccent(frame.style);
   const value = builtIn ?? frame.presetId;
-  const thumbs = useFrameThumbs(shape, value);
+  // The frame catalogue (every built-in design) loads when the gallery opens, or at once for a
+  // token whose frame is a built-in design the page didn't come with a thumbnail for.
+  const [wanted, setWanted] = useState(false);
+  const catalogue = useFrameCatalogue(wanted || (builtIn !== null && !onSheet(builtIn)));
+  const thumbs = useFrameThumbs(shape, value, catalogue);
+  // Until then the panel names the frame from what the page and the token know.
+  const preset = builtIn ? undefined : framePresetById(value);
+  const current = catalogue?.TILES.find((t) => t.id === value) ?? {
+    id: value,
+    label: builtIn ? (frame.design?.name ?? 'Frame') : (preset?.name ?? 'Frame'),
+    group: builtIn === DEFAULT_DESIGN_ID ? DEFAULT_DESIGN.group : preset ? categoryOf(preset.id) : '',
+  };
 
   const setFrame = (patch: Partial<FrameSettings>, transient = false) =>
     updateFrameAndArt((d) => ({ ...d, frame: { ...d.frame, ...patch } }), { transient });
@@ -437,15 +458,21 @@ function DrawnFrame() {
     <>
       <ShapeControl />
       <FramePicker
-        tiles={TILES}
+        tiles={catalogue?.TILES ?? null}
+        current={current}
         shape={shape}
         thumbs={thumbs.map}
         value={value}
-        onOpen={thumbs.fillGallery}
+        onOpen={() => {
+          thumbs.fillGallery();
+          setWanted(true);
+          // A failed load is tried again each time the gallery is opened.
+          void loadFrameCatalogue().catch(() => toast("The frames couldn't be loaded. Check your connection and open the gallery again.", 'error'));
+        }}
         onChange={(id) => {
           const p = framePresetById(id);
           if (p) setFrame({ kind: 'code', presetId: p.id, style: p.style, color: p.color, highlightColor: null });
-          else if (isBuiltInDesign(id)) applyBuiltInDesign(id);
+          else if (isBuiltInDesign(id) && catalogue) applyBuiltInDesign(catalogue.builtInDesignFrame(id), catalogue.builtInBand(id));
         }}
       />
       {builtIn ? (

@@ -1,5 +1,5 @@
 import { createDocument, MAX_DECORATIONS, MAX_EFFECTS, newDecoration, newEffect, newLabel } from './defaults';
-import { DocumentVersionError, migrateDocument } from './migrate';
+import { DocumentVersionError, migrateDocument, readyToMigrate } from './migrate';
 import { PICTURE_FRAME_TEMPLATES } from '../frameMaker/project/pictureFrameTemplates';
 import { SCHEMA_VERSION } from './types';
 
@@ -399,9 +399,11 @@ describe('v11: background colours, and the built-in picture frames as Frame Make
     expect(doc.background.adjust).toEqual({ brightness: 100, contrast: -100, saturation: 0, hue: 180, temperature: 20 });
   });
 
-  it.each(PICTURE_FRAME_TEMPLATES.map((t) => t.id))('a token with the old %s picture frame gets its Frame Maker design', (id) => {
+  it.each(PICTURE_FRAME_TEMPLATES.map((t) => t.id))('a token with the old %s picture frame gets its Frame Maker design', async (id) => {
     const old = v10();
     old.frame = { ...old.frame, kind: 'image', image: { source: { type: 'library', id }, name: id, hole: [0.7, 0, 0, 0.7, -0.7, 0, 0, -0.7], outer: 0.96, nudge: { x: 0, y: 0, scale: 1 } } };
+    // The designs are in the frame catalogue, loaded for a token like this before it is upgraded.
+    await readyToMigrate(old);
     const doc = migrateDocument(old);
     expect(doc.frame.kind).toBe('design');
     expect(doc.frame.image).toBeNull();

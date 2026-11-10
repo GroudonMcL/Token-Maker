@@ -1,26 +1,16 @@
 // Every frame the frame picker lists (drawn frames and built-in designs), in
 // the owner's order (config/frameOrder.json), with their tags and thumbnails.
+// This file brings the whole catalogue of built-in designs with it, so the
+// editor only loads it through render/frameCatalogue.ts, when it is needed.
 
-import frameOrder from '../config/frameOrder.json';
 import { categoryOf, categoryRank } from '../frameMaker/project/frameCategories';
 import { loadFrameDesignPictures } from '../frameMaker/share/frameDesign';
+import type { FrameTile } from './frameOrder';
+import type { DesignFrame } from '../document/types';
 import { BUILT_IN_DESIGNS, builtInDesignFrame } from '../render/builtInDesigns';
 import { FRAME_PRESETS, type ShapeId } from '../render/catalog';
+import { rankOf } from './frameOrder';
 import { clearDesignThumbnails, designThumbnail, frameThumbnail } from './frameThumbs';
-
-/** One frame in the frame picker. */
-export interface FrameTile {
-  id: string;
-  label: string;
-  group: string;
-}
-
-/** Each frame's place in the owner's order (by category, then by look: similar frames next to each other). */
-const RANK = new Map(frameOrder.order.map((id, i) => [id, i]));
-export const rankOf = (id: string) => RANK.get(id) ?? Infinity;
-
-/** Each frame's tags (config/frameTags.ts), as the owner gave them. */
-export const FRAME_TAGS: Readonly<Record<string, readonly string[]>> = frameOrder.tags;
 
 /**
  * Drawn frames no longer offered, though tokens made with them still draw
@@ -51,13 +41,20 @@ function frameTiles(): FrameTile[] {
     .map(({ t }) => ({ id: t.id, label: t.label, group: t.group }));
 }
 
-/** The built-in designs, made once each (their thumbnails and photo textures are cached by id). */
-export const builtInFrames = new Map(BUILT_IN_DESIGNS.map((b) => [b.id, builtInDesignFrame(b.id)!]));
+/** The built-in designs, each made the first time it is drawn (their thumbnails and photo textures are cached by id). */
+const made = new Map<string, DesignFrame | null>();
+export const builtInFrame = (id: string): DesignFrame | null => {
+  if (!id.startsWith('builtin:')) return null;
+  if (!made.has(id)) made.set(id, builtInDesignFrame(id));
+  return made.get(id) ?? null;
+};
 export const TILES = frameTiles();
+export { FRAME_TAGS, rankOf, type FrameTile } from './frameOrder';
+export { builtInBand, builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
 
 /** One frame's thumbnail (a drawn frame or a built-in design), `px` across. */
 export const thumbOf = (id: string, shape: ShapeId, px = 96) => {
-  const design = builtInFrames.get(id);
+  const design = builtInFrame(id);
   return design ? designThumbnail(id, design.project, shape, px) : frameThumbnail(id, shape, px);
 };
 
@@ -67,7 +64,10 @@ export const thumbOf = (id: string, shape: ShapeId, px = 96) => {
  * if any were drawn without them, so they should be drawn again.
  */
 export async function loadFramePictures(ids: readonly string[]): Promise<boolean> {
-  const designs = ids.flatMap((id) => (builtInFrames.has(id) ? [[id, builtInFrames.get(id)!] as const] : []));
+  const designs = ids.flatMap((id) => {
+    const design = builtInFrame(id);
+    return design ? [[id, design] as const] : [];
+  });
   if (!designs.length) return false;
   const loaded = await Promise.all(designs.map(([, d]) => loadFrameDesignPictures(d.project).then(() => true, () => false)));
   if (!loaded.some(Boolean)) return false;

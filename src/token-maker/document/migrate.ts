@@ -4,8 +4,8 @@
 
 import { libraryFrameById } from '../render/libraryFrames';
 import { readFrameDesign } from '../frameMaker/share/frameDesign';
-import { builtInDesignById, builtInDesignFrame } from '../render/builtInDesigns';
-import { cleanChoices } from '../frameMaker/project/colourSlots';
+import { frameCatalogue, loadFrameCatalogue } from '../render/frameCatalogue';
+import { isHexColour, type ColourChoices } from '../frameMaker/project/colourSlots';
 import { FRAME_STYLES, SHAPES } from '../render/catalog';
 import { EFFECT_STYLES } from '../render/effectStyles';
 import {
@@ -108,7 +108,8 @@ export const MIGRATIONS: Record<number, (doc: Json) => Json> = {
     if (source.type !== 'library' || typeof source.id !== 'string') return doc;
     // Only the frame in use is swapped; one kept behind a drawn frame or a design is dropped.
     const inUse = frame.kind === 'image';
-    const design = inUse ? builtInDesignFrame(source.id) : null;
+    // The designs are in the frame catalogue, which readyToMigrate loads first for a token like this one.
+    const design = inUse ? (frameCatalogue()?.builtInDesignFrame(source.id) ?? null) : null;
     return { ...doc, frame: { ...frame, kind: inUse ? (design ? 'design' : 'code') : frame.kind, image: null, design: design ?? frame.design } };
   },
   // v11 → v12 (owner feedback): the frame's backing colour joined the Background tab. A token
@@ -259,6 +260,19 @@ function overlayToEffect(o: Json, index: number): Json {
 }
 
 export class DocumentVersionError extends Error {}
+
+/**
+ * Call before migrateDocument on a saved token. A token from before version
+ * 11 that uses one of the old built-in picture frames gets that frame's
+ * design, which is in the frame catalogue; this loads the catalogue for such
+ * a token (no other token needs it). If it can't be loaded, the token still
+ * opens, with a drawn frame.
+ */
+export async function readyToMigrate(raw: unknown): Promise<void> {
+  if (!isObject(raw) || (typeof raw.schemaVersion === 'number' && raw.schemaVersion > 10)) return;
+  const frame = obj(raw.frame);
+  if (frame.kind === 'image' && obj(obj(frame.image).source).type === 'library') await loadFrameCatalogue().catch(() => {});
+}
 
 export function migrateDocument(
   raw: unknown,
@@ -511,8 +525,23 @@ export function designFrame(raw: unknown): DesignFrame | null {
   if (JSON.stringify(raw.project).length > MAX_DESIGN_CHARS) return null;
   const read = readFrameDesign(raw.project);
   if (!read.ok) return null;
-  const colours = cleanChoices(raw.colours, builtInDesignById(id)?.colours ?? []);
+  const colours = colourChoices(raw.colours);
   return { id, name: str(raw.name, read.project.name).slice(0, 80), project: read.project, ...(Object.keys(colours).length ? { colours } : {}) };
+}
+
+/**
+ * The colours chosen for a built-in design's slots, as saved: a record of
+ * what was picked (the design's project is already in those colours). Which
+ * slots a design has is in the frame catalogue, which isn't loaded here, so
+ * only the shape is checked; the Frame section drops any that name no slot.
+ */
+function colourChoices(raw: unknown): ColourChoices {
+  const out: ColourChoices = {};
+  if (!isObject(raw)) return out;
+  for (const [slot, colour] of Object.entries(raw).slice(0, 12)) {
+    if (/^[a-z0-9-]{1,40}$/.test(slot) && isHexColour(colour)) out[slot] = colour.toLowerCase();
+  }
+  return out;
 }
 
 /** Most stroke data any one document keeps (about 2 MB of numbers). */
