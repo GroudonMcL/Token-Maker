@@ -2,10 +2,15 @@ import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import { SIZE_PRESETS } from '../document/defaults';
 import { outputSize, squaresLabel } from '../document/sizing';
+import { artEdits } from '../image/process';
+import { DRAFT_SIDE, peekProcessedArt, processedArt } from '../image/processedArt';
 import { renderToken } from '../render/render';
 import { assetStore } from '../state/assets';
 import { useDoc } from '../state/tokenStore';
 import { useExportSettings } from '../export/exportSettings';
+
+/** The longest side of the art's copy made for the thumbnail. */
+const THUMB_SIDE = 192;
 
 /** Thumbnail, name, size and final pixel size of the current token. */
 export function TokenSummary() {
@@ -24,7 +29,13 @@ export function TokenSummary() {
       const px = Math.round(36 * Math.min(2, window.devicePixelRatio || 1));
       c.width = px;
       c.height = px;
-      renderToken(ctx, doc, assets, px);
+      // The art is drawn from a copy already worked out if there is one, else from a small one made
+      // for this: a 36 px picture never needs the full-size art (up to 2048 px) worked out on the
+      // main thread, which froze the page for a moment after every change to the picture.
+      const src = doc.art.assetId ? assets.get(doc.art.assetId) : undefined;
+      const edits = artEdits(doc);
+      const art = src ? (peekProcessedArt(src, edits) ?? peekProcessedArt(src, edits, DRAFT_SIDE) ?? processedArt(src, edits, THUMB_SIDE)) : null;
+      renderToken(ctx, doc, assets, px, { processedArt: art?.source });
     }, 150);
     return () => clearTimeout(id);
   }, [doc, assets, hasArt]);

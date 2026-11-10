@@ -36,7 +36,8 @@ What to do before Token Maker goes public, from a review on 27 October 2026. Whe
 
 ## 4. Performance
 
-- [ ] `pictureData` (Frame Maker's 32 photo textures, embedded as text) builds as a **2.2 MB chunk (1.66 MB gzipped), twice**: once per app. It only loads when a design uses a photo texture, so it doesn't slow the first load. But someone using both apps downloads it twice. Moving the photos into `public/` as separate files would fix that, and each design would then fetch only the photos it uses.
+- [x] The 32 photo textures are separate files in `public/textures/` (10 November 2026), fetched one at a time when a design uses them and shared by both apps. They were a 2.2 MB chunk of text built three times (once per app, once for the frame worker).
+- [x] The built-in frames no longer come with the first load (10 November 2026). Token Maker's first load carries only the starting frame (`config/defaultDesign.json`; run `npm run tm:default-design` if the Simple design changes) and fetches the catalogue when the frame gallery opens; Frame Maker fetches it when New or Add frame opens. First-load JavaScript and CSS: Token Maker 1,418 kB → 761 kB (330 → 248 kB gzipped), Frame Maker 1,355 kB → 671 kB (300 → 210 kB gzipped).
 - [ ] Check the first load on a real phone over mobile data (Lighthouse or WebPageTest).
 - [ ] The AI model (about 100 MB) downloads only when someone uses AI cut-out, and the page warns about it. Leave it as it is.
 

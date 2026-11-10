@@ -470,6 +470,8 @@ Type scale: 12 / 13 / 15 (body) / 18 (section titles) / 22 / 28 px.
 
 *(Phase 10, performance: only the Import section comes with the first load; the other sections load lazily in the background once the editor is up, and the About, Privacy and UI kit pages only when visited (first-load JavaScript about 162 KB gzipped). While a slider or the art is dragged the preview canvas is drawn at a pixel density of at most 1.25 and comes back sharp when the drag ends. A test drags sliders on a phone with the CPU slowed four times.)*
 
+*(Before launch, performance: the built-in frames are no longer part of the first load. A new token's frame, the Simple design, is its own small file (`config/defaultDesign.json`, written by `npm run tm:default-design` and checked against the catalogue by `render/defaultDesign.test.ts`); the catalogue (`render/builtInDesigns.ts` and the picker's list, `sections/frameTiles.ts`) is fetched through `render/frameCatalogue.ts` when the frame gallery opens, when the token's frame is another built-in design (for its colour pickers), or before a token from before version 11 that used an old built-in picture frame is upgraded (`readyToMigrate`). Each design's project is made when first used rather than all at load. The bottom bar's thumbnail draws the art from a copy already worked out, or a 192 px one, never the full-size art. Imported pictures are dropped from memory once the token, the batch and the undo history no longer use them (`state/assetCleanup.ts`), and their AI cut-out masks with them; saved AI masks are deleted with their saved pictures (`tidySavedAiMasks`). Switching batch pictures compares undo steps part by part (`sameValue`) instead of turning each into text.)*
+
 ---
 
 ## 11. Help tips ("?")

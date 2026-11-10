@@ -1,6 +1,6 @@
 import { newLabel } from '../document/defaults';
 import { docHistory, getDoc, resetDoc, undo, updateDoc } from '../state/tokenStore';
-import { addBatchItem, batchStore, docForItem, itemFromDoc, removeItem, selectItem, setBatchMode, styleKey, syncedItems } from './batch';
+import { addBatchItem, batchStore, docForItem, itemFromDoc, removeItem, sameValue, selectItem, setBatchMode, styleKey, syncedItems } from './batch';
 
 // Batch mode (DESIGN.md §6.1): one shared style, each picture keeps its own
 // position, masks and name.
@@ -109,5 +109,25 @@ describe('batch mode', () => {
     setBatchMode(false);
     expect(batchStore.getState().items).toHaveLength(0);
     expect(getDoc().name).toBe('Lich');
+  });
+});
+
+describe('sameValue', () => {
+  it('compares data, not objects, and treats a missing setting like an undefined one', () => {
+    expect(sameValue({ a: [1, { b: 'x' }], c: null }, { a: [1, { b: 'x' }], c: null })).toBe(true);
+    expect(sameValue({ a: 1, b: undefined }, { a: 1 })).toBe(true);
+    expect(sameValue({ a: 1 }, { a: 1, b: undefined })).toBe(true);
+    expect(sameValue({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+    expect(sameValue({ a: [1, 2] }, { a: [1, 2, 3] })).toBe(false);
+    expect(sameValue({ a: [1] }, { a: { 0: 1 } })).toBe(false);
+    expect(sameValue({ a: null }, { a: {} })).toBe(false);
+  });
+
+  it('agrees with comparing two tokens as text', () => {
+    const a = getDoc();
+    const b = JSON.parse(JSON.stringify(a)) as typeof a;
+    expect(sameValue(a, b)).toBe(true);
+    expect(sameValue(a, { ...b, shape: 'hexagon' })).toBe(false);
+    expect(sameValue(a, { ...b, frame: { ...b.frame, thickness: b.frame.thickness + 0.01 } })).toBe(false);
   });
 });

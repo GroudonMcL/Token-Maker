@@ -11,6 +11,7 @@ import { watchLabelFonts } from '../fonts/fontLoader';
 import { watchLibraryImages } from '../state/libraryAssets';
 import { watchPictures } from '../state/pictureLibrary';
 import { watchAiRemoval } from '../image/aiRemoval';
+import { watchUnusedPictures } from '../state/assetCleanup';
 import { preloadSections } from '../sections';
 import { toast } from '../ui/toast';
 import { Toasts } from '../ui/Toasts';
@@ -42,6 +43,7 @@ function boot() {
     watchFrameImages();
     watchPictures();
     watchAiRemoval();
+    watchUnusedPictures();
     watchLabelFonts();
     preloadSections();
     listenForSentFrames();

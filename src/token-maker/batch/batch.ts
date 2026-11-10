@@ -86,6 +86,24 @@ export function styleKey(doc: TokenDocument): string {
   return JSON.stringify(blank);
 }
 
+/**
+ * Whether two values hold the same data (as their JSON would: a missing
+ * setting and an undefined one are the same). Parts that are the very same
+ * object, as most of two undo steps are, aren't looked into.
+ */
+export function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => sameValue(v, b[i]));
+  }
+  const x = a as Record<string, unknown>;
+  const y = b as Record<string, unknown>;
+  for (const k in x) if (!sameValue(x[k], y[k])) return false;
+  for (const k in y) if (!(k in x) && y[k] !== undefined) return false;
+  return true;
+}
+
 /** Every item, with the one on screen brought up to date from the document. */
 export function syncedItems(state: BatchState = batchStore.getState(), doc: TokenDocument = getDoc()): BatchItem[] {
   return state.items.map((it) => (it.id === state.activeId ? itemFromDoc(doc, it.id) : it));
@@ -158,22 +176,24 @@ export function selectItem(id: string): void {
   const items = syncedItems(state);
   const h = docHistory.getState();
   const swap = (d: TokenDocument) => docForItem(d, target);
-  const dedupe = (list: TokenDocument[], keepLast: string) => {
+  // Every step now shows the new picture, so two steps with the same style are the same
+  // document. They are compared part by part (sameValue), which stops at the parts two steps
+  // share; turning each whole document into text to compare, as before, took a moment with
+  // a long history or a big frame design.
+  const dedupe = (list: TokenDocument[], last: TokenDocument) => {
     const out: TokenDocument[] = [];
-    let prev = '';
+    let prev: TokenDocument | null = null;
     for (const d of list) {
-      const key = styleKey(d);
-      if (key !== prev) out.push(d);
-      prev = key;
+      if (!prev || !sameValue(prev, d)) out.push(d);
+      prev = d;
     }
     // A step whose style is the same as the present one undoes nothing visible.
-    while (out.length && styleKey(out[out.length - 1]!) === keepLast) out.pop();
+    while (out.length && sameValue(out[out.length - 1], last)) out.pop();
     return out;
   };
   const present = swap(h.present);
-  const presentKey = styleKey(present);
-  const past = dedupe(h.past.map(swap), presentKey);
-  const future = dedupe([...h.future].reverse().map(swap), presentKey).reverse();
+  const past = dedupe(h.past.map(swap), present);
+  const future = dedupe([...h.future].reverse().map(swap), present).reverse();
   docHistory.setState({ present, past, future, pendingBase: null });
   batchStore.setState({ items, activeId: id });
 }

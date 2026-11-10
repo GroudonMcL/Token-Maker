@@ -3,9 +3,10 @@
 
 import { batchStore, loadBatch, syncedItems, type BatchItem, type BatchState } from '../batch/batch';
 import { createStore as createIdbStore, del, get, keys, set, type UseStore } from 'idb-keyval';
-import { migrateDocument } from '../document/migrate';
+import { migrateDocument, readyToMigrate } from '../document/migrate';
 import type { TokenDocument } from '../document/types';
 import { decodeImage } from '../import/decode';
+import { tidySavedAiMasks } from '../image/aiRemoval';
 import { addAsset, assetStore } from './assets';
 import { docHistory, resetDoc } from './tokenStore';
 import { toast } from '../ui/toast';
@@ -55,6 +56,8 @@ export async function saveNow(doc: TokenDocument, batch: BatchState = batchStore
   const kept = keptPictures;
   if (kept === 'all') return;
   await Promise.all(saved.filter((k) => !used.includes(k) && !kept.has(k)).map((k) => del(k, db)));
+  // The pictures' AI cut-out masks are kept, and deleted, with them.
+  await tidySavedAiMasks(used, kept).catch((err) => console.warn('Could not tidy the saved AI masks', err));
 }
 
 /**
@@ -83,6 +86,7 @@ export async function restore(): Promise<RestoreResult> {
     raw = await get(DOC_KEY, db);
     if (!raw) return { status: 'none' };
     rawBatch = await get(BATCH_KEY, db);
+    await readyToMigrate(raw);
     doc = migrateDocument(raw);
     batch = readBatch(rawBatch);
   } catch (err) {
@@ -145,6 +149,7 @@ export async function clearAutosave(): Promise<void> {
   if (!db) return;
   const all = await keys(db);
   await Promise.all(all.map((k) => del(k, db)));
+  await tidySavedAiMasks([]).catch((err) => console.warn('Could not tidy the saved AI masks', err));
 }
 
 /** A saved batch, checked field by field (anything odd is left out). */

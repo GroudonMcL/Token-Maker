@@ -3,7 +3,7 @@
 // asset id (and in IndexedDB, so a reload doesn't redo it), which means each
 // picture in a batch gets its own. The work happens in ai.worker.ts.
 
-import { createStore as createIdbStore, del, get, set, type UseStore } from 'idb-keyval';
+import { createStore as createIdbStore, del, get, keys, set, type UseStore } from 'idb-keyval';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { TokenDocument } from '../document/types';
@@ -150,6 +150,39 @@ export async function forgetAiMask(assetId: string): Promise<void> {
   aiStore.setState({ masks });
   const db = store();
   if (db) await del(assetId, db).catch(() => {});
+}
+
+/** Forgets, in memory only, the masks of pictures that are no longer held (state/assetCleanup.ts). */
+export function releaseAiMasks(assetIds: readonly string[]): void {
+  const s = aiStore.getState();
+  const held = assetIds.filter((id) => s.masks.has(id) || s.status.has(id));
+  for (const id of assetIds) restores.delete(id);
+  if (!held.length) return;
+  const masks = new Map(s.masks);
+  const status = new Map(s.status);
+  for (const id of held) {
+    masks.delete(id);
+    status.delete(id);
+  }
+  aiStore.setState({ masks, status });
+}
+
+/**
+ * Keeps the saved masks in step with the saved pictures (autosave calls this
+ * after each save). A mask is only worth keeping while its picture is: masks
+ * of pictures that are `used` or otherwise `kept` stay, the rest are deleted
+ * (they used to pile up for ever, about 1 MB each). A picture that came back
+ * into use (Undo) after its mask was deleted gets it saved again.
+ */
+export async function tidySavedAiMasks(used: readonly string[], kept: ReadonlySet<string> = new Set()): Promise<void> {
+  const db = store();
+  if (!db) return;
+  const saved = (await keys(db)).filter((k): k is string => typeof k === 'string');
+  await Promise.all(saved.filter((id) => !used.includes(id) && !kept.has(id)).map((id) => del(id, db)));
+  for (const id of used) {
+    const mask = aiStore.getState().masks.get(id);
+    if (mask && !saved.includes(id)) await set(id, { data: mask.data, width: mask.width, height: mask.height }, db);
+  }
 }
 
 /**
