@@ -50,7 +50,7 @@ What to do before Token Maker goes public, from a review on 27 October 2026. Whe
   - a web import works on the live site
 - [x] The PROGRESS.md files and other build-time documents were removed.
 - [x] `apple-touch-icon` PNG added (`public/apple-touch-icon.png`, 180 × 180, linked from all three pages).
-- [ ] Add social-share tags (`og:title`, `og:description`, `og:image`) and maybe a web manifest. At the moment the favicon is the only icon.
+- [x] Social-share tags added (11 November 2026): `og:title`, `og:description`, `og:image` and a large Twitter card on all three pages, pointing at `https://tokenmaker.uk`. The picture is `public/share.png` (1200 × 630); run `npm run share-image` to retake it. Still open: a web manifest.
 - [ ] Decide how you'll hear about errors. Cloudflare's Workers logs cover the proxy. Browser errors are invisible unless you add something, and that something must go on the Privacy page.
 
 ## 6. Testing on real devices

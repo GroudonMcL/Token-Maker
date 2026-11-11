@@ -16,6 +16,7 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "pages:dev": "npm run build && npx --yes wrangler@4 pages dev dist --port 8788 --compatibility-date=2026-09-01",
+    "share-image": "tsx scripts/shell/share-image.ts",
     "tm:frame-sheet": "tsx scripts/token-maker/frame-sheet.ts",
     "tm:effect-sheet": "tsx scripts/token-maker/effect-sheet.ts",
     "tm:make-fixture": "tsx scripts/token-maker/make-fixture.ts",
